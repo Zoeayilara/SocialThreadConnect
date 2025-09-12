@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { authenticatedFetch } from "@/utils/api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +26,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface MessagesProps {
   onBack: () => void;
@@ -76,7 +76,7 @@ export default function Messages({ onBack }: MessagesProps) {
   const { data: conversations = [], isLoading: conversationsLoading, error: conversationsError } = useQuery({
     queryKey: ['conversations'],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/conversations`, { credentials: 'include' });
+      const response = await authenticatedFetch('/api/conversations');
       if (!response.ok) throw new Error('Failed to fetch conversations');
       return response.json();
     },
@@ -97,7 +97,7 @@ export default function Messages({ onBack }: MessagesProps) {
     queryKey: ['searchUsers', searchTerm],
     queryFn: async () => {
       if (!searchTerm.trim()) return [];
-      const response = await fetch(`${API_URL}/api/users/search?q=${encodeURIComponent(searchTerm)}`, { credentials: 'include' });
+      const response = await authenticatedFetch(`/api/users/search?q=${encodeURIComponent(searchTerm)}`);
       if (!response.ok) throw new Error('Failed to search users');
       return response.json();
     },
@@ -109,7 +109,7 @@ export default function Messages({ onBack }: MessagesProps) {
     queryKey: ['messages', selectedUser?.id],
     queryFn: async () => {
       if (!selectedUser) return [];
-      const response = await fetch(`${API_URL}/api/messages/${selectedUser.id}`, { credentials: 'include' });
+      const response = await authenticatedFetch(`/api/messages/${selectedUser.id}`);
       if (!response.ok) throw new Error('Failed to fetch messages');
       return response.json();
     },
@@ -126,10 +126,10 @@ export default function Messages({ onBack }: MessagesProps) {
           formData.append('recipientId', recipientId.toString());
           formData.append('media', file);
           
-          const response = await fetch(`${API_URL}/api/messages`, {
+          const response = await authenticatedFetch('/api/messages', {
             method: 'POST',
-            credentials: 'include',
-            body: formData
+            body: formData,
+            headers: {} // Don't set Content-Type for FormData
           });
           if (!response.ok) throw new Error('Failed to send message');
           return response.json();
@@ -141,10 +141,10 @@ export default function Messages({ onBack }: MessagesProps) {
           textFormData.append('recipientId', recipientId.toString());
           textFormData.append('content', content);
           
-          const textResponse = await fetch(`${API_URL}/api/messages`, {
+          const textResponse = await authenticatedFetch('/api/messages', {
             method: 'POST',
-            credentials: 'include',
-            body: textFormData
+            body: textFormData,
+            headers: {} // Don't set Content-Type for FormData
           });
           if (!textResponse.ok) throw new Error('Failed to send text message');
           promises.push(textResponse.json());
@@ -157,10 +157,10 @@ export default function Messages({ onBack }: MessagesProps) {
         formData.append('recipientId', recipientId.toString());
         if (content) formData.append('content', content);
 
-        const response = await fetch(`${API_URL}/api/messages`, {
+        const response = await authenticatedFetch('/api/messages', {
           method: 'POST',
-          credentials: 'include',
-          body: formData
+          body: formData,
+          headers: {} // Don't set Content-Type for FormData
         });
         if (!response.ok) throw new Error('Failed to send message');
         return response.json();
@@ -206,9 +206,8 @@ export default function Messages({ onBack }: MessagesProps) {
   // Delete message mutation
   const deleteMessageMutation = useMutation({
     mutationFn: async (messageId: number) => {
-      const response = await fetch(`${API_URL}/api/messages/${messageId}`, {
-        method: 'DELETE',
-        credentials: 'include'
+      const response = await authenticatedFetch(`/api/messages/${messageId}`, {
+        method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete message');
       return response.json();
@@ -226,9 +225,8 @@ export default function Messages({ onBack }: MessagesProps) {
   // Delete conversation mutation
   const deleteConversationMutation = useMutation({
     mutationFn: async (otherUserId: number) => {
-      const response = await fetch(`${API_URL}/api/conversations/${otherUserId}`, {
-        method: 'DELETE',
-        credentials: 'include'
+      const response = await authenticatedFetch(`/api/conversations/${otherUserId}`, {
+        method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete conversation');
       return response.json();

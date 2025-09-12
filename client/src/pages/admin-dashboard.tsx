@@ -4,13 +4,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Shield, Users, FileText, MessageSquare, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { FoxLogo } from "@/components/FoxLogo";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
+import { authenticatedFetch } from "@/utils/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -63,7 +64,7 @@ export default function AdminDashboard() {
   const { data: stats } = useQuery<AdminStats>({
     queryKey: ['/api/admin/stats'],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/admin/stats`, { credentials: 'include' });
+      const response = await authenticatedFetch('/api/admin/stats');
       if (!response.ok) throw new Error('Failed to fetch admin stats');
       return response.json();
     },
@@ -79,7 +80,7 @@ export default function AdminDashboard() {
         limit: '20',
         ...(searchQuery && { search: searchQuery })
       });
-      const response = await fetch(`${API_URL}/api/admin/users?${params}`, { credentials: 'include' });
+      const response = await authenticatedFetch(`/api/admin/users?${params}`);
       if (!response.ok) throw new Error('Failed to fetch users');
       return response.json();
     },

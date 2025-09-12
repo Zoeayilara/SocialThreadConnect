@@ -17,8 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { SavePostMenuItem } from "@/components/SavePostMenuItem";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { authenticatedFetch } from "@/utils/api";
 
 interface Post {
   id: number;
@@ -133,9 +132,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
     queryKey: ['user', profileUserId],
     queryFn: async () => {
       if (isOwnProfile) return currentUser;
-      const response = await fetch(`${API_URL}/api/users/${profileUserId}`, {
-        credentials: 'include',
-      });
+      const response = await authenticatedFetch(`/api/users/${profileUserId}`);
       if (!response.ok) throw new Error('Failed to fetch user');
       return response.json();
     },
@@ -163,9 +160,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const { data: userPosts = [] } = useQuery({
     queryKey: ['userPosts', profileUserId],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/users/${profileUserId}/posts`, {
-        credentials: 'include',
-      });
+      const response = await authenticatedFetch(`/api/users/${profileUserId}/posts`);
       if (!response.ok) throw new Error('Failed to fetch user posts');
       const posts = await response.json();
       
@@ -173,9 +168,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       const postsWithComments = await Promise.all(
         posts.map(async (post: Post) => {
           try {
-            const commentsResponse = await fetch(`${API_URL}/api/posts/${post.id}/comments`, {
-              credentials: 'include',
-            });
+            const commentsResponse = await authenticatedFetch(`/api/posts/${post.id}/comments`);
             if (commentsResponse.ok) {
               const comments = await commentsResponse.json();
               return { ...post, comments };
@@ -199,9 +192,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const { data: userReposts = [] } = useQuery({
     queryKey: ['userReposts', profileUserId],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/users/${profileUserId}/reposts`, {
-        credentials: 'include',
-      });
+      const response = await authenticatedFetch(`/api/users/${profileUserId}/reposts`);
       if (!response.ok) throw new Error('Failed to fetch user reposts');
       return response.json();
     },
@@ -215,9 +206,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const { data: followerData } = useQuery({
     queryKey: ['followers', profileUserId],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/users/${profileUserId}/followers`, {
-        credentials: 'include',
-      });
+      const response = await authenticatedFetch(`/api/users/${profileUserId}/followers`);
       if (!response.ok) throw new Error('Failed to fetch followers');
       return response.json();
     },
@@ -230,9 +219,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Follow/unfollow mutation
   const followMutation = useMutation({
     mutationFn: async ({ userId, isFollowing }: { userId: number; isFollowing: boolean }) => {
-      const response = await fetch(`${API_URL}/api/${isFollowing ? 'unfollow' : 'follow'}/${userId}`, {
+      const response = await authenticatedFetch(`/api/${isFollowing ? 'unfollow' : 'follow'}/${userId}`, {
         method: 'POST',
-        credentials: 'include',
       });
       if (!response.ok) throw new Error(`Failed to ${isFollowing ? 'unfollow' : 'follow'} user`);
       return response.json();
@@ -250,10 +238,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Create post mutation
   const createPostMutation = useMutation({
     mutationFn: async (postData: { content: string; imageUrl?: string }) => {
-      const response = await fetch(`${API_URL}/api/posts`, {
+      const response = await authenticatedFetch('/api/posts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(postData),
       });
       if (!response.ok) throw new Error('Failed to create post');
@@ -272,9 +258,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Repost mutation
   const repostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`${API_URL}/api/posts/${postId}/repost`, {
+      const response = await authenticatedFetch(`/api/posts/${postId}/repost`, {
         method: 'POST',
-        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to toggle repost');
       return response.json();
@@ -289,9 +274,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Like post mutation
   const likeMutation = useMutation({
     mutationFn: async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
-      const response = await fetch(`${API_URL}/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
+      const response = await authenticatedFetch(`/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
         method: 'POST',
-        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to update like');
       return response.json();
@@ -306,10 +290,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Comment mutation
   const commentMutation = useMutation({
     mutationFn: async ({ postId, content, parentId }: { postId: number; content: string; parentId?: number }) => {
-      const response = await fetch(`${API_URL}/api/posts/${postId}/comments`, {
+      const response = await authenticatedFetch(`/api/posts/${postId}/comments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ content, parentId }),
       });
       if (!response.ok) throw new Error('Failed to create comment');
@@ -328,9 +310,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
     queryKey: ['comments', showComments],
     queryFn: async () => {
       if (!showComments) return [];
-      const response = await fetch(`${API_URL}/api/posts/${showComments}/comments`, {
-        credentials: 'include',
-      });
+      const response = await authenticatedFetch(`/api/posts/${showComments}/comments`);
       if (!response.ok) throw new Error('Failed to fetch comments');
       return response.json();
     },
@@ -340,10 +320,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Edit post mutation
   const editPostMutation = useMutation({
     mutationFn: async ({ postId, content }: { postId: number; content: string }) => {
-      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
+      const response = await authenticatedFetch(`/api/posts/${postId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ content }),
       });
       if (!response.ok) throw new Error('Failed to update post');
@@ -360,9 +338,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Delete post mutation
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
+      const response = await authenticatedFetch(`/api/posts/${postId}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to delete post');
       return response.json();
@@ -376,9 +353,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Save post mutation
   const savePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`${API_URL}/api/posts/${postId}/save`, {
+      const response = await authenticatedFetch(`/api/posts/${postId}/save`, {
         method: 'POST',
-        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to save post');
       return response.json();
@@ -392,9 +368,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Unsave post mutation
   const unsavePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`${API_URL}/api/posts/${postId}/save`, {
+      const response = await authenticatedFetch(`/api/posts/${postId}/save`, {
         method: 'DELETE',
-        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to unsave post');
       return response.json();
@@ -408,10 +383,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (profileData: { firstName: string; lastName: string; bio?: string; link?: string; universityHandle?: string; isPrivate?: boolean }) => {
-      const response = await fetch(`${API_URL}/api/users/profile`, {
+      const response = await authenticatedFetch('/api/users/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(profileData),
       });
       if (!response.ok) throw new Error('Failed to update profile');
@@ -437,10 +410,10 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       const formData = new FormData();
       formData.append('profilePicture', file);
       
-      const response = await fetch(`${API_URL}/api/upload-profile-picture`, {
+      const response = await authenticatedFetch('/api/upload-profile-picture', {
         method: 'POST',
-        credentials: 'include',
         body: formData,
+        headers: {}, // Don't set Content-Type for FormData
       });
       
       if (!response.ok) {

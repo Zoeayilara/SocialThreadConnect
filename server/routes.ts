@@ -1,13 +1,22 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, loginUser } from "./auth";
+import { setupAuth, isAuthenticated, loginUser, generateUserToken } from "./auth";
 import { emailService } from "./emailService";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
+
+// Extend Express Request type to include userId
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: number;
+    }
+  }
+}
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -374,7 +383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId; // Use req.userId instead of req.session.userId
       const user = await storage.getUserById(userId);
       res.json(user);
     } catch (error) {
@@ -422,7 +431,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isVerified: 0
       });
 
-      // Auto-login the user after registration
+      // Generate JWT token for auto-login after registration
+      const token = generateUserToken(user);
+      console.log('🔑 Generated JWT token for new user:', user.id);
+      
+      // Set session for backward compatibility
       (req.session as any).userId = user.id;
       console.log('🔑 Setting userId in session:', user.id, 'Session ID:', req.sessionID);
       console.log('🔍 Session before save:', JSON.stringify(req.session, null, 2));
@@ -443,6 +456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ 
         message: "Registration successful", 
+        token: token, // Include JWT token in response
         userId: user.id,
         user: {
           id: user.id,
@@ -469,10 +483,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const user = await loginUser(email, password);
       
-      // Set session AND save it explicitly before responding
+      // Generate JWT token
+      const token = generateUserToken(user);
+      console.log('🔑 Generated JWT token for user:', user.id);
+      
+      // Set session for backward compatibility
       (req.session as any).userId = user.id;
       console.log('🔑 Setting userId in session:', user.id, 'Session ID:', req.sessionID);
-      console.log('🔍 Session before save:', JSON.stringify(req.session, null, 2));
       
       // Save session and wait for completion
       await new Promise<void>((resolve, reject) => {
@@ -482,14 +499,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             reject(err);
           } else {
             console.log('✅ Login session saved successfully for user:', user.id, 'Session ID:', req.sessionID);
-            console.log('🔍 Session after save:', JSON.stringify(req.session, null, 2));
             resolve();
           }
         });
       });
       
       res.json({ 
-        message: "Login successful", 
+        message: "Login successful",
+        token: token, // Include JWT token in response
         user: {
           id: user.id,
           email: user.email,
@@ -513,14 +530,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile picture upload
   app.post('/api/upload-profile-picture', isAuthenticated, upload.single('profilePicture'), async (req: any, res) => {
     try {
-      console.log('Upload request received, user ID:', req.session.userId);
+      console.log('Upload request received, user ID:', req.userId);
       console.log('File received:', req.file ? req.file.originalname : 'No file');
       
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const userId = req.session.userId;
+      const userId = req.userId;
       
       // Only allow images for profile pictures
       if (!req.file.mimetype.startsWith('image/')) {
@@ -697,7 +714,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const posts = await storage.getPosts(limit, offset, sortBy);
 
       // Enrich posts with like and repost status for current user
-      const userId = (req as any).session.userId as number;
+      const userId = req.userId as number;
       const enriched = await Promise.all(
         posts.map(async (p) => {
           console.log('Post data:', { id: p.id, mediaUrl: p.mediaUrl, mediaType: p.mediaType });
@@ -718,7 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/posts', isAuthenticated, upload.array('media', 10), async (req: any, res) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId;
       const { content } = req.body;
       
       console.log('Post creation request:', { userId, content, hasFiles: !!req.files });
@@ -776,7 +793,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update post
   app.put('/api/posts/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId;
       const postId = parseInt(req.params.id);
       const { content } = req.body;
 
@@ -800,7 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete post
   app.delete('/api/posts/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId;
       const postId = parseInt(req.params.id);
 
       const deleted = await storage.deletePost(postId, userId);
@@ -818,7 +835,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/posts/:id/like', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId;
       const postId = parseInt(req.params.id);
 
       const isLiked = await storage.isPostLiked(userId, postId);
@@ -839,7 +856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Explicit unlike route (to support clients calling /unlike directly)
   app.post('/api/posts/:id/unlike', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId;
       const postId = parseInt(req.params.id);
       await storage.unlikePost(userId, postId);
       res.json({ liked: false });
@@ -851,7 +868,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/comments', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId;
       const commentData = createCommentSchema.parse(req.body);
       
       const comment = await storage.createComment({
@@ -873,7 +890,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create comment via /api/posts/:id/comments
   app.post('/api/posts/:id/comments', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId;
       const postId = parseInt(req.params.id);
       const bodySchema = z.object({ 
         content: z.string().min(1),
@@ -913,7 +930,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Follow / Unfollow
   app.post('/api/follow/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const followerId = req.session.userId as number;
+      const followerId = req.userId as number;
       const followingId = parseInt(req.params.id);
       await storage.followUser(followerId, followingId);
       res.json({ following: true });
@@ -925,7 +942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/unfollow/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const followerId = req.session.userId as number;
+      const followerId = req.userId as number;
       const followingId = parseInt(req.params.id);
       await storage.unfollowUser(followerId, followingId);
       res.json({ following: false });
@@ -940,7 +957,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const q = ((req.query.q as string) || '').trim().toLowerCase();
       if (!q) return res.json([]);
-      const currentUserId = req.session.userId as number;
+      const currentUserId = req.userId as number;
       
       // naive search in sqlite using LIKE via drizzle
       const results = await db
@@ -1007,7 +1024,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const posts = await storage.getUserPosts(userId);
       
       // Enrich posts with like and repost status for current user
-      const currentUserId = (req as any).session.userId as number;
+      const currentUserId = (req as any).userId as number;
       const enriched = await Promise.all(
         posts.map(async (p: any) => ({
           ...p,
@@ -1030,7 +1047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const reposts = await storage.getUserReposts(userId);
       
       // Enrich posts with like and repost status for current user
-      const currentUserId = (req as any).session.userId as number;
+      const currentUserId = (req as any).userId as number;
       const enriched = await Promise.all(
         reposts.map(async (p: any) => ({
           ...p,
@@ -1050,7 +1067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/users/:id/followers', isAuthenticated, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.id);
-      const currentUserId = req.session.userId as number;
+      const currentUserId = req.userId as number;
       const count = await storage.getFollowerCount(userId);
       const isFollowing = await storage.isFollowing(currentUserId, userId);
       res.json({ count, isFollowing });
@@ -1063,7 +1080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Repost/unrepost a post
   app.post('/api/posts/:id/repost', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId as number;
+      const userId = req.userId as number;
       const postId = parseInt(req.params.id);
       
       const result = await storage.toggleRepost(userId, postId);
@@ -1077,7 +1094,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user profile
   app.put('/api/users/profile', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId as number;
+      const userId = req.userId as number;
       const { firstName, lastName, bio, link, universityHandle, isPrivate } = req.body;
       
       await storage.updateUserProfile(userId, {
@@ -1099,7 +1116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get notifications
   app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId as number;
+      const userId = req.userId as number;
       const notifications = await storage.getNotifications(userId);
       res.json(notifications);
     } catch (error) {
@@ -1111,7 +1128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Saved posts endpoints
   app.post('/api/posts/:id/save', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId as number;
+      const userId = req.userId as number;
       const postId = parseInt(req.params.id);
       
       // Check if already saved
@@ -1130,7 +1147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/posts/:id/save', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId as number;
+      const userId = req.userId as number;
       const postId = parseInt(req.params.id);
       
       await storage.unsavePost(userId, postId);
@@ -1143,7 +1160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/saved-posts', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId as number;
+      const userId = req.userId as number;
       const savedPosts = await storage.getSavedPosts(userId);
       res.json(savedPosts);
     } catch (error) {
@@ -1154,7 +1171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/posts/:id/saved-status', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId as number;
+      const userId = req.userId as number;
       const postId = parseInt(req.params.id);
       
       const isSaved = await storage.isPostSaved(userId, postId);
@@ -1168,7 +1185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user activities
   app.get('/api/activities', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId;
       
       // Get recent activities - likes, comments, and reposts on user's posts
       const activities = sqlite.prepare(`
@@ -1238,7 +1255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin middleware to check if user is admin
   const isAdmin = async (req: any, res: any, next: any) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId;
       const user = await storage.getUserById(userId);
       
       if (!user || user.userType !== 'admin') {
@@ -1372,7 +1389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete account route
   app.delete("/api/account/delete", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId;
       
       // Delete user's posts first (due to foreign key constraints)
       sqlite.prepare('DELETE FROM posts WHERE user_id = ?').run(userId);
@@ -1410,7 +1427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's conversations with last message
   app.get('/api/conversations', isAuthenticated, async (req: any, res) => {
     try {
-      const currentUserId = req.session.userId as number;
+      const currentUserId = req.userId as number;
       console.log('Fetching conversations for user:', currentUserId);
       
       // Get conversations ordered by most recent message
@@ -1501,7 +1518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get messages between current user and another user
   app.get('/api/messages/:userId', isAuthenticated, async (req: any, res) => {
     try {
-      const currentUserId = req.session.userId as number;
+      const currentUserId = req.userId as number;
       const otherUserId = parseInt(req.params.userId);
       
       const messages = sqlite.prepare(`
@@ -1528,7 +1545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send a new message
   app.post('/api/messages', isAuthenticated, upload.single('media'), async (req: any, res) => {
     try {
-      const senderId = req.session.userId as number;
+      const senderId = req.userId as number;
       const { recipientId, content } = req.body;
       const mediaFile = req.file;
       
@@ -1587,7 +1604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete individual message
   app.delete('/api/messages/:messageId', isAuthenticated, async (req: any, res) => {
     try {
-      const currentUserId = req.session.userId as number;
+      const currentUserId = req.userId as number;
       const messageId = parseInt(req.params.messageId);
 
       // Check if message exists and belongs to current user
@@ -1618,7 +1635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete conversation between users
   app.delete('/api/conversations/:userId', isAuthenticated, async (req: any, res) => {
     try {
-      const currentUserId = req.session.userId as number;
+      const currentUserId = req.userId as number;
       const otherUserId = parseInt(req.params.userId);
       
       console.log('Deleting conversation between users:', currentUserId, 'and', otherUserId);

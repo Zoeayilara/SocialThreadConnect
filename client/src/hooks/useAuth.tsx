@@ -43,14 +43,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check for temp registration data to skip auth query if present
   const tempUserId = typeof window !== 'undefined' ? localStorage.getItem('tempUserId') : null;
   
+  // Get JWT token from localStorage
+  const getAuthToken = () => {
+    return typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  };
+
+  // Set JWT token in localStorage
+  const setAuthToken = (token: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('authToken', token);
+    }
+  };
+
+  // Remove JWT token from localStorage
+  const removeAuthToken = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
+    }
+  };
+  
   const { data: user, error, isLoading: userQueryLoading } = useQuery({
     queryKey: ['auth', 'user'],
     queryFn: async () => {
+      const token = getAuthToken();
+      const headers: HeadersInit = {
+        'credentials': 'include',
+      };
+      
+      // Add Authorization header if token exists
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(`${API_URL}/api/auth/user`, {
         credentials: 'include',
+        headers,
       });
       if (!response.ok) {
         if (response.status === 401) {
+          // Remove invalid token
+          removeAuthToken();
           setIsAuthenticating(false);
           return null;
         }
@@ -110,6 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return response.json();
     },
     onSuccess: (data) => {
+      // Store JWT token if provided
+      if (data.token) {
+        setAuthToken(data.token);
+      }
+      
       // Clear any temp data from registration
       localStorage.removeItem('tempUserId');
       localStorage.removeItem('tempUserType');
@@ -163,6 +200,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return response.json();
     },
     onSuccess: () => {
+      // Remove JWT token on logout
+      removeAuthToken();
+      
       queryClient.setQueryData(['auth', 'user'], null);
       queryClient.clear(); // Clear all queries
       setHasLoggedOut(true);
