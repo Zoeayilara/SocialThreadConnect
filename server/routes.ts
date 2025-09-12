@@ -26,6 +26,18 @@ import { db, sqlite } from "./db";
 import { users } from "../shared/schema";
 import { sql } from "drizzle-orm";
 
+// Utility function to get the correct base URL for media files
+function getBaseUrl(): string {
+  // Use BASE_URL if set, otherwise detect environment
+  if (process.env.BASE_URL) {
+    return process.env.BASE_URL;
+  }
+  
+  return process.env.RAILWAY_ENVIRONMENT_NAME 
+    ? 'https://web-production-aff5b.up.railway.app' 
+    : 'http://localhost:5000';
+}
+
 // Database migration function to add missing columns
 async function runMigrations() {
   try {
@@ -555,11 +567,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       fs.writeFileSync(filePath, req.file.buffer);
-      const profileImageUrl = `/uploads/${fileName}`;
       
-      await storage.updateUser(userId, { profileImageUrl });
+      const profileImageUrl = `/uploads/${fileName}`;
+      const fullProfileImageUrl = `${getBaseUrl()}${profileImageUrl}`;
+      
+      await storage.updateUser(userId, { profileImageUrl: fullProfileImageUrl });
 
-      res.json({ profileImageUrl });
+      res.json({ profileImageUrl: fullProfileImageUrl });
     } catch (error) {
       console.log('Profile picture upload error:', error);
       res.status(500).json({ message: "File upload failed" });
@@ -778,8 +792,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const post = await storage.createPost({
         userId,
         content: (content || "").trim(),
-        imageUrl: mediaUrls.length > 0 ? JSON.stringify(mediaUrls.map(url => `http://localhost:5000${url}`)) : null,
-        mediaUrl: mediaUrls.length > 0 ? JSON.stringify(mediaUrls.map(url => `http://localhost:5000${url}`)) : null,
+        imageUrl: mediaUrls.length > 0 ? JSON.stringify(mediaUrls.map(url => `${getBaseUrl()}${url}`)) : null,
+        mediaUrl: mediaUrls.length > 0 ? JSON.stringify(mediaUrls.map(url => `${getBaseUrl()}${url}`)) : null,
         mediaType: mediaTypes.length > 0 ? JSON.stringify(mediaTypes) : null,
       });
 
