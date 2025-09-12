@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { FoxLogo } from "@/components/FoxLogo";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 interface AdminUser {
   id: number;
   email: string;
@@ -61,7 +63,7 @@ export default function AdminDashboard() {
   const { data: stats } = useQuery<AdminStats>({
     queryKey: ['/api/admin/stats'],
     queryFn: async () => {
-      const response = await fetch('/api/admin/stats', { credentials: 'include' });
+      const response = await fetch(`${API_URL}/api/admin/stats`, { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch admin stats');
       return response.json();
     },
@@ -77,7 +79,7 @@ export default function AdminDashboard() {
         limit: '20',
         ...(searchQuery && { search: searchQuery })
       });
-      const response = await fetch(`/api/admin/users?${params}`, { credentials: 'include' });
+      const response = await fetch(`${API_URL}/api/admin/users?${params}`, { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch users');
       return response.json();
     },
@@ -87,7 +89,7 @@ export default function AdminDashboard() {
   // Verify/unverify user mutation
   const verifyUserMutation = useMutation({
     mutationFn: async ({ userId, isVerified }: { userId: number; isVerified: boolean }) => {
-      const response = await fetch(`/api/admin/users/${userId}/verify`, {
+      const response = await fetch(`${API_URL}/api/admin/users/${userId}/verify`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

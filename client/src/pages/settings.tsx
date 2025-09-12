@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Bell, Bookmark, User, HelpCircle, Info, LogOut, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 interface SettingsProps {
   onBack: () => void;
 }
@@ -11,7 +13,7 @@ export default function Settings({ onBack }: SettingsProps) {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/logout', {
+      const response = await fetch(`${API_URL}/api/logout`, {
         method: 'POST',
         credentials: 'include',
       });

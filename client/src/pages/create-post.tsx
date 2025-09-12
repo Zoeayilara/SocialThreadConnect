@@ -4,8 +4,10 @@ import { X, ImageIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/hooks/useAuth';
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface User {
   id: number;
@@ -24,11 +26,9 @@ export default function CreatePost() {
 
   const createPostMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const response = await fetch('http://localhost:5000/api/posts', {
+      const response = await fetch(`${API_URL}/api/posts`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        credentials: 'include',
         body: formData,
       });
       

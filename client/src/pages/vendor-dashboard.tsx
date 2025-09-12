@@ -21,6 +21,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { SavePostMenuItem } from "@/components/SavePostMenuItem";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 interface Post {
   id: number;
   userId: number;
@@ -115,7 +117,7 @@ export default function CustomerDashboard() {
   const { data: posts = [] } = useQuery({
     queryKey: ['/api/posts'],
     queryFn: async () => {
-      const response = await fetch('/api/posts', { credentials: 'include' });
+      const response = await fetch(`${API_URL}/api/posts`, { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
@@ -130,7 +132,7 @@ export default function CustomerDashboard() {
     queryKey: ['/api/comments', showComments],
     queryFn: async () => {
       if (!showComments) return [];
-      const response = await fetch(`/api/posts/${showComments}/comments`, { credentials: 'include' });
+      const response = await fetch(`${API_URL}/api/posts/${showComments}/comments`, { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch comments');
       return response.json();
     },
@@ -143,7 +145,7 @@ export default function CustomerDashboard() {
 
   const likeMutation = useMutation({
     mutationFn: async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
-      const response = await fetch(`/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -159,7 +161,7 @@ export default function CustomerDashboard() {
 
   const commentMutation = useMutation({
     mutationFn: async ({ postId, content, parentId }: { postId: number; content: string; parentId?: number }) => {
-      const response = await fetch(`/api/posts/${postId}/comments`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content, parentId }),
@@ -177,7 +179,7 @@ export default function CustomerDashboard() {
 
   const repostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`/api/posts/${postId}/repost`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/repost`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -193,7 +195,7 @@ export default function CustomerDashboard() {
   // Edit post mutation
   const editPostMutation = useMutation({
     mutationFn: async ({ postId, content }: { postId: number; content: string }) => {
-      const response = await fetch(`/api/posts/${postId}`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -214,7 +216,7 @@ export default function CustomerDashboard() {
   // Delete post mutation
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`/api/posts/${postId}`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -232,7 +234,7 @@ export default function CustomerDashboard() {
   // Save post mutation
   const savePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`/api/posts/${postId}/save`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/save`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -250,7 +252,7 @@ export default function CustomerDashboard() {
   // Unsave post mutation
   const unsavePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`/api/posts/${postId}/save`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/save`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -336,7 +338,7 @@ export default function CustomerDashboard() {
   // Search users mutation
   const searchUsersMutation = useMutation({
     mutationFn: async (query: string) => {
-      const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`, {
+      const response = await fetch(`${API_URL}/api/users/search?q=${encodeURIComponent(query)}`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to search users');
@@ -350,7 +352,7 @@ export default function CustomerDashboard() {
   // Follow/unfollow mutation
   const followMutation = useMutation({
     mutationFn: async ({ userId, isFollowing }: { userId: number; isFollowing: boolean }) => {
-      const response = await fetch(`/api/${isFollowing ? 'unfollow' : 'follow'}/${userId}`, {
+      const response = await fetch(`${API_URL}/api/${isFollowing ? 'unfollow' : 'follow'}/${userId}`, {
         method: 'POST',
         credentials: 'include',
       });

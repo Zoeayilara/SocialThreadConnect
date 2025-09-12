@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 interface AccountProps {
   onBack: () => void;
 }
@@ -29,7 +31,7 @@ export default function Account({ onBack }: AccountProps) {
 
     setIsDeleting(true);
     try {
-      const response = await fetch('/api/account/delete', {
+      const response = await fetch(`${API_URL}/api/account/delete`, {
         method: 'DELETE',
         credentials: 'include',
       });

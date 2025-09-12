@@ -14,6 +14,8 @@ import { Heart, MessageCircle, Share, MoreHorizontal, Image, Send, LogOut, Edit,
 import { FoxLogo } from "@/components/FoxLogo";
 import { formatRelativeTime } from "@/utils/dateUtils";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 interface Post {
   id: number;
   userId: number;
@@ -78,7 +80,7 @@ export default function Social() {
   const { data: posts = [] } = useQuery({
     queryKey: ['/api/posts'],
     queryFn: async () => {
-      const response = await fetch('/api/posts', {
+      const response = await fetch(`${API_URL}/api/posts`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch posts');
@@ -91,7 +93,7 @@ export default function Social() {
     queryKey: ['/api/comments', showComments],
     queryFn: async () => {
       if (!showComments) return [];
-      const response = await fetch(`/api/posts/${showComments}/comments`, {
+      const response = await fetch(`${API_URL}/api/posts/${showComments}/comments`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch comments');
@@ -104,7 +106,7 @@ export default function Social() {
   const createPostMutation = useMutation({
     mutationFn: async (data: string | FormData) => {
       const isFormData = data instanceof FormData;
-      const response = await fetch('/api/posts', {
+      const response = await fetch(`${API_URL}/api/posts`, {
         method: 'POST',
         headers: isFormData ? {} : { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -127,7 +129,7 @@ export default function Social() {
   // Like post mutation
   const likeMutation = useMutation({
     mutationFn: async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
-      const response = await fetch(`/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -142,7 +144,7 @@ export default function Social() {
   // Comment mutation
   const commentMutation = useMutation({
     mutationFn: async ({ postId, content }: { postId: number; content: string }) => {
-      const response = await fetch(`/api/posts/${postId}/comments`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -162,7 +164,7 @@ export default function Social() {
   // Edit post mutation
   const editPostMutation = useMutation({
     mutationFn: async ({ postId, content }: { postId: number; content: string }) => {
-      const response = await fetch(`/api/posts/${postId}`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -182,7 +184,7 @@ export default function Social() {
   // Delete post mutation
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`/api/posts/${postId}`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
         method: 'DELETE',
         credentials: 'include',
       });

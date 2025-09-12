@@ -18,6 +18,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { SavePostMenuItem } from "@/components/SavePostMenuItem";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 interface Post {
   id: number;
   content: string;
@@ -131,7 +133,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
     queryKey: ['user', profileUserId],
     queryFn: async () => {
       if (isOwnProfile) return currentUser;
-      const response = await fetch(`/api/users/${profileUserId}`, {
+      const response = await fetch(`${API_URL}/api/users/${profileUserId}`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch user');
@@ -161,7 +163,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const { data: userPosts = [] } = useQuery({
     queryKey: ['userPosts', profileUserId],
     queryFn: async () => {
-      const response = await fetch(`/api/users/${profileUserId}/posts`, {
+      const response = await fetch(`${API_URL}/api/users/${profileUserId}/posts`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch user posts');
@@ -171,7 +173,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       const postsWithComments = await Promise.all(
         posts.map(async (post: Post) => {
           try {
-            const commentsResponse = await fetch(`/api/posts/${post.id}/comments`, {
+            const commentsResponse = await fetch(`${API_URL}/api/posts/${post.id}/comments`, {
               credentials: 'include',
             });
             if (commentsResponse.ok) {
@@ -197,7 +199,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const { data: userReposts = [] } = useQuery({
     queryKey: ['userReposts', profileUserId],
     queryFn: async () => {
-      const response = await fetch(`/api/users/${profileUserId}/reposts`, {
+      const response = await fetch(`${API_URL}/api/users/${profileUserId}/reposts`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch user reposts');
@@ -213,7 +215,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const { data: followerData } = useQuery({
     queryKey: ['followers', profileUserId],
     queryFn: async () => {
-      const response = await fetch(`/api/users/${profileUserId}/followers`, {
+      const response = await fetch(`${API_URL}/api/users/${profileUserId}/followers`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch followers');
@@ -228,7 +230,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Follow/unfollow mutation
   const followMutation = useMutation({
     mutationFn: async ({ userId, isFollowing }: { userId: number; isFollowing: boolean }) => {
-      const response = await fetch(`/api/${isFollowing ? 'unfollow' : 'follow'}/${userId}`, {
+      const response = await fetch(`${API_URL}/api/${isFollowing ? 'unfollow' : 'follow'}/${userId}`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -248,7 +250,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Create post mutation
   const createPostMutation = useMutation({
     mutationFn: async (postData: { content: string; imageUrl?: string }) => {
-      const response = await fetch('/api/posts', {
+      const response = await fetch(`${API_URL}/api/posts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -270,7 +272,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Repost mutation
   const repostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`/api/posts/${postId}/repost`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/repost`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -287,7 +289,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Like post mutation
   const likeMutation = useMutation({
     mutationFn: async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
-      const response = await fetch(`/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -304,7 +306,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Comment mutation
   const commentMutation = useMutation({
     mutationFn: async ({ postId, content, parentId }: { postId: number; content: string; parentId?: number }) => {
-      const response = await fetch(`/api/posts/${postId}/comments`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -326,7 +328,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
     queryKey: ['comments', showComments],
     queryFn: async () => {
       if (!showComments) return [];
-      const response = await fetch(`/api/posts/${showComments}/comments`, {
+      const response = await fetch(`${API_URL}/api/posts/${showComments}/comments`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch comments');
@@ -338,7 +340,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Edit post mutation
   const editPostMutation = useMutation({
     mutationFn: async ({ postId, content }: { postId: number; content: string }) => {
-      const response = await fetch(`/api/posts/${postId}`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -358,7 +360,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Delete post mutation
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`/api/posts/${postId}`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -374,7 +376,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Save post mutation
   const savePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`/api/posts/${postId}/save`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/save`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -390,7 +392,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Unsave post mutation
   const unsavePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`/api/posts/${postId}/save`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/save`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -406,7 +408,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (profileData: { firstName: string; lastName: string; bio?: string; link?: string; universityHandle?: string; isPrivate?: boolean }) => {
-      const response = await fetch('/api/users/profile', {
+      const response = await fetch(`${API_URL}/api/users/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -435,7 +437,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       const formData = new FormData();
       formData.append('profilePicture', file);
       
-      const response = await fetch('/api/upload-profile-picture', {
+      const response = await fetch(`${API_URL}/api/upload-profile-picture`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
