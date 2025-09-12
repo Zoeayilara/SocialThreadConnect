@@ -1,0 +1,590 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Heart, MessageCircle, Bookmark, MoreHorizontal, Flag, Send, X } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { SavePostMenuItem } from '@/components/SavePostMenuItem';
+import { useState } from 'react';
+import { formatRelativeTime } from "@/utils/dateUtils";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+interface SavedPost {
+  id: number;
+  content: string;
+  imageUrl?: string;
+  mediaUrl?: string;
+  mediaType?: string;
+  likesCount: number;
+  commentsCount: number;
+  repostsCount: number;
+  createdAt: number;
+  savedAt: number;
+  isLiked?: boolean;
+  user: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    profileImageUrl?: string;
+    universityHandle?: string;
+  };
+}
+
+interface Comment {
+  id: number;
+  content: string;
+  createdAt: string;
+  repliesCount: number;
+  replies?: Comment[];
+  user: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    profileImageUrl?: string;
+  };
+}
+
+const Saved = () => {
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [carouselIndex, setCarouselIndex] = useState<{[postId: number]: number}>({});
+  const [showComments, setShowComments] = useState<number | null>(null);
+  const [newComment, setNewComment] = useState("");
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [showReplies, setShowReplies] = useState<Set<number>>(new Set());
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: savedPosts = [], isLoading } = useQuery<SavedPost[]>({
+    queryKey: ['saved-posts'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/saved-posts`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch saved posts');
+      }
+      return response.json();
+    },
+  });
+
+  // Fetch comments for a specific post
+  const { data: comments = [] } = useQuery<Comment[]>({
+    queryKey: ['comments', showComments],
+    queryFn: async () => {
+      if (!showComments) return [];
+      const response = await fetch(`${API_URL}/api/posts/${showComments}/comments`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch comments');
+      return response.json();
+    },
+    enabled: !!showComments,
+  });
+
+  // Like mutation
+  const likeMutation = useMutation({
+    mutationFn: async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/like`, {
+        method: isLiked ? 'DELETE' : 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to update like');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-posts'] });
+    },
+  });
+
+  // Unsave post mutation
+  const unsavePostMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/save`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to unsave post');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-posts'] });
+      toast({ title: "Post unsaved successfully!" });
+    },
+  });
+
+  // Comment mutation
+  const commentMutation = useMutation({
+    mutationFn: async ({ postId, content, parentId }: { postId: number; content: string; parentId?: number }) => {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content, parentId }),
+      });
+      if (!response.ok) throw new Error('Failed to create comment');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments'] });
+      queryClient.invalidateQueries({ queryKey: ['saved-posts'] });
+    },
+  });
+
+  const handleLike = (post: SavedPost) => {
+    likeMutation.mutate({ postId: post.id, isLiked: !!post.isLiked });
+  };
+
+  const handleUnsave = (postId: number) => {
+    unsavePostMutation.mutate(postId);
+  };
+
+  // Repost mutation
+  const repostMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      const response = await fetch(`${API_URL}/api/posts/${postId}/repost`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to toggle repost');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-posts'] });
+    },
+  });
+
+  const handleRepost = (postId: number) => {
+    repostMutation.mutate(postId);
+  };
+
+  const handleComment = async (postId: number, parentId?: number) => {
+    const content = parentId ? replyContent : newComment;
+    if (!content.trim()) return;
+    
+    commentMutation.mutate({ postId, content, parentId });
+    
+    if (parentId) {
+      setReplyContent("");
+      setReplyingTo(null);
+    } else {
+      setNewComment("");
+    }
+  };
+
+  const toggleReplies = (commentId: number) => {
+    const newShowReplies = new Set(showReplies);
+    if (newShowReplies.has(commentId)) {
+      newShowReplies.delete(commentId);
+    } else {
+      newShowReplies.add(commentId);
+    }
+    setShowReplies(newShowReplies);
+  };
+
+  const openImageModal = (url: string) => {
+    window.open(url, '_blank');
+  };
+
+  const getUserDisplayName = (user: any) => 
+    (user.firstName && user.lastName) ? `${user.firstName} ${user.lastName}` : user.universityHandle || 'User';
+
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl">
+          <div className="sticky top-0 bg-black/80 backdrop-blur-md border-b border-gray-800 px-4 py-3">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.history.back()}
+                className="p-2 text-white hover:bg-gray-800"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h1 className="text-xl font-semibold text-white">Saved</h1>
+            </div>
+          </div>
+          <div className="px-4 py-4">
+            <div className="text-center text-gray-400">Loading saved posts...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl">
+        {/* Header */}
+        <div className="sticky top-0 bg-black/80 backdrop-blur-md border-b border-gray-800 p-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.history.back()}
+              className="p-2 text-white hover:bg-gray-800"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-xl font-semibold text-white">Saved</h1>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-4 pb-20">
+          {savedPosts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                <Bookmark className="h-8 w-8 text-gray-400" />
+              </div>
+              <h2 className="text-xl font-semibold text-white mb-2">No saved posts yet</h2>
+              <p className="text-gray-400 text-center max-w-sm">
+                When you save posts, they'll appear here so you can easily find them later.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-0">
+              {savedPosts.map((post) => (
+                <Card key={post.id} className="overflow-hidden border-0 shadow-none bg-transparent border-b border-gray-800 rounded-none">
+                  <CardHeader className="pb-2 px-0 pt-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-3">
+                        <Avatar className="w-10 h-10 cursor-pointer">
+                          <AvatarImage src={post.user.profileImageUrl || undefined} />
+                          <AvatarFallback className="bg-gray-700 text-white">{post.user.firstName?.[0]}{post.user.lastName?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <p className="font-semibold text-white">{getUserDisplayName(post.user)}</p>
+                            <p className="text-sm text-gray-500">{formatRelativeTime(post.createdAt)}</p>
+                          </div>
+                          <>
+                            {post.content && (
+                              <p className="text-white mt-2 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+                            )}
+                            {post.mediaUrl && (
+                              <div className="mt-3">
+                                {post.mediaType === 'image' ? (
+                                  <img 
+                                    src={post.mediaUrl} 
+                                    alt="Post image" 
+                                    className="max-w-full h-auto rounded-lg cursor-pointer"
+                                    onClick={() => window.open(post.mediaUrl, '_blank')}
+                                  />
+                                ) : post.mediaType === 'video' ? (
+                                  <video 
+                                    src={post.mediaUrl} 
+                                    controls 
+                                    className="max-w-full h-auto rounded-lg"
+                                    style={{ maxHeight: '400px' }}
+                                  />
+                                ) : null}
+                              </div>
+                            )}
+                          </>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-white">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <SavePostMenuItem postId={post.id} onSave={() => {}} onUnsave={handleUnsave} />
+                          <DropdownMenuItem>
+                            <Flag className="w-4 h-4 mr-2" />
+                            Report Post
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0 px-0 pb-6">
+                    {/* Render media from imageUrl: single URL or JSON array */}
+                    {post.imageUrl ? (() => {
+                      const val = post.imageUrl || '';
+                      const looksJsonArray = val.trim().startsWith('[');
+                      if (looksJsonArray) {
+                        const urls: string[] = (() => { try { return JSON.parse(val); } catch { return []; }})();
+                        if (urls.length > 0) {
+                          // Threads-like swipeable carousel with flexible sizing
+                          return (
+                            <div className="relative mb-4">
+                              <Carousel 
+                                className=""
+                                setApi={(api) => {
+                                  if (api) {
+                                    api.on('select', () => {
+                                      setCarouselIndex(prev => ({ ...prev, [post.id]: api.selectedScrollSnap() }));
+                                    });
+                                  }
+                                }}
+                              >
+                                <CarouselContent>
+                                  {urls.map((url, idx) => (
+                                    <CarouselItem key={idx} className="pr-2">
+                                      <div className="relative w-full max-h-[300px] sm:max-h-[400px] overflow-hidden rounded-2xl bg-black">
+                                        {url.match(/\.(mp4|mov|webm)$/i) ? (
+                                          <video src={url} controls playsInline className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-contain" />
+                                        ) : (
+                                          <img 
+                                            src={url} 
+                                            className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-contain cursor-pointer hover:opacity-90 transition-opacity" 
+                                            onClick={() => openImageModal(url)}
+                                          />
+                                        )}
+                                      </div>
+                                    </CarouselItem>
+                                  ))}
+                                </CarouselContent>
+                                <CarouselPrevious className="left-2 bg-background/60" />
+                                <CarouselNext className="right-2 bg-background/60" />
+                              </Carousel>
+                              <div className="absolute right-3 top-3 rounded-full bg-black/60 text-white text-xs px-2 py-1">
+                                {(carouselIndex[post.id] || 0) + 1}/{urls.length}
+                              </div>
+                            </div>
+                          );
+                        }
+                        // Single item in array
+                        const only = urls[0];
+                        if (only) {
+                          return (
+                            <div className="relative w-full max-h-[300px] sm:max-h-[400px] mb-4 overflow-hidden rounded-2xl bg-black">
+                              {only.match(/\.(mp4|mov|webm)$/i) ? (
+                                <video src={only} controls playsInline className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-contain" />
+                              ) : (
+                                <img 
+                                  src={only} 
+                                  className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-contain cursor-pointer hover:opacity-90 transition-opacity" 
+                                  onClick={() => openImageModal(only)}
+                                />
+                              )}
+                            </div>
+                          );
+                        }
+                        return null;
+                      }
+                      // Plain single URL
+                      return (
+                        <div className="relative w-full max-h-[300px] sm:max-h-[400px] mb-4 overflow-hidden rounded-2xl bg-black">
+                          {val.match(/\.(mp4|mov|webm)$/i) ? (
+                            <video src={val} controls playsInline className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-contain" />
+                          ) : (
+                            <img 
+                              src={val} 
+                              alt="Post media" 
+                              className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-contain cursor-pointer hover:opacity-90 transition-opacity" 
+                              onClick={() => openImageModal(val)}
+                            />
+                          )}
+                        </div>
+                      );
+                    })() : null}
+                    <div className="flex items-center space-x-4 pt-4">
+                      <Button variant="ghost" size="lg" onClick={() => handleLike(post)} className={`p-3 h-auto rounded-full hover:bg-red-500/10 transition-all duration-200 ${post.isLiked ? 'text-red-500 bg-red-500/10' : 'text-gray-500 hover:text-red-500'}`}>
+                        <Heart className={`w-7 h-7 mr-3 ${post.isLiked ? 'fill-current' : ''}`} />
+                        <span className="text-base font-medium">{post.likesCount}</span>
+                      </Button>
+                      <Button variant="ghost" size="lg" onClick={() => setShowComments(showComments === post.id ? null : post.id)} className="p-3 h-auto rounded-full text-gray-500 hover:text-blue-500 hover:bg-blue-500/10 transition-all duration-200">
+                        <MessageCircle className="w-7 h-7 mr-3" />
+                        <span className="text-base font-medium">{post.commentsCount}</span>
+                      </Button>
+                      <Button variant="ghost" size="lg" onClick={() => handleRepost(post.id)} className="p-3 h-auto rounded-full text-gray-500 hover:text-green-500 hover:bg-green-500/10 transition-all duration-200">
+                        <svg className="w-7 h-7 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span className="text-base font-medium">{post.repostsCount}</span>
+                      </Button>
+                    </div>
+
+                    {showComments === post.id && (
+                      <div className="mt-4 pt-4 border-t border-gray-800 space-y-4">
+                        <div className="flex space-x-2">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={undefined} />
+                            <AvatarFallback className="text-xs bg-gray-700 text-white">U</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 flex">
+                            <Input
+                              placeholder="Write a comment..."
+                              value={newComment}
+                              onChange={(e) => setNewComment(e.target.value)}
+                              className="rounded-r-none bg-gray-900 border-gray-700 text-white placeholder:text-gray-500"
+                              onKeyPress={(e) => { if (e.key === 'Enter') { handleComment(post.id); } }}
+                            />
+                            <Button onClick={() => handleComment(post.id)} disabled={!newComment.trim() || commentMutation.isPending} className="rounded-l-none" size="sm">
+                              <Send className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {comments.map((comment: Comment) => (
+                          <div key={comment.id} className="space-y-2">
+                            <div className="flex space-x-2">
+                              <Avatar className="w-8 h-8">
+                                <AvatarImage src={comment.user.profileImageUrl || undefined} />
+                                <AvatarFallback className="bg-gray-700 text-white">{comment.user.firstName?.[0]}{comment.user.lastName?.[0]}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <div className="bg-gray-900 rounded-lg px-3 py-2">
+                                  <p className="font-semibold text-sm text-white">{getUserDisplayName(comment.user)}</p>
+                                  <p className="text-sm text-gray-300">{comment.content}</p>
+                                </div>
+                                <div className="flex items-center space-x-4 mt-1 ml-3">
+                                  <p className="text-xs text-gray-500">{formatRelativeTime(comment.createdAt)}</p>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                                    className="text-xs text-gray-500 hover:text-white p-0 h-auto"
+                                  >
+                                    Reply
+                                  </Button>
+                                  {comment.repliesCount > 0 && (
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={() => toggleReplies(comment.id)}
+                                      className="text-xs text-gray-500 hover:text-white p-0 h-auto"
+                                    >
+                                      {showReplies.has(comment.id) ? 'Hide' : 'View'} {comment.repliesCount} {comment.repliesCount === 1 ? 'reply' : 'replies'}
+                                    </Button>
+                                  )}
+                                </div>
+                                
+                                {replyingTo === comment.id && (
+                                  <div className="mt-2 ml-3 flex space-x-2">
+                                    <Avatar className="w-6 h-6">
+                                      <AvatarImage src={undefined} />
+                                      <AvatarFallback className="text-xs bg-gray-700 text-white">U</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 flex">
+                                      <Input
+                                        placeholder={`Reply to ${getUserDisplayName(comment.user)}...`}
+                                        value={replyContent}
+                                        onChange={(e) => setReplyContent(e.target.value)}
+                                        className="rounded-r-none bg-gray-800 border-gray-600 text-white placeholder:text-gray-500 text-sm"
+                                        onKeyPress={(e) => { if (e.key === 'Enter') { handleComment(post.id, comment.id); } }}
+                                      />
+                                      <Button 
+                                        onClick={() => handleComment(post.id, comment.id)} 
+                                        disabled={!replyContent.trim() || commentMutation.isPending} 
+                                        className="rounded-l-none" 
+                                        size="sm"
+                                      >
+                                        <Send className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Replies */}
+                            {showReplies.has(comment.id) && comment.replies && comment.replies.length > 0 && (
+                              <div className="ml-10 space-y-2 border-l-2 border-gray-800 pl-4">
+                                {comment.replies.map((reply: Comment) => (
+                                  <div key={reply.id} className="space-y-2">
+                                    <div className="flex space-x-2">
+                                      <Avatar className="w-6 h-6">
+                                        <AvatarImage src={reply.user.profileImageUrl || undefined} />
+                                        <AvatarFallback className="bg-gray-700 text-white text-xs">{reply.user.firstName?.[0]}{reply.user.lastName?.[0]}</AvatarFallback>
+                                      </Avatar>
+                                      <div className="flex-1">
+                                        <div className="bg-gray-800 rounded-lg px-3 py-2">
+                                          <p className="font-semibold text-xs text-white">{getUserDisplayName(reply.user)}</p>
+                                          <p className="text-xs text-gray-300">{reply.content}</p>
+                                        </div>
+                                        <div className="flex items-center space-x-4 mt-1 ml-3">
+                                          <p className="text-xs text-gray-500">{formatRelativeTime(reply.createdAt)}</p>
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            onClick={() => setReplyingTo(replyingTo === reply.id ? null : reply.id)}
+                                            className="text-xs text-gray-500 hover:text-white p-0 h-auto"
+                                          >
+                                            Reply
+                                          </Button>
+                                        </div>
+                                        
+                                        {replyingTo === reply.id && (
+                                          <div className="mt-2 ml-3 flex space-x-2">
+                                            <Avatar className="w-5 h-5">
+                                              <AvatarImage src={undefined} />
+                                              <AvatarFallback className="text-xs bg-gray-700 text-white">U</AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1 flex">
+                                              <Input
+                                                placeholder={`Reply to ${getUserDisplayName(reply.user)}...`}
+                                                value={replyContent}
+                                                onChange={(e) => setReplyContent(e.target.value)}
+                                                className="rounded-r-none bg-gray-800 border-gray-600 text-white placeholder:text-gray-500 text-sm"
+                                                onKeyPress={(e) => { if (e.key === 'Enter') { handleComment(post.id, reply.id); } }}
+                                              />
+                                              <Button 
+                                                onClick={() => handleComment(post.id, reply.id)} 
+                                                disabled={!replyContent.trim() || commentMutation.isPending} 
+                                                className="rounded-l-none" 
+                                                size="sm"
+                                              >
+                                                <Send className="w-3 h-3" />
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Image Modal */}
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-7xl max-h-[95vh] p-0 bg-black/95 border-gray-800 backdrop-blur-sm animate-in fade-in-0 zoom-in-95 duration-300">
+          <div className="relative flex items-center justify-center min-h-[50vh]">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 z-10 text-white hover:bg-gray-800/80 rounded-full p-2 transition-all duration-200"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+            {selectedImage && (
+              <img
+                src={selectedImage}
+                alt="Full size image"
+                className="w-full h-auto max-h-[90vh] object-contain transition-all duration-300 ease-out animate-in zoom-in-95 fade-in-0"
+                style={{ animationDelay: '100ms' }}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default Saved;

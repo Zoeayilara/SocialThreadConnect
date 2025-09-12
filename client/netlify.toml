@@ -1,0 +1,26 @@
+[build]
+  publish = "dist"
+  command = "npm install && npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://web-production-aff5b.up.railway.app/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[context.production.environment]
+  VITE_API_URL = "https://web-production-aff5b.up.railway.app"
+
+[context.deploy-preview.environment]
+  VITE_API_URL = "https://web-production-aff5b.up.railway.app"
+
+[context.branch-deploy.environment]
+  VITE_API_URL = "https://web-production-aff5b.up.railway.app"

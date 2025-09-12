@@ -1,0 +1,700 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniConnect - University Social Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#000000',
+                        'secondary': '#666666',
+                        'accent': '#0066FF',
+                        'success': '#00C851',
+                        'error': '#FF4444',
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="font-inter bg-white text-black">
+    <!-- Navigation State Handler -->
+    <div id="app">
+        <!-- Welcome Page -->
+        <div id="welcome-page" class="page active min-h-screen flex flex-col">
+            <div class="flex-1 flex items-center justify-center p-4">
+                <div class="w-full max-w-md text-center">
+                    <!-- Logo -->
+                    <div class="mb-8">
+                        <div class="w-20 h-20 mx-auto mb-4 bg-black rounded-2xl flex items-center justify-center">
+                            <i class="fas fa-graduation-cap text-white text-2xl"></i>
+                        </div>
+                        <h1 class="text-3xl font-bold mb-2">UniConnect</h1>
+                        <p class="text-secondary text-lg">Connect with your university community</p>
+                    </div>
+
+                    <!-- Selection Cards -->
+                    <div class="space-y-4 mb-8">
+                        <button onclick="setUserType('vendor')" class="w-full p-6 border-2 border-gray-200 rounded-2xl hover:border-accent hover:bg-blue-50 transition-all duration-200 group">
+                            <div class="flex items-center justify-between">
+                                <div class="text-left">
+                                    <h3 class="text-xl font-semibold group-hover:text-accent">Join as Vendor</h3>
+                                    <p class="text-secondary mt-1">Sell products and services to students</p>
+                                </div>
+                                <i class="fas fa-store text-2xl text-secondary group-hover:text-accent"></i>
+                            </div>
+                        </button>
+
+                        <button onclick="setUserType('customer')" class="w-full p-6 border-2 border-gray-200 rounded-2xl hover:border-accent hover:bg-blue-50 transition-all duration-200 group">
+                            <div class="flex items-center justify-between">
+                                <div class="text-left">
+                                    <h3 class="text-xl font-semibold group-hover:text-accent">Join as Student</h3>
+                                    <p class="text-secondary mt-1">Connect and shop within your university</p>
+                                </div>
+                                <i class="fas fa-user-graduate text-2xl text-secondary group-hover:text-accent"></i>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="text-center">
+                        <p class="text-secondary">Already have an account? 
+                            <button onclick="showPage('login-page')" class="text-accent font-medium hover:underline">Sign In</button>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration Page -->
+        <div id="register-page" class="page min-h-screen flex flex-col">
+            <div class="flex-1 flex items-center justify-center p-4">
+                <div class="w-full max-w-md">
+                    <!-- Header -->
+                    <div class="text-center mb-8">
+                        <button onclick="showPage('welcome-page')" class="absolute top-6 left-6 w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                            <i class="fas fa-arrow-left text-xl"></i>
+                        </button>
+                        <h1 class="text-2xl font-bold mb-2">Create Account</h1>
+                        <p class="text-secondary">Join as <span id="user-type-display" class="font-medium">Student</span></p>
+                    </div>
+
+                    <!-- Registration Form -->
+                    <form class="space-y-4" onsubmit="handleRegister(event)">
+                        <div>
+                            <input type="text" placeholder="Full Name" required
+                                class="w-full p-4 border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors">
+                        </div>
+                        
+                        <div>
+                            <input type="text" placeholder="University Name" required
+                                class="w-full p-4 border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors">
+                        </div>
+                        
+                        <div>
+                            <input type="email" placeholder="Email Address" required
+                                class="w-full p-4 border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors">
+                        </div>
+                        
+                        <div>
+                            <input type="tel" placeholder="Phone Number" required
+                                class="w-full p-4 border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors">
+                        </div>
+                        
+                        <div>
+                            <input type="password" placeholder="Password" required
+                                class="w-full p-4 border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors">
+                        </div>
+                        
+                        <div>
+                            <input type="password" placeholder="Confirm Password" required
+                                class="w-full p-4 border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors">
+                        </div>
+
+                        <button type="submit" class="w-full bg-black text-white p-4 rounded-xl font-medium hover:bg-gray-800 transition-colors">
+                            Create Account
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-6">
+                        <p class="text-secondary">Already have an account? 
+                            <button onclick="showPage('login-page')" class="text-accent font-medium hover:underline">Sign In</button>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Page -->
+        <div id="login-page" class="page min-h-screen flex flex-col">
+            <div class="flex-1 flex items-center justify-center p-4">
+                <div class="w-full max-w-md">
+                    <!-- Header -->
+                    <div class="text-center mb-8">
+                        <button onclick="showPage('welcome-page')" class="absolute top-6 left-6 w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                            <i class="fas fa-arrow-left text-xl"></i>
+                        </button>
+                        <h1 class="text-2xl font-bold mb-2">Welcome Back</h1>
+                        <p class="text-secondary">Sign in to your account</p>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form class="space-y-4" onsubmit="handleLogin(event)">
+                        <div>
+                            <input type="text" placeholder="Email or Phone Number" required
+                                class="w-full p-4 border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors">
+                        </div>
+                        
+                        <div>
+                            <input type="password" placeholder="Password" required
+                                class="w-full p-4 border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors">
+                        </div>
+
+                        <div class="text-right">
+                            <button type="button" onclick="showPage('forgot-password-page')" class="text-accent font-medium hover:underline">
+                                Forgot Password?
+                            </button>
+                        </div>
+
+                        <button type="submit" class="w-full bg-black text-white p-4 rounded-xl font-medium hover:bg-gray-800 transition-colors">
+                            Sign In
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-6">
+                        <p class="text-secondary">Don't have an account? 
+                            <button onclick="showPage('welcome-page')" class="text-accent font-medium hover:underline">Sign Up</button>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forgot Password Page -->
+        <div id="forgot-password-page" class="page min-h-screen flex flex-col">
+            <div class="flex-1 flex items-center justify-center p-4">
+                <div class="w-full max-w-md">
+                    <!-- Header -->
+                    <div class="text-center mb-8">
+                        <button onclick="showPage('login-page')" class="absolute top-6 left-6 w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                            <i class="fas fa-arrow-left text-xl"></i>
+                        </button>
+                        <h1 class="text-2xl font-bold mb-2">Reset Password</h1>
+                        <p class="text-secondary">Enter your email to receive OTP</p>
+                    </div>
+
+                    <!-- Forgot Password Form -->
+                    <form class="space-y-4" onsubmit="handleForgotPassword(event)">
+                        <div>
+                            <input type="email" placeholder="Email Address" required
+                                class="w-full p-4 border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors">
+                        </div>
+
+                        <button type="submit" class="w-full bg-black text-white p-4 rounded-xl font-medium hover:bg-gray-800 transition-colors">
+                            Send OTP
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- OTP Verification Page -->
+        <div id="otp-page" class="page min-h-screen flex flex-col">
+            <div class="flex-1 flex items-center justify-center p-4">
+                <div class="w-full max-w-md">
+                    <!-- Header -->
+                    <div class="text-center mb-8">
+                        <button onclick="showPage('forgot-password-page')" class="absolute top-6 left-6 w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                            <i class="fas fa-arrow-left text-xl"></i>
+                        </button>
+                        <h1 class="text-2xl font-bold mb-2">Enter OTP</h1>
+                        <p class="text-secondary">We sent a 6-digit code to your email</p>
+                    </div>
+
+                    <!-- OTP Form -->
+                    <form class="space-y-6" onsubmit="handleOtpVerification(event)">
+                        <div class="flex justify-center space-x-3">
+                            <input type="text" maxlength="1" class="w-12 h-12 text-center text-xl font-semibold border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors" oninput="moveToNext(this, 1)">
+                            <input type="text" maxlength="1" class="w-12 h-12 text-center text-xl font-semibold border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors" oninput="moveToNext(this, 2)">
+                            <input type="text" maxlength="1" class="w-12 h-12 text-center text-xl font-semibold border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors" oninput="moveToNext(this, 3)">
+                            <input type="text" maxlength="1" class="w-12 h-12 text-center text-xl font-semibold border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors" oninput="moveToNext(this, 4)">
+                            <input type="text" maxlength="1" class="w-12 h-12 text-center text-xl font-semibold border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors" oninput="moveToNext(this, 5)">
+                            <input type="text" maxlength="1" class="w-12 h-12 text-center text-xl font-semibold border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors">
+                        </div>
+
+                        <button type="submit" class="w-full bg-black text-white p-4 rounded-xl font-medium hover:bg-gray-800 transition-colors">
+                            Verify OTP
+                        </button>
+
+                        <div class="text-center">
+                            <p class="text-secondary">Didn't receive code? 
+                                <button type="button" class="text-accent font-medium hover:underline">Resend OTP</button>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Password Page -->
+        <div id="new-password-page" class="page min-h-screen flex flex-col">
+            <div class="flex-1 flex items-center justify-center p-4">
+                <div class="w-full max-w-md">
+                    <!-- Header -->
+                    <div class="text-center mb-8">
+                        <h1 class="text-2xl font-bold mb-2">Create New Password</h1>
+                        <p class="text-secondary">Your new password must be different from previous used passwords</p>
+                    </div>
+
+                    <!-- New Password Form -->
+                    <form class="space-y-4" onsubmit="handleNewPassword(event)">
+                        <div>
+                            <input type="password" placeholder="New Password" required
+                                class="w-full p-4 border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors">
+                        </div>
+                        
+                        <div>
+                            <input type="password" placeholder="Confirm New Password" required
+                                class="w-full p-4 border border-gray-200 rounded-xl focus:border-accent focus:outline-none transition-colors">
+                        </div>
+
+                        <button type="submit" class="w-full bg-black text-white p-4 rounded-xl font-medium hover:bg-gray-800 transition-colors">
+                            Update Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Picture Page -->
+        <div id="upload-picture-page" class="page min-h-screen flex flex-col">
+            <div class="flex-1 flex items-center justify-center p-4">
+                <div class="w-full max-w-md text-center">
+                    <!-- Header -->
+                    <div class="mb-8">
+                        <h1 class="text-2xl font-bold mb-2">Add Profile Picture</h1>
+                        <p class="text-secondary">Help others recognize you</p>
+                    </div>
+
+                    <!-- Upload Area -->
+                    <div class="mb-8">
+                        <div class="w-32 h-32 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center border-4 border-dashed border-gray-300 hover:border-accent transition-colors cursor-pointer" onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-camera text-3xl text-gray-400"></i>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
+                        
+                        <button onclick="document.getElementById('fileInput').click()" class="bg-accent text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-600 transition-colors mb-4">
+                            Choose Photo
+                        </button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="space-y-3">
+                        <button onclick="showPage('success-page')" class="w-full bg-black text-white p-4 rounded-xl font-medium hover:bg-gray-800 transition-colors">
+                            Continue
+                        </button>
+                        
+                        <button onclick="showPage('success-page')" class="w-full text-secondary font-medium hover:text-black transition-colors">
+                            Skip for Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Page -->
+        <div id="success-page" class="page min-h-screen flex flex-col">
+            <div class="flex-1 flex items-center justify-center p-4">
+                <div class="w-full max-w-md text-center">
+                    <!-- Success Icon -->
+                    <div class="w-20 h-20 mx-auto mb-6 bg-success rounded-full flex items-center justify-center">
+                        <i class="fas fa-check text-white text-2xl"></i>
+                    </div>
+
+                    <!-- Success Message -->
+                    <h1 class="text-2xl font-bold mb-4">Account Created Successfully!</h1>
+                    <p class="text-secondary mb-8">Welcome to UniConnect! Your account has been created and you're ready to start connecting with your university community.</p>
+
+                    <!-- Continue Button -->
+                    <button onclick="showPage('social-page')" class="w-full bg-black text-white p-4 rounded-xl font-medium hover:bg-gray-800 transition-colors">
+                        Continue to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Social Media Interface -->
+        <div id="social-page" class="page min-h-screen bg-gray-50">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+                <div class="max-w-2xl mx-auto px-4 py-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                                <i class="fas fa-graduation-cap text-white text-sm"></i>
+                            </div>
+                            <h1 class="text-xl font-bold">UniConnect</h1>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-search text-gray-600"></i>
+                            </button>
+                            
+                            <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-bell text-gray-600"></i>
+                            </button>
+                            
+                            <button class="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white text-sm font-medium">
+                                JD
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <div class="max-w-2xl mx-auto">
+                <!-- Post Creation -->
+                <div class="bg-white border-b border-gray-200 p-4">
+                    <div class="flex space-x-3">
+                        <div class="w-10 h-10 bg-accent rounded-full flex items-center justify-center text-white font-medium">
+                            JD
+                        </div>
+                        
+                        <div class="flex-1">
+                            <textarea placeholder="What's happening at your university?" 
+                                class="w-full p-3 text-lg border-none resize-none focus:outline-none placeholder-gray-500" 
+                                rows="3"></textarea>
+                            
+                            <div class="flex items-center justify-between mt-3">
+                                <div class="flex space-x-4">
+                                    <button class="text-accent hover:bg-blue-50 p-2 rounded-full transition-colors">
+                                        <i class="fas fa-image"></i>
+                                    </button>
+                                    <button class="text-accent hover:bg-blue-50 p-2 rounded-full transition-colors">
+                                        <i class="fas fa-video"></i>
+                                    </button>
+                                    <button class="text-accent hover:bg-blue-50 p-2 rounded-full transition-colors">
+                                        <i class="fas fa-poll"></i>
+                                    </button>
+                                </div>
+                                
+                                <button class="bg-black text-white px-4 py-2 rounded-full font-medium hover:bg-gray-800 transition-colors">
+                                    Post
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feed Posts -->
+                <div class="space-y-0">
+                    <!-- Post 1 -->
+                    <article class="bg-white border-b border-gray-200 p-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex space-x-3">
+                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-medium">
+                                SM
+                            </div>
+                            
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <h3 class="font-semibold">Sarah Miller</h3>
+                                    <span class="text-secondary text-sm">@sarahm</span>
+                                    <span class="text-secondary text-sm">•</span>
+                                    <span class="text-secondary text-sm">2h</span>
+                                </div>
+                                
+                                <p class="text-gray-900 mb-3">Just finished my final presentation for Computer Science! 🎓 Feeling excited about graduation next month. Anyone else from CS department graduating this semester?</p>
+                                
+                                <!-- Post Image -->
+                                <!-- A graduation cap on a stack of computer science textbooks -->
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=400" alt="Graduation cap on computer science books" class="rounded-xl mb-3 w-full">
+                                
+                                <div class="flex items-center justify-between text-secondary">
+                                    <button class="flex items-center space-x-2 hover:text-red-500 transition-colors">
+                                        <i class="far fa-heart"></i>
+                                        <span class="text-sm">24</span>
+                                    </button>
+                                    
+                                    <button class="flex items-center space-x-2 hover:text-accent transition-colors">
+                                        <i class="far fa-comment"></i>
+                                        <span class="text-sm">8</span>
+                                    </button>
+                                    
+                                    <button class="flex items-center space-x-2 hover:text-accent transition-colors">
+                                        <i class="fas fa-retweet"></i>
+                                        <span class="text-sm">3</span>
+                                    </button>
+                                    
+                                    <button class="hover:text-accent transition-colors">
+                                        <i class="far fa-share"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Post 2 -->
+                    <article class="bg-white border-b border-gray-200 p-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex space-x-3">
+                            <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-medium">
+                                MJ
+                            </div>
+                            
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <h3 class="font-semibold">Mike Johnson</h3>
+                                    <span class="text-secondary text-sm">@mikej</span>
+                                    <span class="text-secondary text-sm">•</span>
+                                    <span class="text-secondary text-sm">4h</span>
+                                </div>
+                                
+                                <p class="text-gray-900 mb-3">Coffee study session at the library anyone? Working on calculus assignments for the next 3 hours ☕📚</p>
+                                
+                                <div class="flex items-center justify-between text-secondary">
+                                    <button class="flex items-center space-x-2 hover:text-red-500 transition-colors">
+                                        <i class="far fa-heart"></i>
+                                        <span class="text-sm">12</span>
+                                    </button>
+                                    
+                                    <button class="flex items-center space-x-2 hover:text-accent transition-colors">
+                                        <i class="far fa-comment"></i>
+                                        <span class="text-sm">5</span>
+                                    </button>
+                                    
+                                    <button class="flex items-center space-x-2 hover:text-accent transition-colors">
+                                        <i class="fas fa-retweet"></i>
+                                        <span class="text-sm">1</span>
+                                    </button>
+                                    
+                                    <button class="hover:text-accent transition-colors">
+                                        <i class="far fa-share"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Post 3 -->
+                    <article class="bg-white border-b border-gray-200 p-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex space-x-3">
+                            <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white font-medium">
+                                EC
+                            </div>
+                            
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <h3 class="font-semibold">Emma Chen</h3>
+                                    <span class="text-secondary text-sm">@emmac</span>
+                                    <span class="text-secondary text-sm">•</span>
+                                    <span class="text-secondary text-sm">6h</span>
+                                </div>
+                                
+                                <p class="text-gray-900 mb-3">The campus food festival was amazing! 🍕🌮🍜 So many diverse cuisines representing different international student communities. Love our multicultural campus! #UniversityLife</p>
+                                
+                                <!-- Post Image -->
+                                <!-- A vibrant university food festival with diverse food stalls -->
+                                <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=400" alt="University food festival with diverse food stalls" class="rounded-xl mb-3 w-full">
+                                
+                                <div class="flex items-center justify-between text-secondary">
+                                    <button class="flex items-center space-x-2 hover:text-red-500 transition-colors">
+                                        <i class="far fa-heart"></i>
+                                        <span class="text-sm">45</span>
+                                    </button>
+                                    
+                                    <button class="flex items-center space-x-2 hover:text-accent transition-colors">
+                                        <i class="far fa-comment"></i>
+                                        <span class="text-sm">12</span>
+                                    </button>
+                                    
+                                    <button class="flex items-center space-x-2 hover:text-accent transition-colors">
+                                        <i class="fas fa-retweet"></i>
+                                        <span class="text-sm">7</span>
+                                    </button>
+                                    
+                                    <button class="hover:text-accent transition-colors">
+                                        <i class="far fa-share"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Marketplace Coming Soon -->
+                    <div class="bg-white border-b border-gray-200 p-6 text-center">
+                        <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-accent to-purple-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-store text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Marketplace Coming Soon!</h3>
+                        <p class="text-secondary mb-4">Buy and sell items within your university community. Stay tuned for the launch!</p>
+                        <div class="flex items-center justify-center space-x-2 text-accent">
+                            <div class="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+                            <div class="w-2 h-2 bg-accent rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                            <div class="w-2 h-2 bg-accent rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3">
+                <div class="max-w-md mx-auto flex justify-around">
+                    <button class="flex flex-col items-center space-y-1 text-black">
+                        <i class="fas fa-home text-xl"></i>
+                        <span class="text-xs">Home</span>
+                    </button>
+                    
+                    <button class="flex flex-col items-center space-y-1 text-secondary">
+                        <i class="fas fa-search text-xl"></i>
+                        <span class="text-xs">Search</span>
+                    </button>
+                    
+                    <button class="flex flex-col items-center space-y-1 text-secondary">
+                        <i class="fas fa-plus text-xl"></i>
+                        <span class="text-xs">Post</span>
+                    </button>
+                    
+                    <button class="flex flex-col items-center space-y-1 text-secondary">
+                        <i class="fas fa-store text-xl"></i>
+                        <span class="text-xs">Marketplace</span>
+                    </button>
+                    
+                    <button class="flex flex-col items-center space-y-1 text-secondary">
+                        <i class="fas fa-user text-xl"></i>
+                        <span class="text-xs">Profile</span>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // Global state
+            let currentUserType = 'customer';
+
+            // Page navigation
+            function showPage(pageId) {
+                // Hide all pages
+                const pages = document.querySelectorAll('.page');
+                pages.forEach(page => {
+                    page.classList.remove('active');
+                    page.style.display = 'none';
+                });
+
+                // Show target page
+                const targetPage = document.getElementById(pageId);
+                if (targetPage) {
+                    targetPage.style.display = 'block';
+                    targetPage.classList.add('active');
+                }
+            }
+
+            // Set user type
+            function setUserType(type) {
+                currentUserType = type;
+                const displayElement = document.getElementById('user-type-display');
+                if (displayElement) {
+                    displayElement.textContent = type === 'vendor' ? 'Vendor' : 'Student';
+                }
+                showPage('register-page');
+            }
+
+            // Form handlers
+            function handleRegister(event) {
+                event.preventDefault();
+                // TODO: Implement registration logic
+                showPage('upload-picture-page');
+            }
+
+            function handleLogin(event) {
+                event.preventDefault();
+                // TODO: Implement login logic
+                showPage('social-page');
+            }
+
+            function handleForgotPassword(event) {
+                event.preventDefault();
+                // TODO: Implement forgot password logic
+                showPage('otp-page');
+            }
+
+            function handleOtpVerification(event) {
+                event.preventDefault();
+                // TODO: Implement OTP verification logic
+                showPage('new-password-page');
+            }
+
+            function handleNewPassword(event) {
+                event.preventDefault();
+                // TODO: Implement password reset logic
+                showPage('social-page');
+            }
+
+            function handleFileUpload(event) {
+                // TODO: Implement file upload logic
+                const file = event.target.files[0];
+                if (file) {
+                    console.log('File selected:', file.name);
+                }
+            }
+
+            // OTP input navigation
+            function moveToNext(input, nextIndex) {
+                if (input.value.length === 1 && nextIndex <= 5) {
+                    const nextInput = input.parentElement.children[nextIndex];
+                    if (nextInput) {
+                        nextInput.focus();
+                    }
+                }
+            }
+
+            // Initialize app
+            document.addEventListener('DOMContentLoaded', function() {
+                showPage('welcome-page');
+            });
+
+            // Make functions globally accessible
+            window.showPage = showPage;
+            window.setUserType = setUserType;
+            window.handleRegister = handleRegister;
+            window.handleLogin = handleLogin;
+            window.handleForgotPassword = handleForgotPassword;
+            window.handleOtpVerification = handleOtpVerification;
+            window.handleNewPassword = handleNewPassword;
+            window.handleFileUpload = handleFileUpload;
+            window.moveToNext = moveToNext;
+
+            // Initial page setup
+            showPage('welcome-page');
+        })();
+    </script>
+
+    <style>
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        
+        /* Custom animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .animate-pulse {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</body>
+</html>

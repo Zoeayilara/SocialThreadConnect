@@ -1,0 +1,706 @@
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { ArrowLeft, Search, Edit, MoreHorizontal, Trash2, Send, Paperclip, Smile } from "lucide-react";
+import { formatMessageTime } from "@/utils/messageUtils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+interface MessagesProps {
+  onBack: () => void;
+}
+
+export default function Messages({ onBack }: MessagesProps) {
+  const [, setLocation] = useLocation();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showSearch, setShowSearch] = useState(() => {
+    return localStorage.getItem('messagesShowSearch') === 'true';
+  });
+  const [selectedUser, setSelectedUser] = useState<any>(() => {
+    try {
+      const saved = localStorage.getItem('messagesSelectedUser');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [messageText, setMessageText] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Save state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('messagesShowSearch', showSearch.toString());
+  }, [showSearch]);
+
+  useEffect(() => {
+    try {
+      if (selectedUser) {
+        localStorage.setItem('messagesSelectedUser', JSON.stringify(selectedUser));
+      } else {
+        localStorage.removeItem('messagesSelectedUser');
+      }
+    } catch (error) {
+      console.error('Failed to save to localStorage:', error);
+    }
+  }, [selectedUser]);
+
+  // Get user's conversations
+  const { data: conversations = [], isLoading: conversationsLoading, error: conversationsError } = useQuery({
+    queryKey: ['conversations'],
+    queryFn: async () => {
+      const response = await fetch('/api/conversations');
+      if (!response.ok) throw new Error('Failed to fetch conversations');
+      return response.json();
+    },
+    enabled: !showSearch,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnWindowFocus: true
+  });
+
+  // Debug logging
+  console.log('Conversations data:', conversations);
+  console.log('Conversations loading:', conversationsLoading);
+  console.log('Conversations error:', conversationsError);
+  
+
+  // Search for users
+  const { data: searchResults = [] } = useQuery({
+    queryKey: ['searchUsers', searchTerm],
+    queryFn: async () => {
+      if (!searchTerm.trim()) return [];
+      const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchTerm)}`);
+      if (!response.ok) throw new Error('Failed to search users');
+      return response.json();
+    },
+    enabled: searchTerm.length > 0
+  });
+
+  // Get messages for selected user
+  const { data: messages = [] } = useQuery({
+    queryKey: ['messages', selectedUser?.id],
+    queryFn: async () => {
+      if (!selectedUser) return [];
+      const response = await fetch(`/api/messages/${selectedUser.id}`);
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      return response.json();
+    },
+    enabled: !!selectedUser
+  });
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async ({ recipientId, content, files }: { recipientId: number; content?: string; files?: File[] }) => {
+      // Send multiple messages if there are multiple files
+      if (files && files.length > 0) {
+        const promises = files.map(async (file) => {
+          const formData = new FormData();
+          formData.append('recipientId', recipientId.toString());
+          formData.append('media', file);
+          
+          const response = await fetch('/api/messages', {
+            method: 'POST',
+            body: formData
+          });
+          if (!response.ok) throw new Error('Failed to send message');
+          return response.json();
+        });
+        
+        // Send text message separately if there's content
+        if (content) {
+          const textFormData = new FormData();
+          textFormData.append('recipientId', recipientId.toString());
+          textFormData.append('content', content);
+          
+          const textResponse = await fetch('/api/messages', {
+            method: 'POST',
+            body: textFormData
+          });
+          if (!textResponse.ok) throw new Error('Failed to send text message');
+          promises.push(textResponse.json());
+        }
+        
+        return Promise.all(promises);
+      } else {
+        // Single message with just text
+        const formData = new FormData();
+        formData.append('recipientId', recipientId.toString());
+        if (content) formData.append('content', content);
+
+        const response = await fetch('/api/messages', {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) throw new Error('Failed to send message');
+        return response.json();
+      }
+    },
+    onSuccess: () => {
+      setMessageText("");
+      setSelectedFiles([]);
+      queryClient.invalidateQueries({ queryKey: ['messages', selectedUser?.id] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      // Force refetch conversations to get updated last message
+      queryClient.refetchQueries({ queryKey: ['conversations'] });
+      toast({ title: "Message sent successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to send message", variant: "destructive" });
+    }
+  });
+
+  // Position chat at bottom only when opening a conversation
+  useEffect(() => {
+    if (selectedUser && messages.length > 0) {
+      const container = document.getElementById('messages-container');
+      if (container) {
+        // Jump to bottom instantly without animation
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+  }, [selectedUser]); // Only when selectedUser changes (opening chat)
+  
+
+  // Typing indicator effect
+  useEffect(() => {
+    if (messageText.length > 0) {
+      setIsTyping(true);
+      const timer = setTimeout(() => setIsTyping(false), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setIsTyping(false);
+    }
+  }, [messageText]);
+
+  // Delete message mutation
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (messageId: number) => {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete message');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', selectedUser?.id] });
+      toast({ title: "Message deleted successfully" });
+      // Don't auto-scroll after deletion
+    },
+    onError: () => {
+      toast({ title: "Failed to delete message", variant: "destructive" });
+    }
+  });
+
+  // Delete conversation mutation
+  const deleteConversationMutation = useMutation({
+    mutationFn: async (otherUserId: number) => {
+      const response = await fetch(`/api/conversations/${otherUserId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete conversation');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      setSelectedUser(null);
+      setShowDeleteDialog(false);
+      toast({ title: "Chat deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete chat", variant: "destructive" });
+    }
+  });
+
+  const handleSendMessage = () => {
+    if (!selectedUser || (!messageText.trim() && selectedFiles.length === 0)) return;
+    sendMessageMutation.mutate({ 
+      recipientId: selectedUser.id, 
+      content: messageText.trim() || undefined,
+      files: selectedFiles.length > 0 ? selectedFiles : undefined
+    });
+  };
+
+  const handleDeleteMessage = (messageId: number) => {
+    deleteMessageMutation.mutate(messageId);
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length > 0) {
+      const validFiles: File[] = [];
+      
+      for (const file of files) {
+        // Check file type and size
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        
+        if (!isImage && !isVideo) {
+          toast({ title: `${file.name} is not a valid image or video file`, variant: "destructive" });
+          continue;
+        }
+        
+        if (file.size > maxSize) {
+          toast({ title: `${file.name} is too large (max 10MB)`, variant: "destructive" });
+          continue;
+        }
+        
+        validFiles.push(file);
+      }
+      
+      setSelectedFiles(prev => [...prev, ...validFiles]);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-black/90 backdrop-blur-xl border-b border-gray-700/50 shadow-lg">
+        <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={selectedUser ? () => setSelectedUser(null) : showSearch ? () => setShowSearch(false) : onBack} 
+              className="text-gray-400 hover:text-white p-2 hover:bg-gray-800/50 rounded-full transition-all duration-200 hover:scale-105"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            {selectedUser ? (
+              <div className="flex items-center space-x-3 animate-in slide-in-from-left duration-300">
+                <div className="relative">
+                  <Avatar className="w-10 h-10 cursor-pointer ring-2 ring-blue-500/20 hover:ring-blue-500/40 transition-all duration-200" onClick={() => setLocation(`/profile/${selectedUser.id}`)}>
+                    <AvatarImage src={selectedUser.profileImageUrl ? `http://localhost:5000${selectedUser.profileImageUrl}` : "/api/placeholder/40/40"} />
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-semibold">
+                      {selectedUser.firstName?.[0] || selectedUser.email[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <div>
+                  <div className="font-semibold text-white text-lg">
+                    {selectedUser.firstName && selectedUser.lastName 
+                      ? `${selectedUser.firstName} ${selectedUser.lastName}`
+                      : selectedUser.email.split('@')[0]
+                    }
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    <span>@{selectedUser.email.split('@')[0]}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">{showSearch ? "New message" : "Messages"}</h1>
+            )}
+          </div>
+          {!showSearch && !selectedUser && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowSearch(true)} 
+              className="text-gray-400 hover:text-white p-2 hover:bg-gray-800/50 rounded-full transition-all duration-200 hover:scale-105"
+            >
+              <Edit className="w-5 h-5" />
+            </Button>
+          )}
+          {selectedUser && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-gray-400 hover:text-white p-2 hover:bg-gray-800/50 rounded-full transition-all duration-200 hover:scale-105"
+                >
+                  <MoreHorizontal className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-gray-900/95 backdrop-blur-xl border-gray-700/50 shadow-xl">
+                <DropdownMenuItem 
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer transition-colors duration-200"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Chat
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      {selectedUser ? (
+        /* Messages View */
+        <div className="flex flex-col h-[calc(100vh-80px)]">
+          <div 
+            id="messages-container"
+            className="flex-1 overflow-y-auto mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-6 pb-24 space-y-6 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent"
+          >
+              {messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center py-20">
+                  <Avatar className="w-20 h-20 mb-6 cursor-pointer" onClick={() => setLocation(`/profile/${selectedUser.id}`)}>
+                    <AvatarImage src={selectedUser.profileImageUrl ? `http://localhost:5000${selectedUser.profileImageUrl}` : "/api/placeholder/80/80"} />
+                    <AvatarFallback className="bg-gray-700 text-white text-2xl">
+                      {selectedUser.firstName?.[0] || selectedUser.email[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    {selectedUser.firstName && selectedUser.lastName 
+                      ? `${selectedUser.firstName} ${selectedUser.lastName}`
+                      : selectedUser.email.split('@')[0]
+                    }
+                  </h3>
+                  <p className="text-gray-400 text-sm mb-8">
+                    Start a conversation with {selectedUser.firstName || selectedUser.email.split('@')[0]}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {messages.map((message: any, index: number) => {
+                    const isOwn = Number(message.senderId) === Number(user?.id);
+                    console.log('Message debug:', { messageId: message.id, senderId: message.senderId, userId: user?.id, isOwn, senderIdType: typeof message.senderId, userIdType: typeof user?.id });
+                    const messageFiles = message.imageUrl ? (Array.isArray(message.imageUrl) ? message.imageUrl : [message.imageUrl]) : [];
+                    
+                    return (
+                      <div 
+                        key={message.id} 
+                        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom duration-300`}
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <div className={`group max-w-xs lg:max-w-md px-5 py-3 rounded-3xl shadow-lg transition-all duration-200 hover:scale-[1.02] relative ${
+                          isOwn 
+                            ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white ml-auto' 
+                            : 'bg-gray-800/80 backdrop-blur-sm text-white border border-gray-700/50'
+                        }`}>
+                          {/* Message Options Menu */}
+                          {isOwn && (
+                            <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="w-6 h-6 p-0 bg-gray-700/80 hover:bg-gray-600/80 rounded-full text-gray-300 hover:text-white"
+                                  >
+                                    <MoreHorizontal className="w-3 h-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="bg-gray-900/95 backdrop-blur-xl border-gray-700/50 shadow-xl">
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteMessage(message.id)}
+                                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer transition-colors duration-200"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Message
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          )}
+                          {!isOwn && (
+                            <div className="flex items-center space-x-2 mb-2">
+                              <Avatar className="w-6 h-6">
+                                <AvatarImage src={selectedUser.profileImageUrl ? `http://localhost:5000${selectedUser.profileImageUrl}` : "/api/placeholder/24/24"} />
+                                <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white text-xs">
+                                  {selectedUser.firstName?.[0] || selectedUser.email[0].toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-xs text-gray-400 font-medium">
+                                {selectedUser.firstName || selectedUser.email.split('@')[0]}
+                              </span>
+                            </div>
+                          )}
+                          {message.content && (
+                            <p className="text-sm leading-relaxed">{message.content}</p>
+                          )}
+                          {messageFiles.length > 0 && (
+                            <div className="mt-3 space-y-3">
+                              {messageFiles.map((fileUrl: string, index: number) => {
+                                const isVideo = fileUrl.match(/\.(mp4|webm|ogg)$/i);
+                                return (
+                                  <div key={index} className="relative group/media">
+                                    {isVideo ? (
+                                      <video 
+                                        src={`http://localhost:5000${fileUrl}`} 
+                                        controls 
+                                        className="max-w-full h-auto rounded-2xl cursor-pointer shadow-lg group-hover/media:shadow-xl transition-all duration-200"
+                                        onClick={() => window.open(`http://localhost:5000${fileUrl}`, '_blank')}
+                                      />
+                                    ) : (
+                                      <img 
+                                        src={`http://localhost:5000${fileUrl}`} 
+                                        alt="Shared media" 
+                                        className="max-w-full h-auto rounded-2xl cursor-pointer hover:opacity-90 transition-all duration-200 shadow-lg group-hover/media:shadow-xl group-hover/media:scale-[1.02]"
+                                        onClick={() => window.open(`http://localhost:5000${fileUrl}`, '_blank')}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          <div className={`text-xs mt-2 flex items-center justify-between ${
+                            isOwn ? 'text-blue-100' : 'text-gray-400'
+                          }`}>
+                            <p className="text-xs text-gray-500">{formatMessageTime(message.createdAt)}</p>
+                            {isOwn && (
+                              <div className="flex items-center space-x-1">
+                                <div className="w-1 h-1 bg-blue-200 rounded-full"></div>
+                                <div className="w-1 h-1 bg-blue-200 rounded-full"></div>
+                                <span className="text-xs">Delivered</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
+
+            {/* Message Input */}
+            <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-xl border-t border-gray-700/50 p-3 shadow-2xl">
+              <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl">
+                {selectedFiles.length > 0 && (
+                  <div className="mb-4 animate-in fade-in slide-in-from-bottom duration-200">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedFiles.map((file, index) => (
+                        <div key={index} className="relative bg-gray-800/80 backdrop-blur-sm rounded-xl p-3 flex items-center space-x-3 border border-gray-700/50 group hover:bg-gray-700/80 transition-all duration-200">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <Paperclip className="w-4 h-4 text-white" />
+                          </div>
+                          <span className="text-sm text-gray-300 truncate max-w-[120px] font-medium">{file.name}</span>
+                          <button
+                            onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
+                            className="text-gray-400 hover:text-red-400 transition-colors duration-200 hover:scale-110 w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-500/10"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {isTyping && (
+                  <div className="mb-2 animate-in fade-in slide-in-from-bottom duration-200">
+                    <div className="flex items-center space-x-2 text-gray-400 text-sm">
+                      <div className="flex space-x-1">
+                        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"></div>
+                        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                      <span>Typing...</span>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex items-end space-x-3 bg-gray-800/50 backdrop-blur-sm rounded-2xl p-2 border border-gray-700/50 focus-within:border-blue-500/50 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-200">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="file-input"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-gray-400 hover:text-blue-400 p-2 hover:bg-blue-500/10 rounded-xl transition-all duration-200 hover:scale-105"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </Button>
+                  
+                  <div className="flex-1 relative">
+                    <Input
+                      type="text"
+                      placeholder="Type a message..."
+                      value={messageText}
+                      onChange={(e) => setMessageText(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                      className="bg-transparent border-none text-white placeholder-gray-400 focus:ring-0 focus:border-none resize-none min-h-[40px] max-h-[120px] py-2 px-3"
+                    />
+                  </div>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-400 hover:text-yellow-400 p-2 hover:bg-yellow-500/10 rounded-xl transition-all duration-200 hover:scale-105"
+                  >
+                    <Smile className="w-5 h-5" />
+                  </Button>
+                  
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!messageText.trim() && selectedFiles.length === 0}
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all duration-200 hover:scale-105 disabled:hover:scale-100 shadow-lg hover:shadow-blue-500/25"
+                  >
+                    <Send className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+      ) : (
+        /* Search/User List */
+        <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 pb-4">
+          {showSearch && (
+            <div className="mb-6 animate-in fade-in slide-in-from-top duration-300">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Input
+                  type="text"
+                  placeholder="Search users..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 pr-4 py-3 bg-gray-800/50 backdrop-blur-sm border-gray-600/50 text-white placeholder-gray-400 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 rounded-xl transition-all duration-200"
+                />
+              </div>
+            </div>
+          )}
+          
+          <div className="space-y-3">
+            {(showSearch ? searchResults : conversations)?.map((user: any, index: number) => (
+              <div
+                key={user.id}
+                onClick={() => {
+                  setSelectedUser(user);
+                  setShowSearch(false);
+                }}
+                className="group flex items-center space-x-4 p-4 hover:bg-gray-800/30 rounded-2xl cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg animate-in fade-in slide-in-from-left duration-300"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="relative">
+                  <Avatar className="w-14 h-14 ring-2 ring-gray-700/50 group-hover:ring-blue-500/30 transition-all duration-300">
+                    <AvatarImage src={user.profileImageUrl ? `http://localhost:5000${user.profileImageUrl}` : "/api/placeholder/56/56"} />
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
+                      {user.firstName?.[0] || user.email[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-white truncate group-hover:text-blue-300 transition-colors duration-200">
+                    {user.firstName && user.lastName 
+                      ? `${user.firstName} ${user.lastName}`
+                      : user.email.split('@')[0]
+                    }
+                  </div>
+                  <div className="text-sm text-gray-400 truncate">
+                    {user.firstName && user.lastName 
+                      ? user.email.split('@')[0]
+                      : user.email
+                    }
+                  </div>
+                  {user.lastMessage && (
+                    <div className="text-sm text-gray-500 truncate mt-1 flex items-center space-x-1">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full opacity-60"></span>
+                      <span>{user.lastMessage}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col items-end space-y-1">
+                  {user.timeAgo && (
+                    <div className="text-xs text-gray-500">
+                      {user.timeAgo}
+                    </div>
+                  )}
+                  <div className="w-3 h-3 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                </div>
+              </div>
+            ))}
+            
+            {!showSearch && conversations.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="relative mb-8">
+                  <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                      <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                      <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
+                    </div>
+                  </div>
+                  <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-gray-700 rounded-full border-4 border-black overflow-hidden">
+                    <img 
+                      src={user?.profileImageUrl ? `http://localhost:5000${user.profileImageUrl}` : "/api/placeholder/48/48"} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                <h2 className="text-2xl font-bold text-white mb-4">
+                  Keep it real in direct messages
+                </h2>
+                
+                <p className="text-gray-400 mb-8 max-w-sm">
+                  You can message anyone who follows you.
+                </p>
+
+                <Button 
+                  onClick={() => setShowSearch(true)}
+                  className="bg-white text-black hover:bg-gray-200 rounded-full px-8 py-3 font-semibold"
+                >
+                  Message
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="bg-gray-900 border-gray-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Delete Chat</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Are you sure you want to delete this chat? This action cannot be undone and all messages will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-800 text-white border-gray-600 hover:bg-gray-700">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => deleteConversationMutation.mutate(selectedUser?.id)}
+              disabled={deleteConversationMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleteConversationMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
