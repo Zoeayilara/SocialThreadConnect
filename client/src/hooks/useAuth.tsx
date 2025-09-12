@@ -1,6 +1,7 @@
 import { createContext, useContext, ReactNode, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { authenticatedFetch } from "@/lib/authenticatedFetch";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -43,10 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check for temp registration data to skip auth query if present
   const tempUserId = typeof window !== 'undefined' ? localStorage.getItem('tempUserId') : null;
   
-  // Get JWT token from localStorage
-  const getAuthToken = () => {
-    return typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-  };
 
   // Set JWT token in localStorage
   const setAuthToken = (token: string) => {
@@ -65,20 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: user, error, isLoading: userQueryLoading } = useQuery({
     queryKey: ['auth', 'user'],
     queryFn: async () => {
-      const token = getAuthToken();
-      const headers: HeadersInit = {
-        'credentials': 'include',
-      };
-      
-      // Add Authorization header if token exists
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await fetch(`${API_URL}/api/auth/user`, {
-        credentials: 'include',
-        headers,
-      });
+      const response = await authenticatedFetch('/api/auth/user');
       if (!response.ok) {
         if (response.status === 401) {
           // Remove invalid token
@@ -92,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticating(false);
       return userData;
     },
-    enabled: !tempUserId && !hasLoggedOut && !!getAuthToken(),
+    enabled: !tempUserId && !hasLoggedOut,
     retry: false, // Don't retry to prevent loading loops
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,

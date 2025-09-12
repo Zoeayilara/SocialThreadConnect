@@ -416,7 +416,7 @@ export default function CustomerDashboard() {
               <Search className="w-5 h-5" />
             </Button>
             <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleProfileClick()}>
-              <AvatarImage src={user?.profileImageUrl ? `http://localhost:5000${user.profileImageUrl}` : undefined} />
+              <AvatarImage src={user?.profileImageUrl || undefined} />
               <AvatarFallback className="bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
             </Avatar>
           </div>
@@ -507,7 +507,7 @@ export default function CustomerDashboard() {
           <CardContent className="pt-4 pb-2 px-0">
             <div className="flex space-x-3">
               <Avatar className="w-12 h-12">
-                <AvatarImage src={user?.profileImageUrl ? `http://localhost:5000${user.profileImageUrl}` : undefined} />
+                <AvatarImage src={user?.profileImageUrl || undefined} />
                 <AvatarFallback className="bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
               </Avatar>
               <div className="flex-1 cursor-pointer" onClick={() => setLocation('/create-post')}>
@@ -527,7 +527,7 @@ export default function CustomerDashboard() {
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3">
                   <Avatar className="w-10 h-10 cursor-pointer" onClick={() => handleProfileClick(post.user.id)}>
-                    <AvatarImage src={post.user.profileImageUrl ? `http://localhost:5000${post.user.profileImageUrl}` : undefined} />
+                    <AvatarImage src={post.user.profileImageUrl || undefined} />
                     <AvatarFallback className="bg-gray-700 text-white">{post.user.firstName?.[0]}{post.user.lastName?.[0]}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
@@ -746,7 +746,7 @@ export default function CustomerDashboard() {
                     <div key={comment.id} className="space-y-2">
                       <div className="flex space-x-2">
                         <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleProfileClick(comment.user.id)}>
-                          <AvatarImage src={comment.user.profileImageUrl ? `http://localhost:5000${comment.user.profileImageUrl}` : undefined} />
+                          <AvatarImage src={comment.user.profileImageUrl || undefined} />
                           <AvatarFallback className="bg-gray-700 text-white">{comment.user.firstName?.[0]}{comment.user.lastName?.[0]}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
@@ -779,7 +779,7 @@ export default function CustomerDashboard() {
                           {replyingTo === comment.id && (
                             <div className="mt-2 ml-3 flex space-x-2">
                               <Avatar className="w-6 h-6">
-                                <AvatarImage src={user?.profileImageUrl ? `http://localhost:5000${user.profileImageUrl}` : undefined} />
+                                <AvatarImage src={user?.profileImageUrl || undefined} />
                                 <AvatarFallback className="text-xs bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                               </Avatar>
                               <div className="flex-1 flex">
@@ -811,7 +811,7 @@ export default function CustomerDashboard() {
                             <div key={reply.id} className="space-y-2">
                               <div className="flex space-x-2">
                                 <Avatar className="w-6 h-6 cursor-pointer" onClick={() => handleProfileClick(reply.user.id)}>
-                                  <AvatarImage src={reply.user.profileImageUrl ? `http://localhost:5000${reply.user.profileImageUrl}` : undefined} />
+                                  <AvatarImage src={reply.user.profileImageUrl || undefined} />
                                   <AvatarFallback className="bg-gray-700 text-white text-xs">{reply.user.firstName?.[0]}{reply.user.lastName?.[0]}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1">
@@ -834,7 +834,7 @@ export default function CustomerDashboard() {
                                   {replyingTo === reply.id && (
                                     <div className="mt-2 ml-3 flex space-x-2">
                                       <Avatar className="w-5 h-5">
-                                        <AvatarImage src={user?.profileImageUrl ? `http://localhost:5000${user.profileImageUrl}` : undefined} />
+                                        <AvatarImage src={user?.profileImageUrl || undefined} />
                                         <AvatarFallback className="text-xs bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                                       </Avatar>
                                       <div className="flex-1 flex">

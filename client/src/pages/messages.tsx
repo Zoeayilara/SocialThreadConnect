@@ -301,7 +301,7 @@ export default function Messages({ onBack }: MessagesProps) {
               <div className="flex items-center space-x-3 animate-in slide-in-from-left duration-300">
                 <div className="relative">
                   <Avatar className="w-10 h-10 cursor-pointer ring-2 ring-blue-500/20 hover:ring-blue-500/40 transition-all duration-200" onClick={() => setLocation(`/profile/${selectedUser.id}`)}>
-                    <AvatarImage src={selectedUser.profileImageUrl ? `http://localhost:5000${selectedUser.profileImageUrl}` : "/api/placeholder/40/40"} />
+                    <AvatarImage src={selectedUser.profileImageUrl || "/api/placeholder/40/40"} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-semibold">
                       {selectedUser.firstName?.[0] || selectedUser.email[0].toUpperCase()}
                     </AvatarFallback>
@@ -369,7 +369,7 @@ export default function Messages({ onBack }: MessagesProps) {
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center py-20">
                   <Avatar className="w-20 h-20 mb-6 cursor-pointer" onClick={() => setLocation(`/profile/${selectedUser.id}`)}>
-                    <AvatarImage src={selectedUser.profileImageUrl ? `http://localhost:5000${selectedUser.profileImageUrl}` : "/api/placeholder/80/80"} />
+                    <AvatarImage src={selectedUser.profileImageUrl || "/api/placeholder/80/80"} />
                     <AvatarFallback className="bg-gray-700 text-white text-2xl">
                       {selectedUser.firstName?.[0] || selectedUser.email[0].toUpperCase()}
                     </AvatarFallback>
@@ -430,7 +430,7 @@ export default function Messages({ onBack }: MessagesProps) {
                           {!isOwn && (
                             <div className="flex items-center space-x-2 mb-2">
                               <Avatar className="w-6 h-6">
-                                <AvatarImage src={selectedUser.profileImageUrl ? `http://localhost:5000${selectedUser.profileImageUrl}` : "/api/placeholder/24/24"} />
+                                <AvatarImage src={selectedUser.profileImageUrl || "/api/placeholder/24/24"} />
                                 <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white text-xs">
                                   {selectedUser.firstName?.[0] || selectedUser.email[0].toUpperCase()}
                                 </AvatarFallback>
@@ -607,7 +607,7 @@ export default function Messages({ onBack }: MessagesProps) {
               >
                 <div className="relative">
                   <Avatar className="w-14 h-14 ring-2 ring-gray-700/50 group-hover:ring-blue-500/30 transition-all duration-300">
-                    <AvatarImage src={user.profileImageUrl ? `http://localhost:5000${user.profileImageUrl}` : "/api/placeholder/56/56"} />
+                    <AvatarImage src={user.profileImageUrl || "/api/placeholder/56/56"} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
                       {user.firstName?.[0] || user.email[0].toUpperCase()}
                     </AvatarFallback>
@@ -656,7 +656,7 @@ export default function Messages({ onBack }: MessagesProps) {
                   </div>
                   <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-gray-700 rounded-full border-4 border-black overflow-hidden">
                     <img 
-                      src={user?.profileImageUrl ? `http://localhost:5000${user.profileImageUrl}` : "/api/placeholder/48/48"} 
+                      src={user?.profileImageUrl || "/api/placeholder/48/48"} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
                     />

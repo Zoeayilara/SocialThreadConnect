@@ -9,3 +9,7 @@ cmds = ['npm run build']
 
 [start]
 cmd = 'npm start'
+
+[variables]
+MAX_FILE_SIZE = '50mb'
+BODY_LIMIT = '50mb'

@@ -29,8 +29,18 @@ export default function Activity({ onBack }: ActivityProps) {
   const { data: activities = [] } = useQuery<ActivityItem[]>({
     queryKey: ['activities', activeTab],
     queryFn: async () => {
+      const token = localStorage.getItem('authToken');
+      const headers: HeadersInit = {
+        'credentials': 'include',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(`${API_URL}/api/activities`, {
         credentials: 'include',
+        headers,
       });
       if (!response.ok) {
         throw new Error('Failed to fetch activities');

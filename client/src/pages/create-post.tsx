@@ -105,7 +105,7 @@ export default function CreatePost() {
         {/* User Profile Section */}
         <div className="flex space-x-3 mb-6 animate-fade-in">
           <Avatar className="w-12 h-12 ring-2 ring-gray-700/50">
-            <AvatarImage src={user?.profileImageUrl ? `http://localhost:5000${user.profileImageUrl}` : undefined} />
+            <AvatarImage src={user?.profileImageUrl || undefined} />
             <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-semibold">
               {user?.firstName?.[0]}{user?.lastName?.[0]}
             </AvatarFallback>

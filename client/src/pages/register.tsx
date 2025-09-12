@@ -58,6 +58,11 @@ export default function Register() {
       queryClient.setQueryData(['auth', 'user'], result.user);
       queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
       
+      // Store JWT token if provided
+      if (result.token) {
+        localStorage.setItem('authToken', result.token);
+      }
+      
       // Store temporary data for use in subsequent pages
       localStorage.setItem('tempUserType', formData.userType);
       localStorage.setItem('tempUserId', result.userId);

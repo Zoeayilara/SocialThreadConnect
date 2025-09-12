@@ -6,6 +6,7 @@ import { Camera } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { authenticatedFetch } from "@/lib/authenticatedFetch";
 
 export default function UploadPicture() {
   const [, setLocation] = useLocation();
@@ -41,12 +42,17 @@ export default function UploadPicture() {
       console.log('Starting upload for file:', file.name);
       const formData = new FormData();
       formData.append('profilePicture', file);
+      
+      // Add temp user ID for registration flow
+      const tempUserId = localStorage.getItem('tempUserId');
+      if (tempUserId) {
+        formData.append('tempUserId', tempUserId);
+      }
 
       console.log('Making request to /api/upload-profile-picture');
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${API_URL}/api/upload-profile-picture`, {
+      
+      const response = await authenticatedFetch('/api/upload-profile-picture', {
         method: 'POST',
-        credentials: 'include',
         body: formData,
       });
 

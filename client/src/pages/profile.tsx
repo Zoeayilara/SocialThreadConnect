@@ -99,6 +99,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
     universityHandle: '',
     isPrivate: false
   });
+  const [profileImageKey, setProfileImageKey] = useState(0);
   
   // Image modal state
   const [imageModal, setImageModal] = useState<{
@@ -424,14 +425,38 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       return response.json();
     },
     onSuccess: (data) => {
+      // Invalidate all user-related queries
       queryClient.invalidateQueries({ queryKey: ['user', profileUserId] });
-      // Update current user data if it's own profile
+      queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      
+      // Force update current user data if it's own profile
       if (isOwnProfile && currentUser) {
-        queryClient.setQueryData(['auth', 'user'], {
+        const updatedUser = {
           ...currentUser,
           profileImageUrl: data.profileImageUrl
-        });
+        };
+        queryClient.setQueryData(['auth', 'user'], updatedUser);
+        queryClient.setQueryData(['user', profileUserId], updatedUser);
       }
+      
+      // Force re-render of profile image
+      setProfileImageKey(prev => prev + 1);
+      
+      // Show success message
+      toast({
+        title: "Profile picture updated",
+        description: "Your profile picture has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error('Profile picture upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload profile picture. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -507,6 +532,27 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Check file size (5MB limit for Railway compatibility)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        toast({
+          title: "File too large",
+          description: "Profile picture must be smaller than 5MB. Please choose a smaller image.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an image file (JPG, PNG, GIF, WebP).",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       uploadProfilePicMutation.mutate(file);
     }
   };
@@ -583,8 +629,10 @@ export default function Profile({ onBack, userId }: ProfileProps) {
               <p className="text-gray-400">@{getUserHandle(profileUser)}</p>
             </div>
             <div className="relative">
-              <Avatar className="w-20 h-20">
-                <AvatarImage src={profileUser.profileImageUrl || undefined} />
+              <Avatar className="w-20 h-20" key={profileImageKey}>
+                <AvatarImage 
+                  src={profileUser.profileImageUrl || undefined} 
+                />
                 <AvatarFallback className="bg-gray-700 text-white text-xl">
                   {profileUser.firstName?.[0]}{profileUser.lastName?.[0]}
                 </AvatarFallback>

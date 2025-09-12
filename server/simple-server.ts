@@ -20,8 +20,10 @@ app.use((req, res, next) => {
   }
 });
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Use smaller body limits for Railway compatibility
+const bodyLimit = '5mb'; // Reduced for Railway reverse proxy compatibility
+app.use(express.json({ limit: bodyLimit }));
+app.use(express.urlencoded({ extended: false, limit: bodyLimit }));
 
 // Register API routes BEFORE static files
 registerRoutes(app).then(() => {

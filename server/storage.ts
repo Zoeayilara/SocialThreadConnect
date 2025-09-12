@@ -75,11 +75,27 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUserById(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    if (user && user.profileImageUrl && user.profileImageUrl.includes('localhost:5000')) {
+      user.profileImageUrl = user.profileImageUrl.replace('http://localhost:5000', this.getBaseUrl());
+    }
     return user;
+  }
+
+  private getBaseUrl(): string {
+    if (process.env.BASE_URL) {
+      return process.env.BASE_URL;
+    }
+    
+    return process.env.RAILWAY_ENVIRONMENT_NAME 
+      ? 'https://web-production-aff5b.up.railway.app' 
+      : 'http://localhost:5000';
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
+    if (user && user.profileImageUrl && user.profileImageUrl.includes('localhost:5000')) {
+      user.profileImageUrl = user.profileImageUrl.replace('http://localhost:5000', this.getBaseUrl());
+    }
     return user;
   }
 

@@ -3,11 +3,13 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Success() {
   const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleContinue = async () => {
     setIsLoading(true);
@@ -16,10 +18,37 @@ export default function Success() {
     try {
       // Get the temporary user data
       const tempUserType = localStorage.getItem('tempUserType');
+      const authToken = localStorage.getItem('authToken');
+      
+      // Check if we already have a valid auth token from registration
+      if (authToken && tempUserType) {
+        // Invalidate auth queries to force refetch with new token
+        queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
+        
+        // Clean up temp data
+        localStorage.removeItem('tempUserType');
+        localStorage.removeItem('tempUserId');
+        localStorage.removeItem('tempEmail');
+        localStorage.removeItem('tempPassword');
+        
+        // Small delay to ensure cleanup is complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Navigate to appropriate dashboard using wouter
+        if (tempUserType === 'vendor') {
+          setLocation("/vendor-dashboard");
+        } else if (tempUserType === 'admin') {
+          setLocation("/admin-dashboard");
+        } else {
+          setLocation("/customer-dashboard");
+        }
+        return;
+      }
+      
+      // Fallback: try to login with temp credentials if no token
       const tempEmail = localStorage.getItem('tempEmail');
       const tempPassword = localStorage.getItem('tempPassword');
       
-      // Try to login with the temp credentials to establish proper session
       if (tempEmail && tempPassword) {
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         const response = await fetch(`${API_URL}/api/login`, {
@@ -35,15 +64,27 @@ export default function Success() {
         });
 
         if (response.ok) {
+          const data = await response.json();
+          
+          // Store JWT token if provided
+          if (data.token) {
+            localStorage.setItem('authToken', data.token);
+          }
+          
           // Login successful, clean up temp data
           localStorage.removeItem('tempUserType');
           localStorage.removeItem('tempUserId');
           localStorage.removeItem('tempEmail');
           localStorage.removeItem('tempPassword');
           
-          // Navigate to appropriate dashboard
+          // Small delay to ensure token is stored
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Navigate to appropriate dashboard using wouter
           if (tempUserType === 'vendor') {
             setLocation("/vendor-dashboard");
+          } else if (tempUserType === 'admin') {
+            setLocation("/admin-dashboard");
           } else {
             setLocation("/customer-dashboard");
           }

@@ -8,6 +8,12 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
+import { users, posts, comments, likes, reposts, otps } from "../shared/schema";
+import { eq, desc, and, or, like, sql as drizzleSql, asc } from "drizzle-orm";
+import { z } from "zod";
+import { db, sqlite } from "./db";
+import { extractTokenFromHeader, verifyToken } from "./jwt";
+import { sql } from "drizzle-orm";
 
 // Extend Express Request type to include userId
 declare global {
@@ -21,10 +27,6 @@ declare global {
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { z } from "zod";
-import { db, sqlite } from "./db";
-import { users } from "../shared/schema";
-import { sql } from "drizzle-orm";
 
 // Utility function to get the correct base URL for media files
 function getBaseUrl(): string {
@@ -367,6 +369,25 @@ const upload = multer({
   }
 });
 
+// Separate multer config for profile pictures with smaller limit
+const profileUpload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { 
+    fileSize: 5 * 1024 * 1024, // Reduced to 5MB for Railway compatibility
+    fieldSize: 5 * 1024 * 1024,
+    fields: 10,
+    files: 1
+  },
+  fileFilter: (_, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${file.mimetype} not allowed. Only images are supported for profile pictures.`));
+    }
+  }
+});
+
 // Validation schemas
 
 const forgotPasswordSchema = z.object({
@@ -414,6 +435,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.send(svg);
   });
   
+  // Profile picture upload route - MUST be before body parser middleware
+  app.post('/api/upload-profile-picture', profileUpload.single('profilePicture'), async (req: any, res) => {
+    try {
+      // Try to get user ID from JWT token first
+      let userId: number | null = null;
+      const authHeader = req.headers.authorization;
+      if (authHeader) {
+        const token = extractTokenFromHeader(authHeader);
+        if (token) {
+          const payload = verifyToken(token);
+          if (payload) {
+            userId = payload.userId;
+          }
+        }
+      }
+      
+      // Fallback to session-based auth
+      if (!userId && req.session && req.session.userId) {
+        userId = req.session.userId;
+      }
+      
+      // For temp users during registration, get from request body
+      if (!userId && req.body && req.body.tempUserId) {
+        userId = parseInt(req.body.tempUserId);
+      }
+      
+      console.log('Upload request received, user ID:', userId);
+      console.log('File received:', req.file ? req.file.originalname : 'No file');
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      // Only allow images for profile pictures
+      if (!req.file.mimetype.startsWith('image/')) {
+        return res.status(400).json({ message: "Only image files are allowed for profile pictures" });
+      }
+      
+      // Generate filename and save file
+      const fileName = `profile-${userId}-${Date.now()}.${req.file.originalname.split('.').pop()}`;
+      const filePath = path.join(__dirname, '../uploads', fileName);
+      
+      // Ensure uploads directory exists
+      const uploadsDir = path.join(__dirname, '../uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(filePath, req.file.buffer);
+      
+      const profileImageUrl = `/uploads/${fileName}`;
+      const fullProfileImageUrl = `${getBaseUrl()}${profileImageUrl}`;
+      
+      await storage.updateUser(userId, { profileImageUrl: fullProfileImageUrl });
+
+      res.json({ profileImageUrl: fullProfileImageUrl });
+    } catch (error) {
+      console.log('Profile picture upload error:', error);
+      res.status(500).json({ message: "File upload failed" });
+    }
+  });
+
   // Auth middleware
   setupAuth(app);
 
@@ -599,46 +686,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Profile picture upload
-  app.post('/api/upload-profile-picture', isAuthenticated, upload.single('profilePicture'), async (req: any, res) => {
-    try {
-      console.log('Upload request received, user ID:', req.userId);
-      console.log('File received:', req.file ? req.file.originalname : 'No file');
-      
-      if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-
-      const userId = req.userId;
-      
-      // Only allow images for profile pictures
-      if (!req.file.mimetype.startsWith('image/')) {
-        return res.status(400).json({ message: "Only image files are allowed for profile pictures" });
-      }
-      
-      // Generate filename and save file
-      const fileName = `profile-${userId}-${Date.now()}.${req.file.originalname.split('.').pop()}`;
-      const filePath = path.join(__dirname, '../uploads', fileName);
-      
-      // Ensure uploads directory exists
-      const uploadsDir = path.join(__dirname, '../uploads');
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      }
-      
-      fs.writeFileSync(filePath, req.file.buffer);
-      
-      const profileImageUrl = `/uploads/${fileName}`;
-      const fullProfileImageUrl = `${getBaseUrl()}${profileImageUrl}`;
-      
-      await storage.updateUser(userId, { profileImageUrl: fullProfileImageUrl });
-
-      res.json({ profileImageUrl: fullProfileImageUrl });
-    } catch (error) {
-      console.log('Profile picture upload error:', error);
-      res.status(500).json({ message: "File upload failed" });
-    }
-  });
 
   // Add error handling middleware for multer
   app.use((error: any, _req: any, res: any, next: any) => {
@@ -1269,7 +1316,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           u.id as user_id,
           u.first_name,
           u.last_name,
-          u.profile_image_url,
+          CASE 
+            WHEN u.profile_image_url LIKE 'http://localhost:5000%' THEN 
+              REPLACE(u.profile_image_url, 'http://localhost:5000', '${getBaseUrl()}')
+            ELSE u.profile_image_url 
+          END as profile_image_url,
           p.id as post_id,
           p.content as post_content,
           p.likes_count,
@@ -1287,7 +1338,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           u.id as user_id,
           u.first_name,
           u.last_name,
-          u.profile_image_url,
+          CASE 
+            WHEN u.profile_image_url LIKE 'http://localhost:5000%' THEN 
+              REPLACE(u.profile_image_url, 'http://localhost:5000', '${getBaseUrl()}')
+            ELSE u.profile_image_url 
+          END as profile_image_url,
           p.id as post_id,
           c.content as post_content,
           p.likes_count,
@@ -1305,7 +1360,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           u.id as user_id,
           u.first_name,
           u.last_name,
-          u.profile_image_url,
+          CASE 
+            WHEN u.profile_image_url LIKE 'http://localhost:5000%' THEN 
+              REPLACE(u.profile_image_url, 'http://localhost:5000', '${getBaseUrl()}')
+            ELSE u.profile_image_url 
+          END as profile_image_url,
           p.id as post_id,
           p.content as post_content,
           p.likes_count,
