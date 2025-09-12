@@ -283,6 +283,66 @@ async function runMigrations() {
       console.log('Admin user already exists');
     }
     
+    // Fix localhost URLs in existing data
+    console.log('🔄 Fixing localhost URLs in existing data...');
+    
+    // Update posts table - fix mediaUrl and imageUrl fields
+    const postsWithMedia = sqlite.prepare(`
+      SELECT id, mediaUrl, imageUrl 
+      FROM posts 
+      WHERE mediaUrl LIKE '%localhost:5000%' OR imageUrl LIKE '%localhost:5000%'
+    `).all();
+
+    console.log(`Found ${postsWithMedia.length} posts with localhost URLs`);
+
+    if (postsWithMedia.length > 0) {
+      const updatePostStmt = sqlite.prepare(`
+        UPDATE posts 
+        SET mediaUrl = ?, imageUrl = ? 
+        WHERE id = ?
+      `);
+
+      for (const post of postsWithMedia) {
+        let newMediaUrl = (post as any).mediaUrl;
+        let newImageUrl = (post as any).imageUrl;
+
+        if (newMediaUrl) {
+          newMediaUrl = newMediaUrl.replace(/http:\/\/localhost:5000/g, 'https://web-production-aff5b.up.railway.app');
+        }
+        
+        if (newImageUrl) {
+          newImageUrl = newImageUrl.replace(/http:\/\/localhost:5000/g, 'https://web-production-aff5b.up.railway.app');
+        }
+
+        updatePostStmt.run(newMediaUrl, newImageUrl, (post as any).id);
+        console.log(`✅ Updated post ${(post as any).id}`);
+      }
+    }
+
+    // Update users table - fix profile_image_url field
+    const usersWithProfileImages = sqlite.prepare(`
+      SELECT id, profile_image_url 
+      FROM users 
+      WHERE profile_image_url LIKE '%localhost:5000%'
+    `).all();
+
+    console.log(`Found ${usersWithProfileImages.length} users with localhost profile image URLs`);
+
+    if (usersWithProfileImages.length > 0) {
+      const updateUserStmt = sqlite.prepare(`
+        UPDATE users 
+        SET profile_image_url = ? 
+        WHERE id = ?
+      `);
+
+      for (const user of usersWithProfileImages) {
+        const newProfileImageUrl = (user as any).profile_image_url.replace(/http:\/\/localhost:5000/g, 'https://web-production-aff5b.up.railway.app');
+        updateUserStmt.run(newProfileImageUrl, (user as any).id);
+        console.log(`✅ Updated user ${(user as any).id} profile image`);
+      }
+    }
+
+    console.log('🎉 URL migration completed!');
     console.log('Database migrations completed');
 } catch (error) {
   console.error('Migration failed:', error);
@@ -1391,12 +1451,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Logout route
   app.post("/api/logout", (req, res) => {
+    console.log('🚪 Logout request received');
+    
+    // Clear session
     req.session.destroy((err) => {
       if (err) {
+        console.error('❌ Session destroy error:', err);
         return res.status(500).json({ error: "Could not log out" });
       }
+      
+      console.log('✅ Session destroyed successfully');
+      
+      // Clear all cookies
       res.clearCookie('connect.sid');
-      res.json({ message: "Logged out successfully" });
+      res.clearCookie('authToken'); // Clear any auth token cookie if exists
+      
+      // Set headers to prevent caching
+      res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.header('Pragma', 'no-cache');
+      res.header('Expires', '0');
+      
+      res.json({ 
+        message: "Logged out successfully",
+        clearToken: true // Signal to client to clear JWT token
+      });
     });
   });
 

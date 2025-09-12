@@ -203,16 +203,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Remove JWT token on logout
       removeAuthToken();
       
+      // Clear all localStorage items related to auth
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      
       queryClient.setQueryData(['auth', 'user'], null);
       queryClient.clear(); // Clear all queries
       setHasLoggedOut(true);
+      
       toast({
         title: "Logged out",
         description: "See you next time!",
       });
-      // Direct navigation to welcome page
+      
+      // Force page reload to clear any cached state and redirect
       setTimeout(() => {
-        window.location.href = '/welcome';
+        window.location.replace('/welcome');
       }, 500);
     },
     onError: (error: Error) => {
