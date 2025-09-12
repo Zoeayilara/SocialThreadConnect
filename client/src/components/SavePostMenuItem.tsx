@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Bookmark } from 'lucide-react';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { authenticatedFetch } from '@/utils/api';
 
 interface SavePostMenuItemProps {
   postId: number;
@@ -12,9 +13,7 @@ export function SavePostMenuItem({ postId, onSave, onUnsave }: SavePostMenuItemP
   const { data: isSaved, isLoading } = useQuery({
     queryKey: ['saved-status', postId],
     queryFn: async () => {
-      const response = await fetch(`/api/posts/${postId}/saved-status`, {
-        credentials: 'include',
-      });
+      const response = await authenticatedFetch(`/api/posts/${postId}/saved-status`);
       if (!response.ok) throw new Error('Failed to check saved status');
       const data = await response.json();
       return data.isSaved;

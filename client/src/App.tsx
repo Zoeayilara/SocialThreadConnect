@@ -1,10 +1,11 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
+import { useEffect } from "react";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Welcome from "@/pages/welcome";
@@ -30,24 +31,37 @@ import Messages from './pages/messages';
 import CreatePost from './pages/create-post';
 
 function AppContent() {
-  const { user, isLoggingOut, isAuthenticating } = useAuth();
-  
-  // Auto-redirect authenticated users from welcome to dashboard
-  if (user && (window.location.pathname === '/welcome' || window.location.pathname === '/')) {
-    let dashboardPath = '/customer-dashboard';
-    if (user.userType === 'vendor') {
-      dashboardPath = '/vendor-dashboard';
-    } else if (user.userType === 'admin') {
-      dashboardPath = '/admin-dashboard';
-    }
-    window.history.replaceState(null, '', dashboardPath);
-  }
+  const { user, isLoggingOut, isAuthenticating, isLoading } = useAuth();
+  const [location, setLocation] = useLocation();
 
-  // Show loading spinner only during logout or authentication
-  if (isLoggingOut || isAuthenticating) {
+  // Auto-redirect authenticated users from landing/welcome pages to their dashboard
+  useEffect(() => {
+    // Check if user just logged out to prevent auto-redirect
+    const justLoggedOut = sessionStorage.getItem('justLoggedOut');
+    
+    if (user && !isLoading && !isAuthenticating && !justLoggedOut) {
+      if (location === '/' || location === '/welcome') {
+        let dashboardPath = '/customer-dashboard';
+        if (user.userType === 'vendor') {
+          dashboardPath = '/vendor-dashboard';
+        } else if (user.userType === 'admin') {
+          dashboardPath = '/admin-dashboard';
+        }
+        setLocation(dashboardPath);
+      }
+    }
+    
+    // Clear the logout flag after checking
+    if (justLoggedOut) {
+      sessionStorage.removeItem('justLoggedOut');
+    }
+  }, [user, location, setLocation, isLoading, isAuthenticating]);
+
+  // Show loading spinner during logout, authentication, or initial user loading
+  if (isLoggingOut || isAuthenticating || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-200 via-indigo-100 to-pink-200">
-        <LoadingOverlay text={isLoggingOut ? "Logging out" : "Signing in"} overlay={false} />
+        <LoadingOverlay text={isLoggingOut ? "Logging out" : isAuthenticating ? "Signing in" : "Loading..."} overlay={false} />
       </div>
     );
   }
@@ -70,7 +84,7 @@ function AppContent() {
       ) : (
         <>
           <Route path="/" component={user.userType === 'vendor' ? VendorDashboard : user.userType === 'admin' ? AdminDashboard : CustomerDashboard} />
-          <Route path="/welcome" component={user.userType === 'vendor' ? VendorDashboard : user.userType === 'admin' ? AdminDashboard : CustomerDashboard} />
+          <Route path="/welcome" component={Welcome} />
           <Route path="/upload-picture" component={UploadPicture} />
           <Route path="/success" component={Success} />
           <Route path="/social" component={Social} />

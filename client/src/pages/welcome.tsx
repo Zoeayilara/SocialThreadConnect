@@ -1,23 +1,32 @@
 import { Button } from "@/components/ui/button";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { FoxLogo } from "@/components/FoxLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 
 export default function Welcome() {
-  const { user } = useAuth();
-  const [, setLocation] = useLocation();
+  const { user, isLoading } = useAuth();
 
-  // Redirect authenticated users to their dashboard
+  // Only redirect if user is truly authenticated and not in a logout state
   useEffect(() => {
-    if (user && user.userType) {
-      if (user.userType === 'vendor') {
-        setLocation('/vendor-dashboard', { replace: true });
-      } else {
-        setLocation('/customer-dashboard', { replace: true });
-      }
+    // Check if we're in a logout state or if we just navigated to welcome intentionally
+    const isLoggingOut = sessionStorage.getItem('isLoggingOut') === 'true';
+    const currentPath = window.location.pathname;
+    
+    // Don't redirect if:
+    // 1. We're in a logout state
+    // 2. We're currently loading
+    // 3. We explicitly navigated to /welcome (user clicked welcome or was redirected here)
+    if (isLoggingOut || isLoading || currentPath === '/welcome') {
+      return;
     }
-  }, [user, setLocation]);
+    
+    // Only redirect if user exists, has userType, and we're not on welcome page intentionally
+    if (user && user.userType) {
+      const dashboardPath = user.userType === 'vendor' ? '/vendor-dashboard' : '/customer-dashboard';
+      window.location.replace(dashboardPath);
+    }
+  }, [user, isLoading]);
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-200 flex items-center justify-center p-4">
       <div className="w-full max-w-sm text-center">

@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Bell, Bookmark, User, HelpCircle, Info, LogOut, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SettingsProps {
   onBack: () => void;
@@ -10,22 +9,10 @@ interface SettingsProps {
 
 export default function Settings({ onBack }: SettingsProps) {
   const [, setLocation] = useLocation();
+  const { logoutMutation } = useAuth();
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        setTimeout(() => {
-          window.location.href = '/welcome';
-        }, 500);
-      }
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+  const handleLogout = () => {
+    logoutMutation.mutate();
   };
 
   const settingsItems = [

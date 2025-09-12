@@ -1,10 +1,9 @@
-import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
 import { ArrowLeft, Bell } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatRelativeTime } from "@/utils/dateUtils";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { authenticatedFetch } from '@/utils/api';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { formatRelativeTime } from '@/utils/dateUtils';
 
 interface NotificationProps {
   onBack: () => void;
@@ -31,9 +30,7 @@ export default function Notifications({ onBack }: NotificationProps) {
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/notifications`, {
-        credentials: 'include',
-      });
+      const response = await authenticatedFetch(`/api/notifications`);
       if (!response.ok) throw new Error('Failed to fetch notifications');
       return response.json();
     },

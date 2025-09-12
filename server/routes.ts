@@ -288,9 +288,9 @@ async function runMigrations() {
     
     // Update posts table - fix mediaUrl and imageUrl fields
     const postsWithMedia = sqlite.prepare(`
-      SELECT id, mediaUrl, imageUrl 
+      SELECT id, media_url, image_url 
       FROM posts 
-      WHERE mediaUrl LIKE '%localhost:5000%' OR imageUrl LIKE '%localhost:5000%'
+      WHERE media_url LIKE '%localhost:5000%' OR image_url LIKE '%localhost:5000%'
     `).all();
 
     console.log(`Found ${postsWithMedia.length} posts with localhost URLs`);
@@ -298,13 +298,13 @@ async function runMigrations() {
     if (postsWithMedia.length > 0) {
       const updatePostStmt = sqlite.prepare(`
         UPDATE posts 
-        SET mediaUrl = ?, imageUrl = ? 
+        SET media_url = ?, image_url = ? 
         WHERE id = ?
       `);
 
       for (const post of postsWithMedia) {
-        let newMediaUrl = (post as any).mediaUrl;
-        let newImageUrl = (post as any).imageUrl;
+        let newMediaUrl = (post as any).media_url;
+        let newImageUrl = (post as any).image_url;
 
         if (newMediaUrl) {
           newMediaUrl = newMediaUrl.replace(/http:\/\/localhost:5000/g, 'https://web-production-aff5b.up.railway.app');

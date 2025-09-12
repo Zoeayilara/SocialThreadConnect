@@ -1,15 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Heart, MessageCircle, Bookmark, MoreHorizontal, Flag, Send, X } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Bookmark, Heart, MessageCircle, MoreHorizontal, ArrowLeft, Flag, Send, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { authenticatedFetch } from '@/utils/api';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
 import { SavePostMenuItem } from '@/components/SavePostMenuItem';
-import { useState } from 'react';
 import { formatRelativeTime } from "@/utils/dateUtils";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -63,9 +69,7 @@ const Saved = () => {
   const { data: savedPosts = [], isLoading } = useQuery<SavedPost[]>({
     queryKey: ['saved-posts'],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/saved-posts`, {
-        credentials: 'include',
-      });
+      const response = await authenticatedFetch(`/api/saved-posts`);
       if (!response.ok) {
         throw new Error('Failed to fetch saved posts');
       }
@@ -105,9 +109,8 @@ const Saved = () => {
   // Unsave post mutation
   const unsavePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`${API_URL}/api/posts/${postId}/save`, {
+      const response = await authenticatedFetch(`/api/posts/${postId}/save`, {
         method: 'DELETE',
-        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to unsave post');
       return response.json();
@@ -418,9 +421,9 @@ const Saved = () => {
                             <Input
                               placeholder="Write a comment..."
                               value={newComment}
-                              onChange={(e) => setNewComment(e.target.value)}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewComment(e.target.value)}
                               className="rounded-r-none bg-gray-900 border-gray-700 text-white placeholder:text-gray-500"
-                              onKeyPress={(e) => { if (e.key === 'Enter') { handleComment(post.id); } }}
+                              onKeyPress={(e: React.KeyboardEvent) => { if (e.key === 'Enter') { handleComment(post.id); } }}
                             />
                             <Button onClick={() => handleComment(post.id)} disabled={!newComment.trim() || commentMutation.isPending} className="rounded-l-none" size="sm">
                               <Send className="w-4 h-4" />
@@ -474,7 +477,7 @@ const Saved = () => {
                                         value={replyContent}
                                         onChange={(e) => setReplyContent(e.target.value)}
                                         className="rounded-r-none bg-gray-800 border-gray-600 text-white placeholder:text-gray-500 text-sm"
-                                        onKeyPress={(e) => { if (e.key === 'Enter') { handleComment(post.id, comment.id); } }}
+                                        onKeyPress={(e: React.KeyboardEvent) => { if (e.key === 'Enter') { handleComment(post.id, comment.id); } }}
                                       />
                                       <Button 
                                         onClick={() => handleComment(post.id, comment.id)} 
@@ -527,9 +530,9 @@ const Saved = () => {
                                               <Input
                                                 placeholder={`Reply to ${getUserDisplayName(reply.user)}...`}
                                                 value={replyContent}
-                                                onChange={(e) => setReplyContent(e.target.value)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReplyContent(e.target.value)}
                                                 className="rounded-r-none bg-gray-800 border-gray-600 text-white placeholder:text-gray-500 text-sm"
-                                                onKeyPress={(e) => { if (e.key === 'Enter') { handleComment(post.id, reply.id); } }}
+                                                onKeyPress={(e: React.KeyboardEvent) => { if (e.key === 'Enter') { handleComment(post.id, reply.id); } }}
                                               />
                                               <Button 
                                                 onClick={() => handleComment(post.id, reply.id)} 

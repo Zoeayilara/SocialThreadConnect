@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticating(false);
       return userData;
     },
-    enabled: !tempUserId && !hasLoggedOut,
+    enabled: !tempUserId && !hasLoggedOut && !!getAuthToken(),
     retry: false, // Don't retry to prevent loading loops
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
@@ -142,6 +142,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return response.json();
     },
     onSuccess: (data) => {
+      // Clear logout state on successful login
+      sessionStorage.removeItem('isLoggingOut');
+      setHasLoggedOut(false);
+      
       // Store JWT token if provided
       if (data.token) {
         setAuthToken(data.token);
@@ -207,7 +211,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
       
+      // Clear all session storage
+      sessionStorage.clear();
+      
+      // Set a flag to prevent auto-redirect after logout
+      sessionStorage.setItem('justLoggedOut', 'true');
+      
+      // Immediately clear user data and disable query
       queryClient.setQueryData(['auth', 'user'], null);
+      queryClient.removeQueries({ queryKey: ['auth', 'user'] });
       queryClient.clear(); // Clear all queries
       setHasLoggedOut(true);
       
@@ -216,10 +228,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "See you next time!",
       });
       
-      // Force page reload to clear any cached state and redirect
-      setTimeout(() => {
-        window.location.replace('/welcome');
-      }, 500);
+      // Force a complete page reload to clear all state
+      window.location.href = '/welcome';
     },
     onError: (error: Error) => {
       toast({
