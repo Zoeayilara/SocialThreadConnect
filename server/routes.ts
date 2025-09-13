@@ -302,33 +302,59 @@ async function runMigrations() {
       if (productionUrl !== 'http://localhost:5000') {
         console.log('🔄 Migrating localhost URLs to production URLs...');
         
-        // Update profile image URLs
-        const profileUpdates = sqlite.prepare(`
-          UPDATE users 
-          SET profile_image_url = REPLACE(profile_image_url, 'http://localhost:5000', ?)
-          WHERE profile_image_url LIKE '%localhost:5000%'
-        `).run(productionUrl);
+        // First, check what columns actually exist in each table
+        const postsColumns = sqlite.prepare("PRAGMA table_info(posts)").all() as Array<{name: string}>;
+        const usersColumns = sqlite.prepare("PRAGMA table_info(users)").all() as Array<{name: string}>;
+        const messagesColumns = sqlite.prepare("PRAGMA table_info(messages)").all() as Array<{name: string}>;
         
-        // Update post image URLs
-        const postImageUpdates = sqlite.prepare(`
-          UPDATE posts 
-          SET imageUrl = REPLACE(imageUrl, 'http://localhost:5000', ?)
-          WHERE imageUrl LIKE '%localhost:5000%'
-        `).run(productionUrl);
+        console.log('Posts table columns:', postsColumns.map(c => c.name));
+        console.log('Users table columns:', usersColumns.map(c => c.name));
+        console.log('Messages table columns:', messagesColumns.map(c => c.name));
         
-        // Update post media URLs
-        const postMediaUpdates = sqlite.prepare(`
-          UPDATE posts 
-          SET mediaUrl = REPLACE(mediaUrl, 'http://localhost:5000', ?)
-          WHERE mediaUrl LIKE '%localhost:5000%'
-        `).run(productionUrl);
+        let profileUpdates = { changes: 0 };
+        let postImageUpdates = { changes: 0 };
+        let postMediaUpdates = { changes: 0 };
+        let messageUpdates = { changes: 0 };
         
-        // Update message image URLs
-        const messageUpdates = sqlite.prepare(`
-          UPDATE messages 
-          SET imageUrl = REPLACE(imageUrl, 'http://localhost:5000', ?)
-          WHERE imageUrl LIKE '%localhost:5000%'
-        `).run(productionUrl);
+        // Update profile image URLs - check if column exists
+        const profileImageCol = usersColumns.find(c => c.name === 'profile_image_url' || c.name === 'profileImageUrl');
+        if (profileImageCol) {
+          profileUpdates = sqlite.prepare(`
+            UPDATE users 
+            SET ${profileImageCol.name} = REPLACE(${profileImageCol.name}, 'http://localhost:5000', ?)
+            WHERE ${profileImageCol.name} LIKE '%localhost:5000%'
+          `).run(productionUrl);
+        }
+        
+        // Update post image URLs - check if column exists
+        const postImageCol = postsColumns.find(c => c.name === 'image_url' || c.name === 'imageUrl');
+        if (postImageCol) {
+          postImageUpdates = sqlite.prepare(`
+            UPDATE posts 
+            SET ${postImageCol.name} = REPLACE(${postImageCol.name}, 'http://localhost:5000', ?)
+            WHERE ${postImageCol.name} LIKE '%localhost:5000%'
+          `).run(productionUrl);
+        }
+        
+        // Update post media URLs - check if column exists
+        const postMediaCol = postsColumns.find(c => c.name === 'media_url' || c.name === 'mediaUrl');
+        if (postMediaCol) {
+          postMediaUpdates = sqlite.prepare(`
+            UPDATE posts 
+            SET ${postMediaCol.name} = REPLACE(${postMediaCol.name}, 'http://localhost:5000', ?)
+            WHERE ${postMediaCol.name} LIKE '%localhost:5000%'
+          `).run(productionUrl);
+        }
+        
+        // Update message image URLs - check if column exists
+        const messageImageCol = messagesColumns.find(c => c.name === 'image_url' || c.name === 'imageUrl');
+        if (messageImageCol) {
+          messageUpdates = sqlite.prepare(`
+            UPDATE messages 
+            SET ${messageImageCol.name} = REPLACE(${messageImageCol.name}, 'http://localhost:5000', ?)
+            WHERE ${messageImageCol.name} LIKE '%localhost:5000%'
+          `).run(productionUrl);
+        }
         
         console.log(`✅ URL Migration completed:
           - Profile images: ${profileUpdates.changes} updated
@@ -343,36 +369,40 @@ async function runMigrations() {
     // Fix localhost URLs in existing data
     console.log('🔄 Fixing localhost URLs in existing data...');
     
-    // Update posts table - fix mediaUrl and imageUrl fields
-    const postsWithMedia = sqlite.prepare(`
-      SELECT id, media_url, image_url 
+    // Update posts table - check both snake_case and camelCase columns
+    const postsWithLocalhostUrls = sqlite.prepare(`
+      SELECT id, mediaUrl, media_url, image_url 
       FROM posts 
-      WHERE media_url LIKE '%localhost:5000%' OR image_url LIKE '%localhost:5000%'
-    `).all();
-
-    console.log(`Found ${postsWithMedia.length} posts with localhost URLs`);
-
-    if (postsWithMedia.length > 0) {
-      const updatePostStmt = sqlite.prepare(`
-        UPDATE posts 
-        SET media_url = ?, image_url = ? 
-        WHERE id = ?
-      `);
-
-      for (const post of postsWithMedia) {
-        let newMediaUrl = (post as any).media_url;
-        let newImageUrl = (post as any).image_url;
-
-        if (newMediaUrl) {
-          newMediaUrl = newMediaUrl.replace(/http:\/\/localhost:5000/g, 'https://web-production-aff5b.up.railway.app');
-        }
-        
-        if (newImageUrl) {
-          newImageUrl = newImageUrl.replace(/http:\/\/localhost:5000/g, 'https://web-production-aff5b.up.railway.app');
-        }
-
-        updatePostStmt.run(newMediaUrl, newImageUrl, (post as any).id);
-        console.log(`✅ Updated post ${(post as any).id}`);
+      WHERE mediaUrl LIKE '%localhost:5000%' 
+         OR media_url LIKE '%localhost:5000%' 
+         OR image_url LIKE '%localhost:5000%'
+    `).all() as Array<{id: number, mediaUrl?: string, media_url?: string, image_url?: string}>;
+    
+    console.log(`Found ${postsWithLocalhostUrls.length} posts with localhost URLs`);
+    
+    // Update each post with localhost URLs
+    for (const post of postsWithLocalhostUrls) {
+      const updates: string[] = [];
+      const params: any[] = [];
+      
+      if (post.mediaUrl && post.mediaUrl.includes('localhost:5000')) {
+        updates.push('mediaUrl = ?');
+        params.push(post.mediaUrl.replace('http://localhost:5000', getBaseUrl()));
+      }
+      
+      if (post.media_url && post.media_url.includes('localhost:5000')) {
+        updates.push('media_url = ?');
+        params.push(post.media_url.replace('http://localhost:5000', getBaseUrl()));
+      }
+      
+      if (post.image_url && post.image_url.includes('localhost:5000')) {
+        updates.push('image_url = ?');
+        params.push(post.image_url.replace('http://localhost:5000', getBaseUrl()));
+      }
+      
+      if (updates.length > 0) {
+        params.push(post.id);
+        sqlite.prepare(`UPDATE posts SET ${updates.join(', ')} WHERE id = ?`).run(...params);
       }
     }
 
@@ -381,29 +411,25 @@ async function runMigrations() {
       SELECT id, profile_image_url 
       FROM users 
       WHERE profile_image_url LIKE '%localhost:5000%'
-    `).all();
+    `).all() as Array<{id: number, profile_image_url?: string}>;
 
     console.log(`Found ${usersWithProfileImages.length} users with localhost profile image URLs`);
 
     if (usersWithProfileImages.length > 0) {
-      const updateUserStmt = sqlite.prepare(`
-        UPDATE users 
-        SET profile_image_url = ? 
-        WHERE id = ?
-      `);
-
       for (const user of usersWithProfileImages) {
-        const newProfileImageUrl = (user as any).profile_image_url.replace(/http:\/\/localhost:5000/g, 'https://web-production-aff5b.up.railway.app');
-        updateUserStmt.run(newProfileImageUrl, (user as any).id);
-        console.log(`✅ Updated user ${(user as any).id} profile image`);
+        if (user.profile_image_url) {
+          const newProfileImageUrl = user.profile_image_url.replace('http://localhost:5000', getBaseUrl());
+          sqlite.prepare('UPDATE users SET profile_image_url = ? WHERE id = ?').run(newProfileImageUrl, user.id);
+          console.log(`✅ Updated user ${user.id} profile image`);
+        }
       }
     }
 
     console.log('🎉 URL migration completed!');
     console.log('Database migrations completed');
-} catch (error) {
-  console.error('Migration failed:', error);
-}
+  } catch (error) {
+    console.error('Migration failed:', error);
+  }
 }
 
 

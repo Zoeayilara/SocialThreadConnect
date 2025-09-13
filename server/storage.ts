@@ -151,10 +151,10 @@ export class DatabaseStorage implements IStorage {
       id: p.posts.id,
       userId: p.posts.userId,
       content: p.posts.content,
-      imageUrl: p.posts.imageUrl?.includes('localhost:5000') 
+      imageUrl: p.posts.imageUrl?.includes?.('localhost:5000') 
         ? p.posts.imageUrl.replace('http://localhost:5000', this.getBaseUrl()) 
         : p.posts.imageUrl,
-      mediaUrl: p.posts.mediaUrl?.includes('localhost:5000') 
+      mediaUrl: p.posts.mediaUrl?.includes?.('localhost:5000') 
         ? p.posts.mediaUrl.replace('http://localhost:5000', this.getBaseUrl()) 
         : p.posts.mediaUrl,
       mediaType: p.posts.mediaType,
