@@ -839,7 +839,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                     <CardContent className="p-0">
                       <div className="flex space-x-3">
                         <Avatar className="w-10 h-10">
-                          <AvatarImage src={post.user.profileImageUrl || undefined} />
+                          <AvatarImage src={getImageUrl(post.user.profileImageUrl)} />
                           <AvatarFallback className="bg-gray-700 text-white">
                             {post.user.firstName?.[0]}{post.user.lastName?.[0]}
                           </AvatarFallback>
@@ -1211,7 +1211,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                         <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-3">
                             <Avatar className="w-10 h-10 cursor-pointer" onClick={() => handleProfileClick(post.user.id)}>
-                              <AvatarImage src={post.user.profileImageUrl || undefined} />
+                              <AvatarImage src={getImageUrl(post.user.profileImageUrl)} />
                               <AvatarFallback className="bg-gray-700 text-white">{post.user.firstName?.[0]}{post.user.lastName?.[0]}</AvatarFallback>
                             </Avatar>
                             <div>
