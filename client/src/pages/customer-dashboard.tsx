@@ -89,7 +89,7 @@ export default function CustomerDashboard() {
   const [showReplies, setShowReplies] = useState<Set<number>>(new Set());
   const [editingPost, setEditingPost] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
-  const [showMessages, setShowMessages] = useState(false);
+  const [showMessages] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [carouselIndex, setCarouselIndex] = useState<{[postId: number]: number}>({});
