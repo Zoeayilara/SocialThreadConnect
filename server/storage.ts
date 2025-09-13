@@ -86,9 +86,18 @@ export class DatabaseStorage implements IStorage {
       return process.env.BASE_URL;
     }
     
-    return process.env.RAILWAY_ENVIRONMENT_NAME 
-      ? 'https://web-production-aff5b.up.railway.app' 
-      : 'http://localhost:5000';
+    // For Railway deployment, detect by checking for Railway environment variables
+    if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID) {
+      return 'https://web-production-aff5b.up.railway.app';
+    }
+    
+    // For production environments (non-Railway)
+    if (process.env.NODE_ENV === 'production') {
+      return 'https://web-production-aff5b.up.railway.app';
+    }
+    
+    // Fallback to localhost for development
+    return 'http://localhost:5000';
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {

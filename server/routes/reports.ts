@@ -1,9 +1,9 @@
-import { Router } from 'express';
-import { extractTokenFromHeader, verifyToken } from '../jwt';
-import nodemailer from 'nodemailer';
+import express from 'express';
 import { z } from 'zod';
+import nodemailer from 'nodemailer';
+import { isAuthenticated } from '../auth';
 
-const router = Router();
+const router = express.Router();
 
 const reportSchema = z.object({
   postId: z.number(),
@@ -24,24 +24,16 @@ const createTransporter = () => {
   });
 };
 
-// Authentication middleware
-const authenticateToken = async (req: any, res: any, next: any) => {
-  try {
-    const token = extractTokenFromHeader(req);
-    if (!token) {
-      return res.status(401).json({ error: 'Access token required' });
-    }
-    
-    const decoded = verifyToken(token);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
+
+const isAdmin = (req: any, res: any, next: any) => {
+  if (req.session?.userType !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
   }
+  next();
 };
 
 // Report a post
-router.post('/posts/:postId', authenticateToken, async (req, res) => {
+router.post('/posts/:postId', isAuthenticated, async (req, res) => {
   try {
     const postId = parseInt(req.params.postId);
     const { reason, description } = reportSchema.parse({
@@ -49,7 +41,7 @@ router.post('/posts/:postId', authenticateToken, async (req, res) => {
       ...req.body
     });
 
-    const userId = (req as any).user.userId;
+    const userId = req.userId;
 
     // Get user and post information
     // Use SQLite database from request
@@ -144,14 +136,8 @@ router.post('/posts/:postId', authenticateToken, async (req, res) => {
 });
 
 // Get all reports (admin only)
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', isAuthenticated, isAdmin, async (req, res) => {
   try {
-    const userType = (req as any).user.userType;
-    
-    if (userType !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
     const query = `
       SELECT 
         r.*,
@@ -181,14 +167,8 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Update report status (admin only)
-router.patch('/:reportId/status', authenticateToken, async (req, res) => {
+router.patch('/:reportId/status', isAuthenticated, isAdmin, async (req, res) => {
   try {
-    const userType = (req as any).user.userType;
-    
-    if (userType !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
     const reportId = parseInt(req.params.reportId);
     const { status, admin_notes } = req.body;
 
@@ -202,7 +182,7 @@ router.patch('/:reportId/status', authenticateToken, async (req, res) => {
       WHERE id = ?
     `;
 
-    const userId = (req as any).user.userId;
+    const userId = req.userId;
     const db = (req as any).db || require('../db').sqlite;
     db.prepare(updateQuery).run(status, admin_notes || '', userId, reportId);
 

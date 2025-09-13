@@ -57,7 +57,7 @@ export function generateUserToken(user: any): string {
 }
 
 export function isAuthenticated(req: any, res: any, next: any) {
-  console.log('=== JWT AUTH CHECK START ===');
+  console.log('=== AUTH CHECK START ===');
   console.log('Request URL:', req.url);
   console.log('Request method:', req.method);
   
@@ -91,7 +91,7 @@ export function isAuthenticated(req: any, res: any, next: any) {
   }
   
   console.log('❌ Authentication failed - no valid JWT or session');
-  console.log('=== JWT AUTH CHECK END ===');
+  console.log('=== AUTH CHECK END ===');
   return res.status(401).json({ message: "Unauthorized - No valid token or session" });
 }
 

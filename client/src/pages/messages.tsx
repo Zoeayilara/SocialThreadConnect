@@ -103,7 +103,9 @@ export default function Messages({ directUserId }: MessagesProps) {
     enabled: !showSearch,
     staleTime: 0,
     gcTime: 0,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    refetchInterval: 5000, // Poll every 5 seconds for new conversations
+    refetchIntervalInBackground: true
   });
 
   // Debug logging
@@ -133,7 +135,11 @@ export default function Messages({ directUserId }: MessagesProps) {
       if (!response.ok) throw new Error('Failed to fetch messages');
       return response.json();
     },
-    enabled: !!selectedUser
+    enabled: !!selectedUser,
+    staleTime: 0,
+    refetchInterval: 3000, // Poll every 3 seconds for new messages
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true
   });
 
   // Send message mutation

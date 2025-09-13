@@ -12,7 +12,6 @@ import { users, posts, comments, likes, reposts, otps } from "../shared/schema";
 import { eq, desc, and, or, like, sql as drizzleSql, asc } from "drizzle-orm";
 import { z } from "zod";
 import { db, sqlite } from "./db";
-import { extractTokenFromHeader, verifyToken } from "./jwt";
 import { sql } from "drizzle-orm";
 import reportsRouter from './routes/reports';
 
@@ -36,13 +35,14 @@ function getBaseUrl(): string {
     return process.env.BASE_URL;
   }
   
-  // For Railway, use the RAILWAY_STATIC_URL or PUBLIC_URL if available
-  if (process.env.RAILWAY_STATIC_URL) {
-    return process.env.RAILWAY_STATIC_URL;
+  // For Railway deployment, detect by checking for Railway environment variables
+  if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID) {
+    return 'https://web-production-aff5b.up.railway.app';
   }
   
-  if (process.env.PUBLIC_URL) {
-    return process.env.PUBLIC_URL;
+  // For production environments (non-Railway)
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://web-production-aff5b.up.railway.app';
   }
   
   // Fallback to localhost for development
@@ -447,21 +447,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile picture upload route - MUST be before body parser middleware
   app.post('/api/upload-profile-picture', profileUpload.single('profilePicture'), async (req: any, res) => {
     try {
-      // Try to get user ID from JWT token first
+      // Use session-based authentication only
       let userId: number | null = null;
-      const authHeader = req.headers.authorization;
-      if (authHeader) {
-        const token = extractTokenFromHeader(authHeader);
-        if (token) {
-          const payload = verifyToken(token);
-          if (payload) {
-            userId = payload.userId;
-          }
-        }
-      }
       
-      // Fallback to session-based auth
-      if (!userId && req.session && req.session.userId) {
+      if (req.session && req.session.userId) {
         userId = req.session.userId;
       }
       
@@ -1421,7 +1410,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let query = `
         SELECT id, email, first_name, last_name, user_type, is_verified, 
-               university, phone, created_at, profile_image_url
+               university, phone, created_at,
+               CASE 
+                 WHEN profile_image_url LIKE 'http://localhost:5000%' THEN 
+                   REPLACE(profile_image_url, 'http://localhost:5000', '${getBaseUrl()}')
+                 ELSE profile_image_url 
+               END as profile_image_url
         FROM users
       `;
       let params: any[] = [];
@@ -1602,7 +1596,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           u.first_name as firstName,
           u.last_name as lastName,
           u.email,
-          u.profile_image_url as profileImageUrl,
+          CASE 
+            WHEN u.profile_image_url LIKE 'http://localhost:5000%' THEN 
+              REPLACE(u.profile_image_url, 'http://localhost:5000', '${getBaseUrl()}')
+            ELSE u.profile_image_url 
+          END as profileImageUrl,
           MAX(m.createdAt) as lastMessageTime
         FROM messages m
         JOIN users u ON (
@@ -1684,7 +1682,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const otherUserId = parseInt(req.params.userId);
       
       const messages = sqlite.prepare(`
-        SELECT m.*, 
+        SELECT m.id, m.senderId, m.recipientId, m.content, m.createdAt,
+               CASE 
+                 WHEN m.imageUrl LIKE 'http://localhost:5000%' THEN 
+                   REPLACE(m.imageUrl, 'http://localhost:5000', '${getBaseUrl()}')
+                 ELSE m.imageUrl 
+               END as imageUrl,
                sender.first_name as senderFirstName, 
                sender.last_name as senderLastName,
                recipient.first_name as recipientFirstName,
@@ -1750,7 +1753,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         SELECT m.*, 
                sender.first_name as senderFirstName, 
                sender.last_name as senderLastName,
-               sender.profile_image_url as senderProfileImageUrl
+               CASE 
+                 WHEN sender.profile_image_url LIKE 'http://localhost:5000%' THEN 
+                   REPLACE(sender.profile_image_url, 'http://localhost:5000', '${getBaseUrl()}')
+                 ELSE sender.profile_image_url 
+               END as senderProfileImageUrl
         FROM messages m
         JOIN users sender ON m.senderId = sender.id
         WHERE m.id = ?
@@ -1822,8 +1829,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add reports routes
-  app.use('/api/reports', reportsRouter);
+  // Add reports routes with database middleware
+  app.use('/api/reports', (req: any, res, next) => {
+    req.db = sqlite;
+    next();
+  }, reportsRouter);
 
   const httpServer = createServer(app);
   return httpServer;

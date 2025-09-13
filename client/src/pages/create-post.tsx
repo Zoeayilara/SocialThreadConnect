@@ -45,6 +45,11 @@ export default function CreatePost() {
         return [newPost, ...oldPosts];
       });
       
+      // Invalidate all related queries to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      
       toast({ title: "Post created successfully!" });
       window.history.back(); // Go back to previous page
     },
