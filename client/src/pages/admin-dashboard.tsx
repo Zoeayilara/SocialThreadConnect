@@ -285,7 +285,7 @@ export default function AdminDashboard() {
                     <div key={adminUser.id} className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700">
                       <div className="flex items-center space-x-4">
                         <Avatar className="w-12 h-12">
-                          <AvatarImage src={adminUser.profile_image_url ? `http://localhost:5000${adminUser.profile_image_url}` : undefined} />
+                          <AvatarImage src={adminUser.profile_image_url ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${adminUser.profile_image_url}` : undefined} />
                           <AvatarFallback className="bg-gray-700 text-white">
                             {adminUser.first_name?.[0]}{adminUser.last_name?.[0]}
                           </AvatarFallback>

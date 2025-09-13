@@ -483,17 +483,17 @@ export default function Messages({ directUserId }: MessagesProps) {
                                   <div key={index} className="relative group/media">
                                     {isVideo ? (
                                       <video 
-                                        src={`http://localhost:5000${fileUrl}`} 
+                                        src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${fileUrl}`} 
                                         controls 
                                         className="max-w-full h-auto rounded-2xl cursor-pointer shadow-lg group-hover/media:shadow-xl transition-all duration-200"
-                                        onClick={() => window.open(`http://localhost:5000${fileUrl}`, '_blank')}
+                                        onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${fileUrl}`, '_blank')}
                                       />
                                     ) : (
                                       <img 
-                                        src={`http://localhost:5000${fileUrl}`} 
+                                        src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${fileUrl}`} 
                                         alt="Shared media" 
                                         className="max-w-full h-auto rounded-2xl cursor-pointer hover:opacity-90 transition-all duration-200 shadow-lg group-hover/media:shadow-xl group-hover/media:scale-[1.02]"
-                                        onClick={() => window.open(`http://localhost:5000${fileUrl}`, '_blank')}
+                                        onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${fileUrl}`, '_blank')}
                                       />
                                     )}
                                   </div>
