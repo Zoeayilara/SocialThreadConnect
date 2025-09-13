@@ -974,7 +974,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mediaType: mediaTypes.length > 0 ? JSON.stringify(mediaTypes) : null,
       });
 
-      res.json(post);
+      // Get the user data to include in the response
+      const user = await storage.getUserById(userId);
+      
+      // Return post with user data
+      const postWithUser = {
+        ...post,
+        user: user || {
+          id: userId,
+          firstName: 'Unknown',
+          lastName: 'User',
+          email: '',
+          profileImageUrl: null,
+          isVerified: 0
+        }
+      };
+
+      res.json(postWithUser);
     } catch (error) {
       console.error("Error creating post:", error);
       res.status(500).json({ message: "Failed to create post" });
