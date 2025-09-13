@@ -19,8 +19,8 @@ export default function Settings({ onBack }: SettingsProps) {
     { icon: Bell, label: 'Notifications', onClick: () => setLocation('/notifications') },
     { icon: Bookmark, label: 'Saved', onClick: () => setLocation('/saved') },
     { icon: User, label: 'Account', onClick: () => setLocation('/account') },
-    { icon: HelpCircle, label: 'Help', onClick: () => console.log('Help') },
-    { icon: Info, label: 'About', onClick: () => console.log('About') },
+    { icon: HelpCircle, label: 'Help', onClick: () => setLocation('/help') },
+    { icon: Info, label: 'About', onClick: () => setLocation('/about') },
   ];
 
   return (

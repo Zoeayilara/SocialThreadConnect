@@ -83,6 +83,10 @@ export default function Social() {
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
+    refetchInterval: false, // Disable automatic refetching
+    refetchOnWindowFocus: false, // Don't refetch on focus
+    refetchIntervalInBackground: false,
+    staleTime: 30 * 60 * 1000, // 30 minutes stale time
   });
 
   // Fetch comments for a post

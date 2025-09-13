@@ -198,8 +198,11 @@ export class DatabaseStorage implements IStorage {
         (post.repostsCount * 1.5)
       );
       
-      // Combined score with time decay
-      const finalScore = (engagementScore + 1) * timeDecay;
+      // Give fresh posts (less than 2 hours old) a significant boost
+      const freshBoost = ageInHours < 2 ? 3.0 : 0;
+      
+      // Combined score with time decay and fresh boost
+      const finalScore = (engagementScore + freshBoost + 1) * timeDecay;
       
       return {
         ...post,

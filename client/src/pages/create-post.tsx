@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { authenticatedFetch, getImageUrl } from '../utils/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, ImageIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/hooks/useAuth';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface User {
   id: number;
@@ -26,25 +26,30 @@ export default function CreatePost() {
 
   const createPostMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const response = await fetch(`${API_URL}/api/posts`, {
+      const response = await authenticatedFetch('/api/posts', {
         method: 'POST',
-        credentials: 'include',
         body: formData,
       });
       
       if (!response.ok) {
-        throw new Error('Failed to create post');
+        const errorText = await response.text();
+        console.error('Post creation failed:', errorText);
+        throw new Error(`Failed to create post: ${errorText}`);
       }
       
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    onSuccess: (newPost) => {
+      // Optimistically add the new post to the top of existing posts
+      queryClient.setQueryData(['/api/posts'], (oldPosts: any[] = []) => {
+        return [newPost, ...oldPosts];
+      });
+      
       toast({ title: "Post created successfully!" });
       window.history.back(); // Go back to previous page
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Post creation error:', error);
       toast({ title: "Failed to create post", variant: "destructive" });
     },
   });
@@ -105,7 +110,7 @@ export default function CreatePost() {
         {/* User Profile Section */}
         <div className="flex space-x-3 mb-6 animate-fade-in">
           <Avatar className="w-12 h-12 ring-2 ring-gray-700/50">
-            <AvatarImage src={user?.profileImageUrl || undefined} />
+            <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
             <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-semibold">
               {user?.firstName?.[0]}{user?.lastName?.[0]}
             </AvatarFallback>

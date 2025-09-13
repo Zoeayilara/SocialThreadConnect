@@ -10,9 +10,14 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
   const token = getAuthToken();
   
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
+  
+  // Only set Content-Type for non-FormData requests
+  // FormData automatically sets the correct Content-Type with boundary
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
   
   // Add Authorization header if token exists
   if (token) {
@@ -31,6 +36,19 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
   }
   
   return response;
+};
+
+// Helper function to construct full image URLs
+export const getImageUrl = (relativePath: string | undefined | null): string | undefined => {
+  if (!relativePath) return undefined;
+  
+  // If already a full URL, return as is
+  if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+    return relativePath;
+  }
+  
+  // If relative path, prepend API_URL
+  return `${API_URL}${relativePath}`;
 };
 
 export { API_URL };

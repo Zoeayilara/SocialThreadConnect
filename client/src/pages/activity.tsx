@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Heart, MessageCircle, Repeat2, Share, MoreHorizontal } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { formatRelativeTime } from '@/utils/dateUtils';
+import { authenticatedFetch } from '@/utils/api';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface ActivityProps {
   onBack: () => void;
@@ -12,7 +13,7 @@ interface ActivityProps {
 
 interface ActivityItem {
   type: 'like' | 'comment' | 'repost';
-  timestamp: string;
+  timestamp: number;
   user_id: number;
   first_name: string;
   last_name: string;
@@ -21,10 +22,12 @@ interface ActivityItem {
   post_content: string;
   likes_count: number;
   comments_count: number;
+  reposts_count?: number;
 }
 
 export default function Activity({ onBack }: ActivityProps) {
   const [activeTab, setActiveTab] = useState<'all' | 'follows' | 'conversations' | 'reposts'>('all');
+  const queryClient = useQueryClient();
 
   const { data: activities = [] } = useQuery<ActivityItem[]>({
     queryKey: ['activities', activeTab],
@@ -38,7 +41,7 @@ export default function Activity({ onBack }: ActivityProps) {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      const response = await fetch(`${API_URL}/api/activities`, {
+      const response = await fetch(`/api/activities`, {
         credentials: 'include',
         headers,
       });
@@ -66,16 +69,6 @@ export default function Activity({ onBack }: ActivityProps) {
     return num.toString();
   };
 
-  const getRelativeTime = (timestamp: string) => {
-    const now = new Date();
-    const activityTime = new Date(timestamp);
-    const diffInHours = Math.floor((now.getTime() - activityTime.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) return 'now';
-    if (diffInHours < 24) return `${diffInHours}h`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays}d`;
-  };
 
   const getActivityText = (activity: ActivityItem) => {
     switch (activity.type) {
@@ -88,6 +81,52 @@ export default function Activity({ onBack }: ActivityProps) {
       default:
         return 'interacted with your post';
     }
+  };
+
+  // Like mutation
+  const likeMutation = useMutation({
+    mutationFn: async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
+      const response = await authenticatedFetch(`/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Failed to update like');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+    onError: (error) => {
+      console.error('Like mutation error:', error);
+    },
+  });
+
+  // Repost mutation
+  const repostMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      const response = await authenticatedFetch(`/api/posts/${postId}/repost`, {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Failed to toggle repost');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+    onError: (error) => {
+      console.error('Repost mutation error:', error);
+    },
+  });
+
+  const handleLike = (activity: ActivityItem) => {
+    console.log('Like button clicked for post:', activity.post_id);
+    likeMutation.mutate({ postId: activity.post_id, isLiked: false }); // Assume not liked in activity
+  };
+
+  const handleRepost = (postId: number) => {
+    console.log('Repost button clicked for post:', postId);
+    repostMutation.mutate(postId);
   };
 
   return (
@@ -151,7 +190,7 @@ export default function Activity({ onBack }: ActivityProps) {
                         <p className="text-gray-400 text-sm">{getActivityText(activity)}</p>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="text-gray-500 text-sm">{getRelativeTime(activity.timestamp)}</span>
+                        <span className="text-gray-500 text-sm">{formatRelativeTime(activity.timestamp)}</span>
                         <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white p-1">
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
@@ -169,7 +208,11 @@ export default function Activity({ onBack }: ActivityProps) {
 
                     <div className="flex items-center justify-between mt-3 text-gray-400">
                       <div className="flex items-center space-x-4">
-                        <button className="flex items-center space-x-1 hover:text-red-400 transition-colors">
+                        <button 
+                          onClick={() => handleLike(activity)}
+                          disabled={likeMutation.isPending}
+                          className="flex items-center space-x-1 hover:text-red-400 transition-colors disabled:opacity-50"
+                        >
                           <Heart className="w-4 h-4" />
                           <span className="text-sm">{formatNumber(activity.likes_count)}</span>
                         </button>
@@ -177,9 +220,13 @@ export default function Activity({ onBack }: ActivityProps) {
                           <MessageCircle className="w-4 h-4" />
                           <span className="text-sm">{formatNumber(activity.comments_count)}</span>
                         </button>
-                        <button className="flex items-center space-x-1 hover:text-green-400 transition-colors">
+                        <button 
+                          onClick={() => handleRepost(activity.post_id)}
+                          disabled={repostMutation.isPending}
+                          className="flex items-center space-x-1 hover:text-green-400 transition-colors disabled:opacity-50"
+                        >
                           <Repeat2 className="w-4 h-4" />
-                          <span className="text-sm">0</span>
+                          <span className="text-sm">{formatNumber(activity.reposts_count || 0)}</span>
                         </button>
                         <button className="flex items-center space-x-1 hover:text-gray-300 transition-colors">
                           <Share className="w-4 h-4" />

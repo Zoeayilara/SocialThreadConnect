@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { authenticatedFetch } from "@/utils/api";
+import { authenticatedFetch, getImageUrl } from '../utils/api';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,10 +28,10 @@ import {
 
 
 interface MessagesProps {
-  onBack: () => void;
+  directUserId?: number;
 }
 
-export default function Messages({ onBack }: MessagesProps) {
+export default function Messages({ directUserId }: MessagesProps) {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearch, setShowSearch] = useState(() => {
@@ -54,6 +54,26 @@ export default function Messages({ onBack }: MessagesProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch user data for direct message
+  const { data: directUser } = useQuery({
+    queryKey: ['user', directUserId],
+    queryFn: async () => {
+      if (!directUserId) return null;
+      const response = await authenticatedFetch(`/api/users/${directUserId}`);
+      if (!response.ok) throw new Error('Failed to fetch user');
+      return response.json();
+    },
+    enabled: !!directUserId,
+  });
+
+  // Handle direct user selection from URL
+  useEffect(() => {
+    if (directUserId && directUser) {
+      setSelectedUser(directUser);
+      setShowSearch(false);
+    }
+  }, [directUserId, directUser]);
 
   // Save state to localStorage when it changes
   useEffect(() => {
@@ -129,7 +149,6 @@ export default function Messages({ onBack }: MessagesProps) {
           const response = await authenticatedFetch('/api/messages', {
             method: 'POST',
             body: formData,
-            headers: {} // Don't set Content-Type for FormData
           });
           if (!response.ok) throw new Error('Failed to send message');
           return response.json();
@@ -144,7 +163,6 @@ export default function Messages({ onBack }: MessagesProps) {
           const textResponse = await authenticatedFetch('/api/messages', {
             method: 'POST',
             body: textFormData,
-            headers: {} // Don't set Content-Type for FormData
           });
           if (!textResponse.ok) throw new Error('Failed to send text message');
           promises.push(textResponse.json());
@@ -160,7 +178,6 @@ export default function Messages({ onBack }: MessagesProps) {
         const response = await authenticatedFetch('/api/messages', {
           method: 'POST',
           body: formData,
-          headers: {} // Don't set Content-Type for FormData
         });
         if (!response.ok) throw new Error('Failed to send message');
         return response.json();
@@ -292,7 +309,16 @@ export default function Messages({ onBack }: MessagesProps) {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={selectedUser ? () => setSelectedUser(null) : showSearch ? () => setShowSearch(false) : onBack} 
+              onClick={selectedUser ? () => {
+                if (directUserId) {
+                  setLocation('/messages');
+                } else {
+                  setSelectedUser(null);
+                }
+              } : showSearch ? () => setShowSearch(false) : () => {
+                const dashboardPath = user?.userType === 'vendor' ? '/vendor-dashboard' : '/customer-dashboard';
+                setLocation(dashboardPath);
+              }} 
               className="text-gray-400 hover:text-white p-2 hover:bg-gray-800/50 rounded-full transition-all duration-200 hover:scale-105"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -301,7 +327,7 @@ export default function Messages({ onBack }: MessagesProps) {
               <div className="flex items-center space-x-3 animate-in slide-in-from-left duration-300">
                 <div className="relative">
                   <Avatar className="w-10 h-10 cursor-pointer ring-2 ring-blue-500/20 hover:ring-blue-500/40 transition-all duration-200" onClick={() => setLocation(`/profile/${selectedUser.id}`)}>
-                    <AvatarImage src={selectedUser.profileImageUrl || "/api/placeholder/40/40"} />
+                    <AvatarImage src={getImageUrl(selectedUser.profileImageUrl)} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-semibold">
                       {selectedUser.firstName?.[0] || selectedUser.email[0].toUpperCase()}
                     </AvatarFallback>
@@ -369,7 +395,7 @@ export default function Messages({ onBack }: MessagesProps) {
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center py-20">
                   <Avatar className="w-20 h-20 mb-6 cursor-pointer" onClick={() => setLocation(`/profile/${selectedUser.id}`)}>
-                    <AvatarImage src={selectedUser.profileImageUrl || "/api/placeholder/80/80"} />
+                    <AvatarImage src={getImageUrl(selectedUser.profileImageUrl)} />
                     <AvatarFallback className="bg-gray-700 text-white text-2xl">
                       {selectedUser.firstName?.[0] || selectedUser.email[0].toUpperCase()}
                     </AvatarFallback>
@@ -430,7 +456,7 @@ export default function Messages({ onBack }: MessagesProps) {
                           {!isOwn && (
                             <div className="flex items-center space-x-2 mb-2">
                               <Avatar className="w-6 h-6">
-                                <AvatarImage src={selectedUser.profileImageUrl || "/api/placeholder/24/24"} />
+                                <AvatarImage src={getImageUrl(selectedUser.profileImageUrl)} />
                                 <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white text-xs">
                                   {selectedUser.firstName?.[0] || selectedUser.email[0].toUpperCase()}
                                 </AvatarFallback>
@@ -607,7 +633,7 @@ export default function Messages({ onBack }: MessagesProps) {
               >
                 <div className="relative">
                   <Avatar className="w-14 h-14 ring-2 ring-gray-700/50 group-hover:ring-blue-500/30 transition-all duration-300">
-                    <AvatarImage src={user.profileImageUrl || "/api/placeholder/56/56"} />
+                    <AvatarImage src={getImageUrl(user.profileImageUrl)} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
                       {user.firstName?.[0] || user.email[0].toUpperCase()}
                     </AvatarFallback>
@@ -655,11 +681,7 @@ export default function Messages({ onBack }: MessagesProps) {
                     </div>
                   </div>
                   <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-gray-700 rounded-full border-4 border-black overflow-hidden">
-                    <img 
-                      src={user?.profileImageUrl || "/api/placeholder/48/48"} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={getImageUrl(user?.profileImageUrl)} alt="Profile" className="w-8 h-8 rounded-full" />
                   </div>
                 </div>
 

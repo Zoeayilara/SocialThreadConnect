@@ -1,8 +1,9 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Shield, Users, FileText, MessageSquare, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { Search, Shield, Users, FileText, MessageSquare, CheckCircle, XCircle, Eye, AlertTriangle } from 'lucide-react';
 import { useState } from "react";
+import AdminReports from './admin-reports';
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +35,7 @@ interface AdminStats {
   unverifiedUsers: number;
   totalPosts: number;
   totalComments: number;
+  pendingReports?: number;
 }
 
 export default function AdminDashboard() {
@@ -44,6 +46,7 @@ export default function AdminDashboard() {
   
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showReports, setShowReports] = useState(false);
   
   // Redirect if not admin
   if (user && user.userType !== 'admin') {
@@ -136,6 +139,11 @@ export default function AdminDashboard() {
     });
   };
 
+  // Show reports page if requested
+  if (showReports) {
+    return <AdminReports onBack={() => setShowReports(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
@@ -150,6 +158,15 @@ export default function AdminDashboard() {
             </Badge>
           </div>
           <div className="flex items-center space-x-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowReports(true)}
+              className="border-gray-600 text-white hover:bg-gray-800"
+            >
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              Reports
+            </Button>
             <Button 
               variant="outline" 
               size="sm" 
@@ -174,7 +191,7 @@ export default function AdminDashboard() {
 
       <div className="mx-auto w-full max-w-7xl px-4 py-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
           <Card className="bg-gray-900 border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-300">Total Users</CardTitle>
@@ -222,6 +239,20 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-white">{stats?.totalComments || 0}</div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="bg-gray-900 border-gray-700 cursor-pointer hover:bg-gray-800 transition-colors"
+            onClick={() => setShowReports(true)}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">Pending Reports</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats?.pendingReports || 0}</div>
+              <p className="text-xs text-gray-500 mt-1">Click to manage</p>
             </CardContent>
           </Card>
         </div>

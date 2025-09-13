@@ -18,10 +18,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { SavePostMenuItem } from "@/components/SavePostMenuItem";
-import { authenticatedFetch } from "@/utils/api";
-
+import { useToast } from '@/hooks/use-toast';
+import { SavePostMenuItem } from '@/components/SavePostMenuItem';
+import ReportDialog from '@/components/ReportDialog';
+import { authenticatedFetch, getImageUrl } from '../utils/api';
 
 interface Post {
   id: number;
@@ -95,13 +95,15 @@ export default function CustomerDashboard() {
   const [showReplies, setShowReplies] = useState<Set<number>>(new Set());
   const [editingPost, setEditingPost] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
-  const [showMessages, setShowMessages] = useState(false);
+  const [showMessages] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [carouselIndex, setCarouselIndex] = useState<{[postId: number]: number}>({});
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportPostId, setReportPostId] = useState<number | null>(null);
+  const [viewingUserId, setViewingUserId] = useState<number | undefined>(undefined);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showProfile, setShowProfile] = useState(false);
-  const [viewingUserId, setViewingUserId] = useState<number | undefined>(undefined);
 
 
   // Show loading spinner only during logout
@@ -121,10 +123,10 @@ export default function CustomerDashboard() {
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
-    refetchInterval: 10000, // Refetch every 10 seconds instead of 2
-    refetchOnWindowFocus: false, // Don't refetch on focus to prevent loading delays
+    refetchInterval: false, // Disable automatic refetching
+    refetchOnWindowFocus: false, // Don't refetch on focus
     refetchIntervalInBackground: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes stale time
+    staleTime: 30 * 60 * 1000, // 30 minutes stale time
   });
 
   // Fetch comments for a post with automatic refetching
@@ -151,10 +153,15 @@ export default function CustomerDashboard() {
       if (!response.ok) throw new Error('Failed to update like');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-      queryClient.invalidateQueries({ queryKey: ['userPosts'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+    onSuccess: (_, variables) => {
+      // Update the specific post in place without reordering
+      queryClient.setQueryData(['/api/posts'], (oldPosts: any[] = []) => {
+        return oldPosts.map(post => 
+          post.id === variables.postId 
+            ? { ...post, isLiked: !variables.isLiked, likesCount: variables.isLiked ? post.likesCount - 1 : post.likesCount + 1 }
+            : post
+        );
+      });
     },
   });
 
@@ -163,14 +170,22 @@ export default function CustomerDashboard() {
       const response = await authenticatedFetch(`/api/posts/${postId}/comments`, {
         method: 'POST',
         body: JSON.stringify({ content, parentId }),
-      });if (!response.ok) throw new Error('Failed to create comment');
+      });
+      if (!response.ok) throw new Error('Failed to create comment');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-      queryClient.invalidateQueries({ queryKey: ['comments'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+    onSuccess: (_, variables) => {
+      // Only update comments, don't reorder posts
       queryClient.invalidateQueries({ queryKey: ['/api/comments', showComments] });
+      
+      // Update comment count for the specific post without reordering
+      queryClient.setQueryData(['/api/posts'], (oldPosts: any[] = []) => {
+        return oldPosts.map(post => 
+          post.id === variables.postId 
+            ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
+            : post
+        );
+      });
     },
   });
 
@@ -182,9 +197,15 @@ export default function CustomerDashboard() {
       if (!response.ok) throw new Error('Failed to toggle repost');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    onSuccess: (_, postId) => {
+      // Update repost count for the specific post without reordering
+      queryClient.setQueryData(['/api/posts'], (oldPosts: any[] = []) => {
+        return oldPosts.map(post => 
+          post.id === postId 
+            ? { ...post, repostsCount: (post.repostsCount || 0) + 1, isReposted: !post.isReposted }
+            : post
+        );
+      });
     },
   });
 
@@ -388,7 +409,7 @@ export default function CustomerDashboard() {
   }
 
   if (showMessages) {
-    return <Messages onBack={() => setShowMessages(false)} />;
+    return <Messages />;
   }
 
   return (
@@ -416,7 +437,7 @@ export default function CustomerDashboard() {
               <Search className="w-5 h-5" />
             </Button>
             <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleProfileClick()}>
-              <AvatarImage src={user?.profileImageUrl || undefined} />
+              <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
               <AvatarFallback className="bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
             </Avatar>
           </div>
@@ -454,7 +475,7 @@ export default function CustomerDashboard() {
                           setShowSearch(false);
                         }}
                       >
-                        <AvatarImage src={searchUser.profileImageUrl || undefined} />
+                        <AvatarImage src={getImageUrl(searchUser.profileImageUrl)} />
                         <AvatarFallback className="bg-gray-700 text-white">{searchUser.firstName?.[0]}{searchUser.lastName?.[0]}</AvatarFallback>
                       </Avatar>
                       <div 
@@ -507,7 +528,7 @@ export default function CustomerDashboard() {
           <CardContent className="pt-4 pb-2 px-0">
             <div className="flex space-x-3">
               <Avatar className="w-12 h-12">
-                <AvatarImage src={user?.profileImageUrl || undefined} />
+                <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
                 <AvatarFallback className="bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
               </Avatar>
               <div className="flex-1 cursor-pointer" onClick={() => setLocation('/create-post')}>
@@ -527,7 +548,7 @@ export default function CustomerDashboard() {
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3">
                   <Avatar className="w-10 h-10 cursor-pointer" onClick={() => handleProfileClick(post.user.id)}>
-                    <AvatarImage src={post.user.profileImageUrl || undefined} />
+                    <AvatarImage src={getImageUrl(post.user.profileImageUrl)} />
                     <AvatarFallback className="bg-gray-700 text-white">{post.user.firstName?.[0]}{post.user.lastName?.[0]}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
@@ -614,7 +635,10 @@ export default function CustomerDashboard() {
                       </>
                     ) : null}
                     <SavePostMenuItem postId={post.id} onSave={handleSavePost} onUnsave={handleUnsavePost} />
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      setReportPostId(post.id);
+                      setReportDialogOpen(true);
+                    }}>
                       <Flag className="w-4 h-4 mr-2" />
                       Report Post
                     </DropdownMenuItem>
@@ -725,7 +749,7 @@ export default function CustomerDashboard() {
                 <div className="mt-4 pt-4 border-t border-gray-800 space-y-4">
                   <div className="flex space-x-2">
                     <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleProfileClick(user?.id)}>
-                      <AvatarImage src={user?.profileImageUrl || undefined} />
+                      <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
                       <AvatarFallback className="text-xs bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 flex">
@@ -746,7 +770,7 @@ export default function CustomerDashboard() {
                     <div key={comment.id} className="space-y-2">
                       <div className="flex space-x-2">
                         <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleProfileClick(comment.user.id)}>
-                          <AvatarImage src={comment.user.profileImageUrl || undefined} />
+                          <AvatarImage src={getImageUrl(comment.user.profileImageUrl)} />
                           <AvatarFallback className="bg-gray-700 text-white">{comment.user.firstName?.[0]}{comment.user.lastName?.[0]}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
@@ -779,7 +803,7 @@ export default function CustomerDashboard() {
                           {replyingTo === comment.id && (
                             <div className="mt-2 ml-3 flex space-x-2">
                               <Avatar className="w-6 h-6">
-                                <AvatarImage src={user?.profileImageUrl || undefined} />
+                                <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
                                 <AvatarFallback className="text-xs bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                               </Avatar>
                               <div className="flex-1 flex">
@@ -811,7 +835,7 @@ export default function CustomerDashboard() {
                             <div key={reply.id} className="space-y-2">
                               <div className="flex space-x-2">
                                 <Avatar className="w-6 h-6 cursor-pointer" onClick={() => handleProfileClick(reply.user.id)}>
-                                  <AvatarImage src={reply.user.profileImageUrl || undefined} />
+                                  <AvatarImage src={getImageUrl(reply.user.profileImageUrl)} />
                                   <AvatarFallback className="bg-gray-700 text-white text-xs">{reply.user.firstName?.[0]}{reply.user.lastName?.[0]}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1">
@@ -834,7 +858,7 @@ export default function CustomerDashboard() {
                                   {replyingTo === reply.id && (
                                     <div className="mt-2 ml-3 flex space-x-2">
                                       <Avatar className="w-5 h-5">
-                                        <AvatarImage src={user?.profileImageUrl || undefined} />
+                                        <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
                                         <AvatarFallback className="text-xs bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                                       </Avatar>
                                       <div className="flex-1 flex">
@@ -913,6 +937,18 @@ export default function CustomerDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Report Dialog */}
+      {reportPostId && (
+        <ReportDialog
+          isOpen={reportDialogOpen}
+          onClose={() => {
+            setReportDialogOpen(false);
+            setReportPostId(null);
+          }}
+          postId={reportPostId}
+        />
+      )}
     </div>
   );
 }

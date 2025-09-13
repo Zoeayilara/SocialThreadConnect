@@ -1,12 +1,14 @@
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth, AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { useEffect } from "react";
-import NotFound from "@/pages/not-found";
+import NotFound from './pages/not-found';
+import Help from './pages/help';
+import About from './pages/about';
 import Landing from "@/pages/landing";
 import Welcome from "@/pages/welcome";
 import UserSelection from "@/pages/user-selection";
@@ -96,8 +98,11 @@ function AppContent() {
           <Route path="/saved" component={Saved} />
           <Route path="/account" component={() => <Account onBack={() => window.history.back()} />} />
           <Route path="/activity" component={() => <Activity onBack={() => window.history.back()} />} />
-          <Route path="/messages" component={() => <Messages onBack={() => window.history.back()} />} />
+          <Route path="/messages" component={() => <Messages />} />
+          <Route path="/messages/:userId" component={({ params }: any) => <Messages directUserId={parseInt(params.userId)} />} />
           <Route path="/create-post" component={CreatePost} />
+          <Route path="/help" component={() => <Help onBack={() => window.history.back()} />} />
+          <Route path="/about" component={() => <About onBack={() => window.history.back()} />} />
           <Route path="/profile/:userId" component={({ params }: any) => <Profile onBack={() => window.history.back()} userId={parseInt(params.userId)} />} />
         </>
       )}

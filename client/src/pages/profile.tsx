@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { SavePostMenuItem } from "@/components/SavePostMenuItem";
-import { authenticatedFetch } from "@/utils/api";
+import { authenticatedFetch, getImageUrl } from '../utils/api';
 
 interface Post {
   id: number;
@@ -414,7 +414,6 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       const response = await authenticatedFetch('/api/upload-profile-picture', {
         method: 'POST',
         body: formData,
-        headers: {}, // Don't set Content-Type for FormData
       });
       
       if (!response.ok) {
@@ -631,7 +630,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
             <div className="relative">
               <Avatar className="w-20 h-20" key={profileImageKey}>
                 <AvatarImage 
-                  src={profileUser.profileImageUrl || undefined} 
+                  src={getImageUrl(profileUser.profileImageUrl)} 
                 />
                 <AvatarFallback className="bg-gray-700 text-white text-xl">
                   {profileUser.firstName?.[0]}{profileUser.lastName?.[0]}
@@ -701,7 +700,11 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                 >
                   {followMutation.isPending ? 'Loading...' : (followerData?.isFollowing ? 'Unfollow' : 'Follow')}
                 </Button>
-                <Button variant="outline" className="flex-1 bg-transparent border-gray-600 text-white hover:bg-gray-800">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 bg-transparent border-gray-600 text-white hover:bg-gray-800"
+                  onClick={() => setLocation(`/messages/${profileUserId}`)}
+                >
                   Message
                 </Button>
               </>

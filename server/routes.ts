@@ -14,6 +14,7 @@ import { z } from "zod";
 import { db, sqlite } from "./db";
 import { extractTokenFromHeader, verifyToken } from "./jwt";
 import { sql } from "drizzle-orm";
+import reportsRouter from './routes/reports';
 
 // Extend Express Request type to include userId
 declare global {
@@ -35,9 +36,17 @@ function getBaseUrl(): string {
     return process.env.BASE_URL;
   }
   
-  return process.env.RAILWAY_ENVIRONMENT_NAME 
-    ? 'https://web-production-aff5b.up.railway.app' 
-    : 'http://localhost:5000';
+  // For Railway, use the RAILWAY_STATIC_URL or PUBLIC_URL if available
+  if (process.env.RAILWAY_STATIC_URL) {
+    return process.env.RAILWAY_STATIC_URL;
+  }
+  
+  if (process.env.PUBLIC_URL) {
+    return process.env.PUBLIC_URL;
+  }
+  
+  // Fallback to localhost for development
+  return 'http://localhost:5000';
 }
 
 // Database migration function to add missing columns
@@ -490,11 +499,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fs.writeFileSync(filePath, req.file.buffer);
       
       const profileImageUrl = `/uploads/${fileName}`;
-      const fullProfileImageUrl = `${getBaseUrl()}${profileImageUrl}`;
       
-      await storage.updateUser(userId, { profileImageUrl: fullProfileImageUrl });
+      // Store relative URL in database, let frontend handle base URL
+      await storage.updateUser(userId, { profileImageUrl: profileImageUrl });
 
-      res.json({ profileImageUrl: fullProfileImageUrl });
+      res.json({ profileImageUrl: profileImageUrl });
     } catch (error) {
       console.log('Profile picture upload error:', error);
       res.status(500).json({ message: "File upload failed" });
@@ -1494,13 +1503,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const verifiedUsers = sqlite.prepare('SELECT COUNT(*) as count FROM users WHERE is_verified = 1').get() as { count: number };
       const totalPosts = sqlite.prepare('SELECT COUNT(*) as count FROM posts').get() as { count: number };
       const totalComments = sqlite.prepare('SELECT COUNT(*) as count FROM comments').get() as { count: number };
+      const pendingReports = sqlite.prepare('SELECT COUNT(*) as count FROM reports WHERE status = ?').get('pending') as { count: number };
 
       res.json({
         totalUsers: totalUsers.count,
         verifiedUsers: verifiedUsers.count,
         unverifiedUsers: totalUsers.count - verifiedUsers.count,
         totalPosts: totalPosts.count,
-        totalComments: totalComments.count
+        totalComments: totalComments.count,
+        pendingReports: pendingReports.count
       });
     } catch (error) {
       console.error("Error fetching admin stats:", error);
@@ -1810,6 +1821,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to delete conversation' });
     }
   });
+
+  // Add reports routes
+  app.use('/api/reports', reportsRouter);
 
   const httpServer = createServer(app);
   return httpServer;

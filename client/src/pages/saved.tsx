@@ -18,7 +18,6 @@ import { Input } from '@/components/ui/input';
 import { SavePostMenuItem } from '@/components/SavePostMenuItem';
 import { formatRelativeTime } from "@/utils/dateUtils";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface SavedPost {
   id: number;
@@ -82,9 +81,7 @@ const Saved = () => {
     queryKey: ['comments', showComments],
     queryFn: async () => {
       if (!showComments) return [];
-      const response = await fetch(`${API_URL}/api/posts/${showComments}/comments`, {
-        credentials: 'include',
-      });
+      const response = await authenticatedFetch(`/api/posts/${showComments}/comments`);
       if (!response.ok) throw new Error('Failed to fetch comments');
       return response.json();
     },
@@ -94,15 +91,21 @@ const Saved = () => {
   // Like mutation
   const likeMutation = useMutation({
     mutationFn: async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
-      const response = await fetch(`${API_URL}/api/posts/${postId}/like`, {
-        method: isLiked ? 'DELETE' : 'POST',
-        credentials: 'include',
+      const response = await authenticatedFetch(`/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
+        method: 'POST',
       });
       if (!response.ok) throw new Error('Failed to update like');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['saved-posts'] });
+    onSuccess: (_, variables) => {
+      // Update the specific post in place without reordering
+      queryClient.setQueryData(['saved-posts'], (oldPosts: SavedPost[] = []) => {
+        return oldPosts.map(post => 
+          post.id === variables.postId 
+            ? { ...post, isLiked: !variables.isLiked, likesCount: variables.isLiked ? post.likesCount - 1 : post.likesCount + 1 }
+            : post
+        );
+      });
     },
   });
 
@@ -124,18 +127,25 @@ const Saved = () => {
   // Comment mutation
   const commentMutation = useMutation({
     mutationFn: async ({ postId, content, parentId }: { postId: number; content: string; parentId?: number }) => {
-      const response = await fetch(`${API_URL}/api/posts/${postId}/comments`, {
+      const response = await authenticatedFetch(`/api/posts/${postId}/comments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ content, parentId }),
       });
       if (!response.ok) throw new Error('Failed to create comment');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments'] });
-      queryClient.invalidateQueries({ queryKey: ['saved-posts'] });
+    onSuccess: (_, variables) => {
+      // Only update comments, don't reorder posts
+      queryClient.invalidateQueries({ queryKey: ['comments', showComments] });
+      
+      // Update comment count for the specific post without reordering
+      queryClient.setQueryData(['saved-posts'], (oldPosts: SavedPost[] = []) => {
+        return oldPosts.map(post => 
+          post.id === variables.postId 
+            ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
+            : post
+        );
+      });
     },
   });
 
@@ -150,15 +160,21 @@ const Saved = () => {
   // Repost mutation
   const repostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await fetch(`${API_URL}/api/posts/${postId}/repost`, {
+      const response = await authenticatedFetch(`/api/posts/${postId}/repost`, {
         method: 'POST',
-        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to toggle repost');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['saved-posts'] });
+    onSuccess: (_, postId) => {
+      // Update repost count for the specific post without reordering
+      queryClient.setQueryData(['saved-posts'], (oldPosts: SavedPost[] = []) => {
+        return oldPosts.map(post => 
+          post.id === postId 
+            ? { ...post, repostsCount: (post.repostsCount || 0) + 1 }
+            : post
+        );
+      });
     },
   });
 
