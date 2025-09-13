@@ -146,20 +146,29 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(posts.userId, users.id))
       .orderBy(desc(posts.createdAt));
 
-    // Map to proper format
+    // Map to proper format with URL replacement
     const allPosts = postsWithUsers.map(p => ({
       id: p.posts.id,
       userId: p.posts.userId,
       content: p.posts.content,
-      imageUrl: p.posts.imageUrl,
-      mediaUrl: p.posts.mediaUrl,
+      imageUrl: p.posts.imageUrl?.includes('localhost:5000') 
+        ? p.posts.imageUrl.replace('http://localhost:5000', this.getBaseUrl()) 
+        : p.posts.imageUrl,
+      mediaUrl: p.posts.mediaUrl?.includes('localhost:5000') 
+        ? p.posts.mediaUrl.replace('http://localhost:5000', this.getBaseUrl()) 
+        : p.posts.mediaUrl,
       mediaType: p.posts.mediaType,
       likesCount: p.posts.likesCount || 0,
       commentsCount: p.posts.commentsCount || 0,
       repostsCount: p.posts.repostsCount || 0,
       createdAt: p.posts.createdAt,
       updatedAt: p.posts.updatedAt,
-      user: p.users!,
+      user: {
+        ...p.users!,
+        profileImageUrl: p.users!.profileImageUrl?.includes('localhost:5000')
+          ? p.users!.profileImageUrl.replace('http://localhost:5000', this.getBaseUrl())
+          : p.users!.profileImageUrl
+      },
     }));
 
     let sortedPosts;

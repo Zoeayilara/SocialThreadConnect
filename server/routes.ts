@@ -261,39 +261,85 @@ async function runMigrations() {
     }
     
     // Create admin user if it doesn't exist
-    const adminEmail = 'admin@socialconnect.com';
-    const existingAdmin = sqlite.prepare('SELECT * FROM users WHERE email = ?').get(adminEmail);
-    
-    if (!existingAdmin) {
-      const now = Math.floor(Date.now() / 1000);
-      const insertAdmin = sqlite.prepare(`
-        INSERT INTO users (
-          email, first_name, last_name, password, user_type, 
-          university, phone, is_verified, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      
-      const result = insertAdmin.run(
-        adminEmail,
-        'EntreeFox',
-        '',
-        'Admin123!@#',
-        'admin',
-        'System University',
-        '+1234567890',
-        1, // is_verified = true
-        now,
-        now
-      );
-      
-      console.log('✅ Admin user created successfully!');
-      console.log('📧 Email:', adminEmail);
-      console.log('🔑 Password: Admin123!@#');
-      console.log('🆔 User ID:', result.lastInsertRowid);
-    } else {
-      console.log('Admin user already exists');
+    try {
+      const adminExists = sqlite.prepare("SELECT id FROM users WHERE email = ?").get('admin@socialconnect.com');
+      if (!adminExists) {
+        const adminUser = {
+          email: 'admin@socialconnect.com',
+          password: 'Admin123!@#',
+          firstName: 'Admin',
+          lastName: 'User',
+          userType: 'admin',
+          isVerified: 1,
+          createdAt: Math.floor(Date.now() / 1000),
+          updatedAt: Math.floor(Date.now() / 1000)
+        };
+        
+        sqlite.prepare(`
+          INSERT INTO users (email, password, first_name, last_name, user_type, is_verified, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          adminUser.email,
+          adminUser.password,
+          adminUser.firstName,
+          adminUser.lastName,
+          adminUser.userType,
+          adminUser.isVerified,
+          adminUser.createdAt,
+          adminUser.updatedAt
+        );
+        console.log('✅ Admin user created successfully');
+      } else {
+        console.log('✅ Admin user already exists');
+      }
+    } catch (error: any) {
+      console.error('❌ Error creating admin user:', error.message);
     }
-    
+
+    // Migration: Update localhost URLs to production URLs
+    try {
+      const productionUrl = getBaseUrl();
+      if (productionUrl !== 'http://localhost:5000') {
+        console.log('🔄 Migrating localhost URLs to production URLs...');
+        
+        // Update profile image URLs
+        const profileUpdates = sqlite.prepare(`
+          UPDATE users 
+          SET profile_image_url = REPLACE(profile_image_url, 'http://localhost:5000', ?)
+          WHERE profile_image_url LIKE '%localhost:5000%'
+        `).run(productionUrl);
+        
+        // Update post image URLs
+        const postImageUpdates = sqlite.prepare(`
+          UPDATE posts 
+          SET imageUrl = REPLACE(imageUrl, 'http://localhost:5000', ?)
+          WHERE imageUrl LIKE '%localhost:5000%'
+        `).run(productionUrl);
+        
+        // Update post media URLs
+        const postMediaUpdates = sqlite.prepare(`
+          UPDATE posts 
+          SET mediaUrl = REPLACE(mediaUrl, 'http://localhost:5000', ?)
+          WHERE mediaUrl LIKE '%localhost:5000%'
+        `).run(productionUrl);
+        
+        // Update message image URLs
+        const messageUpdates = sqlite.prepare(`
+          UPDATE messages 
+          SET imageUrl = REPLACE(imageUrl, 'http://localhost:5000', ?)
+          WHERE imageUrl LIKE '%localhost:5000%'
+        `).run(productionUrl);
+        
+        console.log(`✅ URL Migration completed:
+          - Profile images: ${profileUpdates.changes} updated
+          - Post images: ${postImageUpdates.changes} updated  
+          - Post media: ${postMediaUpdates.changes} updated
+          - Message images: ${messageUpdates.changes} updated`);
+      }
+    } catch (error: any) {
+      console.error('❌ Error during URL migration:', error.message);
+    }
+
     // Fix localhost URLs in existing data
     console.log('🔄 Fixing localhost URLs in existing data...');
     
