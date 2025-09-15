@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { authenticatedFetch, getImageUrl } from '../utils/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, ImageIcon, Video, Scissors } from 'lucide-react';
+import { X, ImageIcon, Scissors } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
