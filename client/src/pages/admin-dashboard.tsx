@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface AdminUser {
   id: number;
@@ -93,10 +92,9 @@ export default function AdminDashboard() {
   // Verify/unverify user mutation
   const verifyUserMutation = useMutation({
     mutationFn: async ({ userId, isVerified }: { userId: number; isVerified: boolean }) => {
-      const response = await fetch(`${API_URL}/api/admin/users/${userId}/verify`, {
+      const response = await authenticatedFetch(`/api/admin/users/${userId}/verify`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ isVerified }),
       });
       if (!response.ok) throw new Error('Failed to update user verification');

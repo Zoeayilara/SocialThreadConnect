@@ -7,13 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
-import { Heart, MessageCircle, Share, MoreHorizontal, Image, Send, LogOut, Edit, Trash2, Bookmark, Flag } from "lucide-react";
+import { MessageCircle, Share, MoreHorizontal, Image, Send, LogOut, Edit, Trash2, Bookmark, Flag } from "lucide-react";
 import { FoxLogo } from "@/components/FoxLogo";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { authenticatedFetch } from "@/utils/api";
+import { VideoPlayer } from "@/components/VideoPlayer";
+import { AnimatedLikeButton } from "@/components/AnimatedLikeButton";
 
 interface Post {
   id: number;
@@ -57,6 +60,7 @@ export default function Social() {
   const [editContent, setEditContent] = useState("");
   const [showComments, setShowComments] = useState<number | null>(null);
   const [newComment, setNewComment] = useState("");
+  const [carouselIndex, setCarouselIndex] = useState<{[postId: number]: number}>({});
 
   const handleLogout = async () => {
     try {
@@ -126,14 +130,45 @@ export default function Social() {
 
   // Like post mutation
   const likeMutation = useMutation({
-    mutationFn: async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
-      const response = await authenticatedFetch(`/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
+    mutationFn: async ({ postId }: { postId: number }) => {
+      const response = await authenticatedFetch(`/api/posts/${postId}/like`, {
         method: 'POST',
       });
       if (!response.ok) throw new Error('Failed to update like');
       return response.json();
     },
-    onSuccess: () => {
+    onMutate: async ({ postId }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/posts'] });
+      
+      // Snapshot the previous value
+      const previousPosts = queryClient.getQueryData(['/api/posts']);
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData(['/api/posts'], (old: any) => {
+        if (!old) return old;
+        return old.map((post: any) => {
+          if (post.id === postId) {
+            const currentlyLiked = !!post.isLiked;
+            return {
+              ...post,
+              isLiked: !currentlyLiked,
+              likesCount: Math.max(0, currentlyLiked ? post.likesCount - 1 : post.likesCount + 1)
+            };
+          }
+          return post;
+        });
+      });
+      
+      return { previousPosts };
+    },
+    onError: (_, __, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousPosts) {
+        queryClient.setQueryData(['/api/posts'], context.previousPosts);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
     },
   });
@@ -208,7 +243,7 @@ export default function Social() {
   };
 
   const handleLike = (post: Post) => {
-    likeMutation.mutate({ postId: post.id, isLiked: !!post.isLiked });
+    likeMutation.mutate({ postId: post.id });
   };
 
   const handleComment = (postId: number) => {
@@ -463,69 +498,132 @@ export default function Social() {
                   {post.content && (
                     <p className="text-lg mb-4 whitespace-pre-wrap">{post.content}</p>
                   )}
-                  {post.mediaUrl && (
-                    <div className="mb-4">
-                      {post.mediaType === 'image' ? (
-                        <img 
-                          src={post.mediaUrl} 
-                          alt="Post image" 
-                          className="max-w-full h-auto rounded-lg cursor-pointer"
-                          onClick={() => window.open(post.mediaUrl, '_blank')}
-                        />
-                      ) : post.mediaType === 'video' ? (
-                        <video 
-                          src={post.mediaUrl} 
-                          controls 
-                          className="max-w-full h-auto rounded-lg"
-                          style={{ maxHeight: '400px' }}
-                        />
-                      ) : null}
-                    </div>
-                  )}
+                  {/* Media display with carousel support */}
+                  {(post.mediaUrl || post.imageUrl) && (() => {
+                    const mediaUrl = post.mediaUrl || post.imageUrl || '';
+                    const looksJsonArray = mediaUrl.trim().startsWith('[');
+                    
+                    if (looksJsonArray) {
+                      try {
+                        const urls = JSON.parse(mediaUrl);
+                        if (Array.isArray(urls) && urls.length > 0) {
+                          if (urls.length > 1) {
+                            return (
+                              <div className="relative mb-4">
+                                <Carousel 
+                                  className=""
+                                  setApi={(api) => {
+                                    if (api) {
+                                      api.on('select', () => {
+                                        setCarouselIndex(prev => ({ ...prev, [post.id]: api.selectedScrollSnap() }));
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <CarouselContent>
+                                    {urls.map((url, idx) => (
+                                      <CarouselItem key={idx} className="pr-2">
+                                        <div className="relative w-full max-h-[500px] overflow-hidden rounded-lg bg-black">
+                                          {url.match(/\.(mp4|mov|webm)$/i) ? (
+                                            <VideoPlayer 
+                                              src={url} 
+                                              className="w-full h-auto max-h-[500px] object-contain"
+                                            />
+                                          ) : (
+                                            <img 
+                                              src={url} 
+                                              alt="Post media" 
+                                              className="w-full h-auto max-h-[500px] object-contain cursor-pointer hover:opacity-90 transition-opacity" 
+                                              onClick={() => window.open(url, '_blank')}
+                                            />
+                                          )}
+                                        </div>
+                                      </CarouselItem>
+                                    ))}
+                                  </CarouselContent>
+                                  <CarouselPrevious className="left-2 bg-background/60" />
+                                  <CarouselNext className="right-2 bg-background/60" />
+                                </Carousel>
+                                <div className="absolute right-3 top-3 rounded-full bg-black/60 text-white text-xs px-2 py-1">
+                                  {(carouselIndex[post.id] || 0) + 1}/{urls.length}
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            // Single item from array
+                            const url = urls[0];
+                            return (
+                              <div className="mb-4">
+                                {url.match(/\.(mp4|mov|webm)$/i) ? (
+                                  <VideoPlayer 
+                                    src={url} 
+                                    className="max-w-full h-auto rounded-lg"
+                                  />
+                                ) : (
+                                  <img 
+                                    src={url} 
+                                    alt="Post image" 
+                                    className="max-w-full h-auto rounded-lg cursor-pointer"
+                                    onClick={() => window.open(url, '_blank')}
+                                  />
+                                )}
+                              </div>
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        // Fall back to treating as single URL
+                      }
+                    }
+                    
+                    // Single URL (original behavior)
+                    return (
+                      <div className="mb-4">
+                        {mediaUrl.match(/\.(mp4|mov|webm)$/i) ? (
+                          <VideoPlayer 
+                            src={mediaUrl} 
+                            className="max-w-full h-auto rounded-lg"
+                          />
+                        ) : (
+                          <img 
+                            src={mediaUrl} 
+                            alt="Post image" 
+                            className="max-w-full h-auto rounded-lg cursor-pointer"
+                            onClick={() => window.open(mediaUrl, '_blank')}
+                          />
+                        )}
+                      </div>
+                    );
+                  })()}
                 </>
-              )}
-              
-              {post.imageUrl && (
-                <img 
-                  src={post.imageUrl} 
-                  alt="Post image" 
-                  className="w-full rounded-lg mb-4"
-                />
               )}
 
               {/* Actions */}
-              <div className="flex items-center justify-between pt-3 border-t">
-                <Button
-                  variant="ghost"
+              <div className="flex items-center justify-start gap-6 pt-3 border-t border-gray-800">
+                <AnimatedLikeButton
+                  isLiked={post.isLiked || false}
+                  likesCount={post.likesCount}
+                  onLike={() => handleLike(post)}
+                  disabled={likeMutation.isPending}
                   size="sm"
-                  onClick={() => handleLike(post)}
-                  className={`hover:bg-red-50 hover:text-red-600 ${
-                    post.isLiked ? 'text-red-600' : 'text-gray-600'
-                  }`}
-                >
-                  <Heart 
-                    className={`w-4 h-4 mr-2 ${post.isLiked ? 'fill-current' : ''}`} 
-                  />
-                  {post.likesCount}
-                </Button>
+                />
                 
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowComments(showComments === post.id ? null : post.id)}
-                  className="hover:bg-blue-50 hover:text-blue-600"
+                  className="text-gray-400 hover:text-gray-200 p-0 h-auto font-normal"
                 >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  {post.commentsCount}
+                  <MessageCircle className="w-5 h-5 mr-1" />
+                  <span className="text-sm">{post.commentsCount}</span>
                 </Button>
                 
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="hover:bg-green-50 hover:text-green-600"
+                  className="text-gray-400 hover:text-gray-200 p-0 h-auto font-normal"
                 >
-                  <Share className="w-4 h-4 mr-2" />
-                  Share
+                  <Share className="w-5 h-5" />
                 </Button>
               </div>
 

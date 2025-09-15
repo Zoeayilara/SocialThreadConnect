@@ -10,12 +10,23 @@ app.use((req, res, next) => {
   const allowedOrigins = [
     'https://enterfox.netlify.app',
     'http://localhost:5000',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'http://127.0.0.1:5000',
+    'http://127.0.0.1:3000'
   ];
   
   const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
+  
+  // Allow same-origin requests (when origin is undefined)
+  if (!origin) {
+    res.header('Access-Control-Allow-Origin', '*');
+  } else if (allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    // For development, be more permissive with localhost
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      res.header('Access-Control-Allow-Origin', origin);
+    }
   }
   
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');

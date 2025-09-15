@@ -1,22 +1,18 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Bookmark, Heart, MessageCircle, MoreHorizontal, ArrowLeft, Flag, Send, X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { authenticatedFetch } from '@/utils/api';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { SavePostMenuItem } from '@/components/SavePostMenuItem';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { useToast } from "@/hooks/use-toast";
+import { Heart, MessageCircle, MoreHorizontal, Send, Bookmark, ArrowLeft, X, Flag } from "lucide-react";
 import { formatRelativeTime } from "@/utils/dateUtils";
+import { authenticatedFetch } from "@/utils/api";
+import { VideoPlayer } from "@/components/VideoPlayer";
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { SavePostMenuItem } from '@/components/SavePostMenuItem';
 
 
 interface SavedPost {
@@ -88,24 +84,43 @@ const Saved = () => {
     enabled: !!showComments,
   });
 
-  // Like mutation
+  // Like post mutation
   const likeMutation = useMutation({
-    mutationFn: async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
-      const response = await authenticatedFetch(`/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
+    mutationFn: async ({ postId }: { postId: number }) => {
+      const response = await authenticatedFetch(`/api/posts/${postId}/like`, {
         method: 'POST',
       });
       if (!response.ok) throw new Error('Failed to update like');
       return response.json();
     },
-    onSuccess: (_, variables) => {
-      // Update the specific post in place without reordering
-      queryClient.setQueryData(['saved-posts'], (oldPosts: SavedPost[] = []) => {
-        return oldPosts.map(post => 
-          post.id === variables.postId 
-            ? { ...post, isLiked: !variables.isLiked, likesCount: variables.isLiked ? post.likesCount - 1 : post.likesCount + 1 }
-            : post
-        );
+    onMutate: async ({ postId }) => {
+      await queryClient.cancelQueries({ queryKey: ['/api/posts'] });
+      const previousPosts = queryClient.getQueryData(['/api/posts']);
+      
+      queryClient.setQueryData(['/api/posts'], (old: any) => {
+        if (!old) return old;
+        return old.map((post: any) => {
+          if (post.id === postId) {
+            const currentlyLiked = !!post.isLiked;
+            return {
+              ...post,
+              isLiked: !currentlyLiked,
+              likesCount: Math.max(0, currentlyLiked ? post.likesCount - 1 : post.likesCount + 1)
+            };
+          }
+          return post;
+        });
       });
+      
+      return { previousPosts };
+    },
+    onError: (_, __, context) => {
+      if (context?.previousPosts) {
+        queryClient.setQueryData(['/api/posts'], context.previousPosts);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
     },
   });
 
@@ -150,7 +165,7 @@ const Saved = () => {
   });
 
   const handleLike = (post: SavedPost) => {
-    likeMutation.mutate({ postId: post.id, isLiked: !!post.isLiked });
+    likeMutation.mutate({ postId: post.id });
   };
 
   const handleUnsave = (postId: number) => {
@@ -353,7 +368,7 @@ const Saved = () => {
                                     <CarouselItem key={idx} className="pr-2">
                                       <div className="relative w-full max-h-[300px] sm:max-h-[400px] overflow-hidden rounded-2xl bg-black">
                                         {url.match(/\.(mp4|mov|webm)$/i) ? (
-                                          <video src={url} controls playsInline className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-contain" />
+                                          <VideoPlayer src={url} className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-contain" />
                                         ) : (
                                           <img 
                                             src={url} 
@@ -380,7 +395,7 @@ const Saved = () => {
                           return (
                             <div className="relative w-full max-h-[300px] sm:max-h-[400px] mb-4 overflow-hidden rounded-2xl bg-black">
                               {only.match(/\.(mp4|mov|webm)$/i) ? (
-                                <video src={only} controls playsInline className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-contain" />
+                                <VideoPlayer src={only} className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-contain" />
                               ) : (
                                 <img 
                                   src={only} 
@@ -397,7 +412,7 @@ const Saved = () => {
                       return (
                         <div className="relative w-full max-h-[300px] sm:max-h-[400px] mb-4 overflow-hidden rounded-2xl bg-black">
                           {val.match(/\.(mp4|mov|webm)$/i) ? (
-                            <video src={val} controls playsInline className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-contain" />
+                            <VideoPlayer src={val} className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-contain" />
                           ) : (
                             <img 
                               src={val} 

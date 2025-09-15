@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { authenticatedFetch, getImageUrl } from '../utils/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, ImageIcon } from 'lucide-react';
+import { X, ImageIcon, Video, Scissors } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/hooks/useAuth';
+import { VideoPreview } from '@/components/VideoPreview';
+import { VideoTrimmer } from '@/components/VideoTrimmer';
 
 
 interface User {
@@ -23,6 +25,8 @@ export default function CreatePost() {
   const { user } = useAuth();
   const [newPost, setNewPost] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [showVideoTrimmer, setShowVideoTrimmer] = useState(false);
+  const [videoToTrim, setVideoToTrim] = useState<File | null>(null);
 
   const createPostMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -75,6 +79,31 @@ export default function CreatePost() {
   const getUserDisplayName = (user: User | null) => {
     if (!user) return 'User';
     return (user.firstName && user.lastName) ? `${user.firstName} ${user.lastName}` : 'User';
+  };
+
+  const handleTrimVideo = (file: File) => {
+    setVideoToTrim(file);
+    setShowVideoTrimmer(true);
+  };
+
+  const handleTrimComplete = (trimmedBlob: Blob) => {
+    const trimmedFile = new File([trimmedBlob], videoToTrim?.name || 'trimmed-video.mp4', {
+      type: trimmedBlob.type || 'video/mp4'
+    });
+    
+    // Replace the original video with the trimmed one
+    const updatedFiles = selectedFiles.map(file => 
+      file === videoToTrim ? trimmedFile : file
+    );
+    setSelectedFiles(updatedFiles);
+    
+    setShowVideoTrimmer(false);
+    setVideoToTrim(null);
+  };
+
+  const handleTrimCancel = () => {
+    setShowVideoTrimmer(false);
+    setVideoToTrim(null);
   };
 
   return (
@@ -185,6 +214,18 @@ export default function CreatePost() {
                       alt={`Selected ${index + 1}`}
                       className="w-full h-32 sm:h-40 object-cover rounded-xl border border-gray-700/50 transition-transform duration-200 group-hover:scale-[1.02]"
                     />
+                  ) : file.type.startsWith('video/') ? (
+                    <div className="relative">
+                      <VideoPreview videoFile={file} className="w-full h-32 sm:h-40" />
+                      <Button
+                        onClick={() => handleTrimVideo(file)}
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
+                      >
+                        <Scissors className="w-4 h-4" />
+                      </Button>
+                    </div>
                   ) : (
                     <div className="w-full h-32 sm:h-40 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 flex items-center justify-center transition-transform duration-200 group-hover:scale-[1.02]">
                       <span className="text-gray-400 text-sm font-medium px-4 text-center">{file.name}</span>
@@ -205,6 +246,15 @@ export default function CreatePost() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Video Trimmer Modal */}
+        {showVideoTrimmer && videoToTrim && (
+          <VideoTrimmer
+            videoFile={videoToTrim}
+            onTrimComplete={handleTrimComplete}
+            onCancel={handleTrimCancel}
+          />
         )}
 
         {/* Bottom Section */}

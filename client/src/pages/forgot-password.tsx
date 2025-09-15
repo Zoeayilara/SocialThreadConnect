@@ -30,18 +30,23 @@ export default function ForgotPassword() {
 
   const forgotPasswordMutation = useMutation({
     mutationFn: async (data: ForgotPasswordForm) => {
-      return await apiRequest("POST", "/api/forgot-password", data);
+      console.log('Making forgot password request:', data);
+      const result = await apiRequest("POST", "/api/forgot-password", data);
+      console.log('Forgot password response:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Success callback triggered with data:', data);
       toast({
-        title: "Email Sent",
-        description: "Check your email for password reset instructions.",
+        title: "Code Generated",
+        description: data.developmentOtp ? `Your OTP: ${data.developmentOtp}` : "Check your email for password reset instructions.",
       });
       // Store email in localStorage for OTP verification
       localStorage.setItem('resetEmail', form.getValues('email'));
       setLocation("/verify-otp");
     },
     onError: (error) => {
+      console.error('Error callback triggered:', error);
       toast({
         title: "Error",
         description: error.message,

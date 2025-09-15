@@ -15,6 +15,22 @@ import { db, sqlite } from "./db";
 import { sql } from "drizzle-orm";
 import reportsRouter from './routes/reports';
 
+// Validation schemas for forgot password flow
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+const verifyOtpSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().min(6, "OTP must be 6 digits").max(6, "OTP must be 6 digits"),
+});
+
+const resetPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().min(6, "OTP must be 6 digits").max(6, "OTP must be 6 digits"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
 // Extend Express Request type to include userId
 declare global {
   namespace Express {
@@ -469,28 +485,6 @@ const profileUpload = multer({
   }
 });
 
-// Validation schemas
-
-const forgotPasswordSchema = z.object({
-  email: z.string().email("Invalid email address"),
-});
-
-const verifyOtpSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  otp: z.string().length(6, "OTP must be 6 digits"),
-});
-
-const resetPasswordSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  otp: z.string().length(6, "OTP must be 6 digits"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
-
-
 const createCommentSchema = z.object({
   postId: z.number(),
   content: z.string().min(1, "Comment content is required"),
@@ -517,29 +511,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Profile picture upload route - MUST be before body parser middleware
-  app.post('/api/upload-profile-picture', profileUpload.single('profilePicture'), async (req: any, res) => {
+  app.post('/api/upload-profile-picture', isAuthenticated, profileUpload.single('profilePicture'), async (req: any, res) => {
     try {
-      // Use session-based authentication only
-      let userId: number | null = null;
-      
-      if (req.session && req.session.userId) {
-        userId = req.session.userId;
-      }
-      
-      // For temp users during registration, get from request body
-      if (!userId && req.body && req.body.tempUserId) {
-        userId = parseInt(req.body.tempUserId);
-      }
+      const userId = req.userId as number;
       
       console.log('Upload request received, user ID:', userId);
       console.log('File received:', req.file ? req.file.originalname : 'No file');
       
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
-      }
-
-      if (!userId) {
-        return res.status(401).json({ message: "User not authenticated" });
       }
       
       // Only allow images for profile pictures
@@ -559,9 +539,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       fs.writeFileSync(filePath, req.file.buffer);
       
-      const profileImageUrl = `/uploads/${fileName}`;
+      const profileImageUrl = `${getBaseUrl()}/uploads/${fileName}`;
       
-      // Store relative URL in database, let frontend handle base URL
+      // Store full URL in database for production compatibility
       await storage.updateUser(userId, { profileImageUrl: profileImageUrl });
 
       res.json({ profileImageUrl: profileImageUrl });
@@ -804,41 +784,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Forgot password routes
   app.post('/api/forgot-password', async (req, res) => {
+    console.log("=== FORGOT PASSWORD REQUEST RECEIVED ===");
+    console.log("Request body:", req.body);
+    
     try {
       const { email } = forgotPasswordSchema.parse(req.body);
+      console.log("Parsed email:", email);
       
       // Check if user exists
       const user = await storage.getUserByEmail(email);
+      console.log("User found:", !!user);
+      
       if (!user) {
+        console.log("User not found, returning 404");
         return res.status(404).json({ message: "No account found with this email address" });
       }
       
       // Generate 6-digit OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = Math.floor((Date.now() + 10 * 60 * 1000) / 1000); // 10 minutes from now as Unix timestamp
+      console.log("Generated OTP:", otp);
 
       // Save OTP to database
       await storage.createOtp({ email, code: otp, expiresAt });
+      console.log("OTP saved to database");
       
       // Send OTP email
+      console.log("Attempting to send OTP email for user:", email);
       const emailSent = await emailService.sendOtpEmail(email, otp, user.firstName || undefined);
       
+      console.log("Email send result:", emailSent);
+      
       if (!emailSent) {
-        console.log("Email service not configured, but OTP saved to database:", otp);
-        // For development: still allow the flow to continue even if email fails
-        return res.json({ 
-          message: "OTP generated successfully", 
-          developmentOtp: process.env.NODE_ENV === 'development' ? otp : undefined 
-        });
+        console.log("Email failed, but OTP saved to database. OTP:", otp);
+        const response = { 
+          message: "OTP generated successfully. Check server logs for the code.", 
+          developmentOtp: otp // Always return OTP for debugging
+        };
+        console.log("Sending response:", response);
+        return res.json(response);
       }
 
-      res.json({ message: "OTP sent to your email" });
+      const successResponse = { message: "OTP sent to your email" };
+      console.log("Sending success response:", successResponse);
+      res.json(successResponse);
     } catch (error) {
+      console.log("=== ERROR IN FORGOT PASSWORD ===");
+      console.error("Error details:", error);
+      
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
+        const errorResponse = { message: "Validation error", errors: error.errors };
+        console.log("Sending validation error response:", errorResponse);
+        return res.status(400).json(errorResponse);
       }
-      console.error("Forgot password error:", error);
-      res.status(500).json({ message: "Failed to send OTP" });
+      
+      const errorResponse = { message: "Failed to send OTP" };
+      console.log("Sending server error response:", errorResponse);
+      res.status(500).json(errorResponse);
     }
   });
 
@@ -1045,23 +1047,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/posts/:id/like', isAuthenticated, async (req: any, res) => {
+  // Search users
+  app.get('/api/users/search', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.userId;
-      const postId = parseInt(req.params.id);
-
-      const isLiked = await storage.isPostLiked(userId, postId);
-      
-      if (isLiked) {
-        await storage.unlikePost(userId, postId);
-        res.json({ liked: false });
-      } else {
-        await storage.likePost(userId, postId);
-        res.json({ liked: true });
+      const { q } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.json([]);
       }
+
+      const searchTerm = `%${q.toLowerCase()}%`;
+      const users = sqlite.prepare(`
+        SELECT id, first_name, last_name, email, profile_image_url, is_verified
+        FROM users 
+        WHERE (LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(email) LIKE ?)
+        AND user_type != 'admin'
+        LIMIT 10
+      `).all(searchTerm, searchTerm, searchTerm);
+
+      res.json(users);
     } catch (error) {
-      console.error("Error toggling like:", error);
-      res.status(500).json({ message: "Failed to toggle like" });
+      console.error('Search error:', error);
+      res.status(500).json({ message: 'Search failed' });
+    }
+  });
+
+  // Comprehensive search endpoint
+  app.get('/api/search', isAuthenticated, async (req: any, res) => {
+    try {
+      const { q, type = 'all' } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.json({ users: [], posts: [] });
+      }
+
+      const searchTerm = `%${q.toLowerCase()}%`;
+      const results: any = {};
+
+      // Search users
+      if (type === 'all' || type === 'users') {
+        const users = sqlite.prepare(`
+          SELECT id, first_name, last_name, email, profile_image_url, is_verified
+          FROM users 
+          WHERE (LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(email) LIKE ?)
+          AND user_type != 'admin'
+          LIMIT 10
+        `).all(searchTerm, searchTerm, searchTerm);
+        results.users = users;
+      }
+
+      // Search posts
+      if (type === 'all' || type === 'posts') {
+        const posts = sqlite.prepare(`
+          SELECT p.*, 
+                 u.first_name, u.last_name, u.email, u.profile_image_url, u.is_verified,
+                 COUNT(DISTINCT l.id) as likesCount,
+                 COUNT(DISTINCT c.id) as commentsCount,
+                 COUNT(DISTINCT r.id) as repostsCount
+          FROM posts p
+          JOIN users u ON p.userId = u.id
+          LEFT JOIN likes l ON p.id = l.postId
+          LEFT JOIN comments c ON p.id = c.postId
+          LEFT JOIN reposts r ON p.id = r.postId
+          WHERE LOWER(p.content) LIKE ?
+          GROUP BY p.id
+          ORDER BY p.createdAt DESC
+          LIMIT 20
+        `).all(searchTerm);
+
+        // Format posts with user data
+        const formattedPosts = posts.map((post: any) => ({
+          id: post.id,
+          content: post.content,
+          imageUrl: post.imageUrl ? post.imageUrl.replace('http://localhost:5000', getBaseUrl()) : null,
+          mediaUrl: post.mediaUrl ? post.mediaUrl.replace('http://localhost:5000', getBaseUrl()) : null,
+          mediaType: post.mediaType,
+          createdAt: post.createdAt,
+          likesCount: post.likesCount || 0,
+          commentsCount: post.commentsCount || 0,
+          repostsCount: post.repostsCount || 0,
+          user: {
+            id: post.userId,
+            firstName: post.first_name,
+            lastName: post.last_name,
+            email: post.email,
+            profileImageUrl: post.profile_image_url ? post.profile_image_url.replace('http://localhost:5000', getBaseUrl()) : null,
+            isVerified: post.is_verified
+          }
+        }));
+        results.posts = formattedPosts;
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error('Comprehensive search error:', error);
+      res.status(500).json({ message: 'Search failed' });
     }
   });
 
@@ -1586,20 +1664,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get admin dashboard stats
   app.get('/api/admin/stats', isAuthenticated, isAdmin, async (req, res) => {
     try {
+      console.log('📊 Fetching admin stats...');
+      
       const totalUsers = sqlite.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
+      console.log('Total users:', totalUsers);
+      
       const verifiedUsers = sqlite.prepare('SELECT COUNT(*) as count FROM users WHERE is_verified = 1').get() as { count: number };
+      console.log('Verified users:', verifiedUsers);
+      
       const totalPosts = sqlite.prepare('SELECT COUNT(*) as count FROM posts').get() as { count: number };
+      console.log('Total posts:', totalPosts);
+      
       const totalComments = sqlite.prepare('SELECT COUNT(*) as count FROM comments').get() as { count: number };
-      const pendingReports = sqlite.prepare('SELECT COUNT(*) as count FROM reports WHERE status = ?').get('pending') as { count: number };
+      console.log('Total comments:', totalComments);
+      
+      // Check if reports table exists first
+      let pendingReports = { count: 0 };
+      try {
+        pendingReports = sqlite.prepare('SELECT COUNT(*) as count FROM reports WHERE status = ?').get('pending') as { count: number };
+        console.log('Pending reports:', pendingReports);
+      } catch (reportsError) {
+        console.log('Reports table not found, defaulting to 0');
+      }
 
-      res.json({
+      const stats = {
         totalUsers: totalUsers.count,
         verifiedUsers: verifiedUsers.count,
         unverifiedUsers: totalUsers.count - verifiedUsers.count,
         totalPosts: totalPosts.count,
         totalComments: totalComments.count,
         pendingReports: pendingReports.count
-      });
+      };
+      
+      console.log('📊 Admin stats response:', stats);
+      res.json(stats);
     } catch (error) {
       console.error("Error fetching admin stats:", error);
       res.status(500).json({ message: "Failed to fetch admin stats" });
@@ -1801,23 +1899,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send a new message
-  app.post('/api/messages', isAuthenticated, upload.single('media'), async (req: any, res) => {
+  app.post('/api/messages', isAuthenticated, upload.array('media', 10), async (req: any, res) => {
     try {
       const senderId = req.userId as number;
       const { recipientId, content } = req.body;
-      const mediaFile = req.file;
+      const mediaFiles = req.files as Express.Multer.File[];
       
       if (!recipientId) {
         return res.status(400).json({ message: 'Recipient ID is required' });
       }
       
-      if (!content?.trim() && !mediaFile) {
+      if (!content?.trim() && (!mediaFiles || mediaFiles.length === 0)) {
         return res.status(400).json({ message: 'Either message content or media file is required' });
       }
       
       let mediaUrl: string | null = null;
       
-      if (mediaFile) {
+      if (mediaFiles && mediaFiles.length > 0) {
+        // For now, handle only the first file (can be extended later)
+        const mediaFile = mediaFiles[0];
+        
         // Save media file
         const fileExtension = path.extname(mediaFile.originalname);
         const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
@@ -1832,7 +1933,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Move file to uploads directory
         fs.writeFileSync(filePath, mediaFile.buffer);
         
-        mediaUrl = `/uploads/${fileName}`;
+        mediaUrl = `${getBaseUrl()}/uploads/${fileName}`;
       }
       
       const imageUrl = mediaUrl;

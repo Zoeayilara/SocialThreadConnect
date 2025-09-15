@@ -25,11 +25,20 @@ const createTransporter = () => {
 };
 
 
-const isAdmin = (req: any, res: any, next: any) => {
-  if (req.session?.userType !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' });
+const isAdmin = async (req: any, res: any, next: any) => {
+  try {
+    const userId = req.userId;
+    const db = (req as any).db || require('../db').sqlite;
+    const user = db.prepare('SELECT user_type FROM users WHERE id = ?').get(userId);
+    
+    if (!user || user.user_type !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
+  } catch (error) {
+    console.error('Admin check error:', error);
+    res.status(500).json({ error: 'Admin verification failed' });
   }
-  next();
 };
 
 // Report a post
@@ -47,11 +56,11 @@ router.post('/posts/:postId', isAuthenticated, async (req, res) => {
     // Use SQLite database from request
     const db = (req as any).db || require('../db').sqlite;
     
-    const userQuery = `SELECT firstName, lastName, email FROM users WHERE id = ?`;
+    const userQuery = `SELECT first_name as firstName, last_name as lastName, email FROM users WHERE id = ?`;
     const postQuery = `
-      SELECT p.content, p.created_at, u.firstName, u.lastName, u.email as author_email 
+      SELECT p.content, p.createdAt as created_at, u.first_name as firstName, u.last_name as lastName, u.email as author_email 
       FROM posts p 
-      JOIN users u ON p.user_id = u.id 
+      JOIN users u ON p.userId = u.id 
       WHERE p.id = ?
     `;
 

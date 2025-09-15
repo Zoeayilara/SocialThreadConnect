@@ -1,27 +1,27 @@
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Heart, MessageCircle, MoreHorizontal, Flag, Send, X, Search, Edit3, Trash2, Shield } from 'lucide-react';
-import { VerificationBadge } from '@/components/VerificationBadge';
-import Profile from "./profile";
-import Messages from "./messages";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { FoxLogo } from "@/components/FoxLogo";
-import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { useState } from "react";
-import { useLocation } from "wouter";
-import { formatRelativeTime } from "@/utils/dateUtils";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Textarea } from "@/components/ui/textarea";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
+import { Heart, MessageCircle, MoreHorizontal, MessageSquare, Shield, Search, Edit3, X, Trash2, Flag, Send } from "lucide-react";
+import { FoxLogo } from "@/components/FoxLogo";
+import { formatRelativeTime } from "@/utils/dateUtils";
+import { authenticatedFetch, getImageUrl } from "@/utils/api";
+import { User } from "@/components/User";
+import { VideoPlayer } from "@/components/VideoPlayer";
 import { SavePostMenuItem } from '@/components/SavePostMenuItem';
 import ReportDialog from '@/components/ReportDialog';
-import { authenticatedFetch, getImageUrl } from '../utils/api';
+import { VerificationBadge } from '@/components/VerificationBadge';
+import { useLocation } from "wouter";
 
 interface Post {
   id: number;
@@ -95,7 +95,7 @@ export default function CustomerDashboard() {
   const [showReplies, setShowReplies] = useState<Set<number>>(new Set());
   const [editingPost, setEditingPost] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
-  const [showMessages] = useState(false);
+  const [showMessageSquare] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [carouselIndex, setCarouselIndex] = useState<{[postId: number]: number}>({});
@@ -103,7 +103,7 @@ export default function CustomerDashboard() {
   const [reportPostId, setReportPostId] = useState<number | null>(null);
   const [viewingUserId, setViewingUserId] = useState<number | undefined>(undefined);
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [showProfile, setShowProfile] = useState(false);
+  const [showUser, setShowUser] = useState(false);
 
 
   // Show loading spinner only during logout
@@ -146,22 +146,41 @@ export default function CustomerDashboard() {
 
 
   const likeMutation = useMutation({
-    mutationFn: async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
-      const response = await authenticatedFetch(`/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
+    mutationFn: async ({ postId }: { postId: number }) => {
+      const response = await authenticatedFetch(`/api/posts/${postId}/like`, {
         method: 'POST',
       });
       if (!response.ok) throw new Error('Failed to update like');
       return response.json();
     },
-    onSuccess: (_, variables) => {
-      // Update the specific post in place without reordering
-      queryClient.setQueryData(['/api/posts'], (oldPosts: any[] = []) => {
-        return oldPosts.map(post => 
-          post.id === variables.postId 
-            ? { ...post, isLiked: !variables.isLiked, likesCount: variables.isLiked ? post.likesCount - 1 : post.likesCount + 1 }
-            : post
-        );
+    onMutate: async ({ postId }) => {
+      await queryClient.cancelQueries({ queryKey: ['/api/posts'] });
+      const previousPosts = queryClient.getQueryData(['/api/posts']);
+      
+      queryClient.setQueryData(['/api/posts'], (old: any) => {
+        if (!old) return old;
+        return old.map((post: any) => {
+          if (post.id === postId) {
+            const currentlyLiked = !!post.isLiked;
+            return {
+              ...post,
+              isLiked: !currentlyLiked,
+              likesCount: Math.max(0, currentlyLiked ? post.likesCount - 1 : post.likesCount + 1)
+            };
+          }
+          return post;
+        });
       });
+      
+      return { previousPosts };
+    },
+    onError: (_, __, context) => {
+      if (context?.previousPosts) {
+        queryClient.setQueryData(['/api/posts'], context.previousPosts);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
     },
   });
 
@@ -281,7 +300,7 @@ export default function CustomerDashboard() {
 
 
   const handleLike = (post: Post) => {
-    likeMutation.mutate({ postId: post.id, isLiked: !!post.isLiked });
+    likeMutation.mutate({ postId: post.id });
   };
 
   const handleComment = async (postId: number, parentId?: number) => {
@@ -387,7 +406,7 @@ export default function CustomerDashboard() {
 
   const [, setLocation] = useLocation();
 
-  const handleProfileClick = (userId?: number) => {
+  const handleUserClick = (userId?: number) => {
     if (userId) {
       setLocation(`/profile/${userId}`);
     } else {
@@ -397,19 +416,19 @@ export default function CustomerDashboard() {
 
   // Remove loading spinner for posts - let content load naturally
 
-  if (showProfile) {
-    return <Profile 
+  if (showUser) {
+    return <User 
       userId={viewingUserId}
       onBack={() => {
-        setShowProfile(false);
+        setShowUser(false);
         setViewingUserId(undefined);
         localStorage.setItem('currentPage', 'dashboard');
       }} 
     />;
   }
 
-  if (showMessages) {
-    return <Messages />;
+  if (showMessageSquare) {
+    return <MessageSquare />;
   }
 
   return (
@@ -436,7 +455,7 @@ export default function CustomerDashboard() {
             <Button variant="ghost" size="sm" onClick={() => setShowSearch(!showSearch)} className="text-gray-400 hover:text-white">
               <Search className="w-5 h-5" />
             </Button>
-            <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleProfileClick()}>
+            <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleUserClick()}>
               <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
               <AvatarFallback className="bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
             </Avatar>
@@ -471,7 +490,7 @@ export default function CustomerDashboard() {
                       <Avatar 
                         className="w-10 h-10 cursor-pointer"
                         onClick={() => {
-                          handleProfileClick(searchUser.id);
+                          handleUserClick(searchUser.id);
                           setShowSearch(false);
                         }}
                       >
@@ -481,7 +500,7 @@ export default function CustomerDashboard() {
                       <div 
                         className="flex-1 cursor-pointer"
                         onClick={() => {
-                          handleProfileClick(searchUser.id);
+                          handleUserClick(searchUser.id);
                           setShowSearch(false);
                         }}
                       >
@@ -547,7 +566,7 @@ export default function CustomerDashboard() {
             <CardHeader className="pb-2 px-0">
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3">
-                  <Avatar className="w-10 h-10 cursor-pointer" onClick={() => handleProfileClick(post.user.id)}>
+                  <Avatar className="w-10 h-10 cursor-pointer" onClick={() => handleUserClick(post.user.id)}>
                     <AvatarImage src={getImageUrl(post.user.profileImageUrl)} />
                     <AvatarFallback className="bg-gray-700 text-white">{post.user.firstName?.[0]}{post.user.lastName?.[0]}</AvatarFallback>
                   </Avatar>
@@ -672,7 +691,7 @@ export default function CustomerDashboard() {
                               <CarouselItem key={idx} className="pr-2">
                                 <div className="relative w-full max-h-[500px] overflow-hidden rounded-2xl bg-black">
                                   {url.match(/\.(mp4|mov|webm)$/i) ? (
-                                    <video src={url} controls playsInline className="w-full h-auto max-h-[500px] object-contain" />
+                                    <VideoPlayer src={url} className="w-full h-auto max-h-[500px] object-contain" />
                                   ) : (
                                     <img 
                                       src={url} 
@@ -699,7 +718,7 @@ export default function CustomerDashboard() {
                     return (
                       <div className="relative w-full max-h-[500px] mb-4 overflow-hidden rounded-2xl bg-black">
                         {only.match(/\.(mp4|mov|webm)$/i) ? (
-                          <video src={only} controls playsInline className="w-full h-auto max-h-[500px] object-contain" />
+                          <VideoPlayer src={only} className="w-full h-auto max-h-[500px] object-contain" />
                         ) : (
                           <img 
                             src={only} 
@@ -716,7 +735,7 @@ export default function CustomerDashboard() {
                 return (
                   <div className="relative w-full max-h-[500px] mb-4 overflow-hidden rounded-2xl bg-black">
                     {val.match(/\.(mp4|mov|webm)$/i) ? (
-                      <video src={val} controls playsInline className="w-full h-auto max-h-[500px] object-contain" />
+                      <VideoPlayer src={val} className="w-full h-auto max-h-[500px] object-contain" />
                     ) : (
                       <img 
                         src={val} 
@@ -748,7 +767,7 @@ export default function CustomerDashboard() {
               {showComments === post.id && (
                 <div className="mt-4 pt-4 border-t border-gray-800 space-y-4">
                   <div className="flex space-x-2">
-                    <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleProfileClick(user?.id)}>
+                    <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleUserClick(user?.id)}>
                       <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
                       <AvatarFallback className="text-xs bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                     </Avatar>
@@ -769,7 +788,7 @@ export default function CustomerDashboard() {
                   {comments.map((comment: Comment) => (
                     <div key={comment.id} className="space-y-2">
                       <div className="flex space-x-2">
-                        <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleProfileClick(comment.user.id)}>
+                        <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleUserClick(comment.user.id)}>
                           <AvatarImage src={getImageUrl(comment.user.profileImageUrl)} />
                           <AvatarFallback className="bg-gray-700 text-white">{comment.user.firstName?.[0]}{comment.user.lastName?.[0]}</AvatarFallback>
                         </Avatar>
@@ -834,7 +853,7 @@ export default function CustomerDashboard() {
                           {comment.replies.map((reply: Comment) => (
                             <div key={reply.id} className="space-y-2">
                               <div className="flex space-x-2">
-                                <Avatar className="w-6 h-6 cursor-pointer" onClick={() => handleProfileClick(reply.user.id)}>
+                                <Avatar className="w-6 h-6 cursor-pointer" onClick={() => handleUserClick(reply.user.id)}>
                                   <AvatarImage src={getImageUrl(reply.user.profileImageUrl)} />
                                   <AvatarFallback className="bg-gray-700 text-white text-xs">{reply.user.firstName?.[0]}{reply.user.lastName?.[0]}</AvatarFallback>
                                 </Avatar>
@@ -909,10 +928,10 @@ export default function CustomerDashboard() {
       <div className="fixed bottom-0 left-0 right-0 border-t bg-black/95 backdrop-blur-sm border-gray-800 shadow-2xl">
         <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-3 flex items-center justify-between">
           <Button variant="ghost" size="icon" className="text-white h-14 w-14 hover:bg-gray-800/50 transition-all duration-200"><span className="sr-only">Home</span><svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg></Button>
-          <Button variant="ghost" size="icon" onClick={() => window.location.href = '/messages'} className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200"><span className="sr-only">Messages</span><svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></Button>
+          <Button variant="ghost" size="icon" onClick={() => window.location.href = '/messages'} className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200"><span className="sr-only">MessageSquare</span><svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></Button>
           <Button variant="ghost" size="icon" className="bg-blue-600 hover:bg-blue-700 rounded-full h-16 w-16 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105" onClick={() => document.getElementById('post-media')?.click()}><span className="sr-only">Create</span><svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></svg></Button>
           <Button variant="ghost" size="icon" className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200" onClick={() => window.location.href = '/activity'}><span className="sr-only">Activity</span><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></Button>
-          <Button variant="ghost" size="icon" className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200" onClick={() => handleProfileClick()}><span className="sr-only">Profile</span><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M6 20a6 6 0 0 1 12 0"/></svg></Button>
+          <Button variant="ghost" size="icon" className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200" onClick={() => handleUserClick()}><span className="sr-only">User</span><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M6 20a6 6 0 0 1 12 0"/></svg></Button>
         </div>
       </div>
 

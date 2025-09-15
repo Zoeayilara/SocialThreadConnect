@@ -1,23 +1,24 @@
 import React from 'react';
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Heart, MessageCircle, MoreHorizontal, Flag, Send, X, Edit3, Trash2, ArrowLeft, Plus, Camera, Edit, Repeat2, Share } from 'lucide-react';
-import { VerificationBadge } from '@/components/VerificationBadge';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { FoxLogo } from "@/components/FoxLogo";
 import { useState } from "react";
-import { useLocation } from "wouter";
-import { formatRelativeTime } from "@/utils/dateUtils";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { Heart, MessageCircle, Share, MoreHorizontal, Send, Edit, Trash2, Flag, Camera, X, ArrowLeft, Plus, Edit3, Repeat2 } from "lucide-react";
+import { FoxLogo } from "@/components/FoxLogo";
+import { formatRelativeTime } from "@/utils/dateUtils";
+import { authenticatedFetch, getImageUrl } from "@/utils/api";
+import { VideoPlayer } from "@/components/VideoPlayer";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { VerificationBadge } from '@/components/VerificationBadge';
 import { SavePostMenuItem } from "@/components/SavePostMenuItem";
-import { authenticatedFetch, getImageUrl } from '../utils/api';
+import { useLocation } from "wouter";
 
 interface Post {
   id: number;
@@ -274,17 +275,41 @@ export default function Profile({ onBack, userId }: ProfileProps) {
 
   // Like post mutation
   const likeMutation = useMutation({
-    mutationFn: async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
-      const response = await authenticatedFetch(`/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
+    mutationFn: async ({ postId }: { postId: number }) => {
+      const response = await authenticatedFetch(`/api/posts/${postId}/like`, {
         method: 'POST',
       });
       if (!response.ok) throw new Error('Failed to update like');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userPosts', profileUserId] });
-      queryClient.invalidateQueries({ queryKey: ['userReposts', profileUserId] });
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    onMutate: async ({ postId }) => {
+      await queryClient.cancelQueries({ queryKey: ['/api/posts'] });
+      const previousPosts = queryClient.getQueryData(['/api/posts']);
+      
+      queryClient.setQueryData(['/api/posts'], (old: any) => {
+        if (!old) return old;
+        return old.map((post: any) => {
+          if (post.id === postId) {
+            const currentlyLiked = !!post.isLiked;
+            return {
+              ...post,
+              isLiked: !currentlyLiked,
+              likesCount: Math.max(0, currentlyLiked ? post.likesCount - 1 : post.likesCount + 1)
+            };
+          }
+          return post;
+        });
+      });
+      
+      return { previousPosts };
+    },
+    onError: (_, __, context) => {
+      if (context?.previousPosts) {
+        queryClient.setQueryData(['/api/posts'], context.previousPosts);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
     },
   });
 
@@ -467,7 +492,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   };
 
   const handleLike = (post: Post) => {
-    likeMutation.mutate({ postId: post.id, isLiked: post.isLiked });
+    likeMutation.mutate({ postId: post.id });
   };
 
   const handleSavePost = (postId: number) => {
@@ -1254,7 +1279,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                         <CarouselItem key={idx} className="pr-2">
                                           <div className="relative w-full max-h-[500px] overflow-hidden rounded-2xl bg-black">
                                             {url.match(/\.(mp4|mov|webm)$/i) ? (
-                                              <video src={url} controls playsInline className="w-full h-auto max-h-[500px] object-contain" />
+                                              <VideoPlayer src={url} className="w-full h-auto max-h-[500px] object-contain" />
                                             ) : (
                                               <img 
                                                 src={url} 
@@ -1281,7 +1306,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                             return (
                               <div className="relative w-full max-h-[500px] mb-4 overflow-hidden rounded-2xl bg-black">
                                 {val.match(/\.(mp4|mov|webm)$/i) ? (
-                                  <video src={val} controls playsInline className="w-full h-auto max-h-[500px] object-contain" />
+                                  <VideoPlayer src={val} className="w-full h-auto max-h-[500px] object-contain" />
                                 ) : (
                                   <img 
                                     src={val} 
@@ -1601,11 +1626,15 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setEditProfileData({...editProfileData, isPrivate: !editProfileData.isPrivate})}
+                      onClick={() => {
+                        const newPrivateState = !editProfileData.isPrivate;
+                        setEditProfileData({...editProfileData, isPrivate: newPrivateState});
+                        console.log('Private account toggled:', newPrivateState);
+                      }}
                       className="p-0"
                     >
-                      <div className={`w-12 h-6 rounded-full p-1 transition-colors ${editProfileData.isPrivate ? 'bg-white' : 'bg-gray-600'}`}>
-                        <div className={`w-4 h-4 rounded-full bg-black transition-transform ${editProfileData.isPrivate ? 'translate-x-6' : 'translate-x-0'}`} />
+                      <div className={`w-12 h-6 rounded-full p-1 transition-colors ${editProfileData.isPrivate ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                        <div className={`w-4 h-4 rounded-full transition-transform ${editProfileData.isPrivate ? 'bg-white translate-x-6' : 'bg-gray-300 translate-x-0'}`} />
                       </div>
                     </Button>
                   </div>

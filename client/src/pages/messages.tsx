@@ -145,49 +145,27 @@ export default function Messages({ directUserId }: MessagesProps) {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async ({ recipientId, content, files }: { recipientId: number; content?: string; files?: File[] }) => {
-      // Send multiple messages if there are multiple files
-      if (files && files.length > 0) {
-        const promises = files.map(async (file) => {
-          const formData = new FormData();
-          formData.append('recipientId', recipientId.toString());
-          formData.append('media', file);
-          
-          const response = await authenticatedFetch('/api/messages', {
-            method: 'POST',
-            body: formData,
-          });
-          if (!response.ok) throw new Error('Failed to send message');
-          return response.json();
-        });
-        
-        // Send text message separately if there's content
-        if (content) {
-          const textFormData = new FormData();
-          textFormData.append('recipientId', recipientId.toString());
-          textFormData.append('content', content);
-          
-          const textResponse = await authenticatedFetch('/api/messages', {
-            method: 'POST',
-            body: textFormData,
-          });
-          if (!textResponse.ok) throw new Error('Failed to send text message');
-          promises.push(textResponse.json());
-        }
-        
-        return Promise.all(promises);
-      } else {
-        // Single message with just text
-        const formData = new FormData();
-        formData.append('recipientId', recipientId.toString());
-        if (content) formData.append('content', content);
-
-        const response = await authenticatedFetch('/api/messages', {
-          method: 'POST',
-          body: formData,
-        });
-        if (!response.ok) throw new Error('Failed to send message');
-        return response.json();
+      const formData = new FormData();
+      formData.append('recipientId', recipientId.toString());
+      
+      if (content && content.trim()) {
+        formData.append('content', content.trim());
       }
+      
+      // Append all files to a single request
+      if (files && files.length > 0) {
+        files.forEach((file, index) => {
+          formData.append(`media_${index}`, file);
+        });
+      }
+
+      const response = await authenticatedFetch('/api/messages', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) throw new Error('Failed to send message');
+      return response.json();
     },
     onSuccess: () => {
       setMessageText("");

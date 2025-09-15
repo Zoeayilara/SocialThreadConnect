@@ -332,11 +332,11 @@ export class DatabaseStorage implements IStorage {
       .delete(likes)
       .where(and(eq(likes.userId, userId), eq(likes.postId, postId)));
     
-    // Update likes count
+    // Update likes count with constraint to prevent negative values
     await db
       .update(posts)
       .set({
-        likesCount: sql`${posts.likesCount} - 1`,
+        likesCount: sql`CASE WHEN ${posts.likesCount} > 0 THEN ${posts.likesCount} - 1 ELSE 0 END`,
       })
       .where(eq(posts.id, postId));
   }

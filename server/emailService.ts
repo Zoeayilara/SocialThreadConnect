@@ -14,6 +14,11 @@ class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
+    // Delay transporter creation to ensure env vars are loaded
+    this.initializeTransporter();
+  }
+
+  private initializeTransporter() {
     // Use environment variables for email configuration
     const emailConfig: EmailConfig = {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -25,9 +30,18 @@ class EmailService {
       },
     };
 
+    console.log('Email service initialization:', {
+      host: emailConfig.host,
+      port: emailConfig.port,
+      secure: emailConfig.secure,
+      hasUser: !!emailConfig.auth.user,
+      hasPass: !!emailConfig.auth.pass,
+    });
+
     // Only create transporter if credentials are available
     if (emailConfig.auth.user && emailConfig.auth.pass) {
       this.transporter = nodemailer.createTransport(emailConfig);
+      console.log('Email transporter created successfully');
     } else {
       console.warn('Email credentials not configured. Email functionality will be disabled.');
       this.transporter = null as any;
@@ -36,6 +50,20 @@ class EmailService {
 
   async sendOtpEmail(email: string, otp: string, firstName?: string): Promise<boolean> {
     try {
+      // Check if transporter is available
+      if (!this.transporter) {
+        console.error('Email transporter not initialized - missing SMTP credentials');
+        return false;
+      }
+
+      console.log('Attempting to send OTP email to:', email);
+      console.log('SMTP Config:', {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        user: process.env.SMTP_USER ? '***configured***' : 'missing',
+        pass: process.env.SMTP_PASS ? '***configured***' : 'missing'
+      });
+
       const mailOptions = {
         from: process.env.FROM_EMAIL || 'noreply@entreefox.com',
         to: email,
@@ -60,10 +88,16 @@ class EmailService {
         `,
       };
 
-      await this.transporter.sendMail(mailOptions);
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('Email sent successfully:', result.messageId);
       return true;
     } catch (error) {
       console.error('Error sending OTP email:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        command: error.command
+      });
       return false;
     }
   }

@@ -3,9 +3,9 @@
  */
 
 /**
- * Formats a timestamp for display with full date and time
+ * Formats a timestamp for display as relative time (e.g., "2hr ago", "3min ago")
  * @param timestamp - Unix timestamp in seconds or milliseconds, or ISO string
- * @returns Formatted date and time string
+ * @returns Formatted relative time string
  */
 export function formatRelativeTime(timestamp: number | string): string {
   let date: Date;
@@ -20,13 +20,38 @@ export function formatRelativeTime(timestamp: number | string): string {
     date = new Date(msTimestamp);
   }
   
-  return date.toLocaleString('en-US', {
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) {
+    return diffInSeconds <= 0 ? 'now' : `${diffInSeconds}s ago`;
+  }
+  
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes}min ago`;
+  }
+  
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `${diffInHours}hr ago`;
+  }
+  
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) {
+    return `${diffInDays}d ago`;
+  }
+  
+  const diffInWeeks = Math.floor(diffInDays / 7);
+  if (diffInWeeks < 4) {
+    return `${diffInWeeks}w ago`;
+  }
+  
+  // For older posts, show the actual date
+  return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
   });
 }
 
@@ -54,7 +79,7 @@ export function formatDate(timestamp: number | string): string {
 }
 
 /**
- * Formats a timestamp for display with full date and time
+ * Formats a timestamp for display with full date and time in 24-hour format
  * @param timestamp - Unix timestamp in seconds or milliseconds, or ISO string
  * @returns Formatted date and time string
  */
@@ -69,13 +94,13 @@ export function formatDateTime(timestamp: number | string): string {
     date = new Date(msTimestamp);
   }
   
-  return date.toLocaleString('en-US', {
+  return date.toLocaleString('en-GB', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-    hour: 'numeric',
+    hour: '2-digit',
     minute: '2-digit',
-    hour12: true
+    hour12: false
   });
 }
 
