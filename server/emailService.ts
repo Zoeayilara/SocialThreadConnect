@@ -274,9 +274,10 @@ class EmailService {
         return true; // Return true so the flow continues
       }
 
-      // Send email via Resend API
+      // Send email via Resend API 
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
       const emailData = {
-        from: 'EntreeFox <noreply@entreefox.com>',
+        from: `EntreeFox <${fromEmail}>`,
         to: [email],
         subject: type === 'otp' ? 'EntreeFox - Password Reset OTP' : 'EntreeFox - Password Changed',
         html: type === 'otp' ? this.getOtpEmailHtml(otp, firstName) : this.getPasswordChangeHtml(firstName)
