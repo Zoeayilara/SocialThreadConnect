@@ -786,6 +786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/forgot-password', async (req, res) => {
     console.log("=== FORGOT PASSWORD REQUEST RECEIVED ===");
     console.log("Request body:", req.body);
+    console.log("Headers:", req.headers);
     
     try {
       const { email } = forgotPasswordSchema.parse(req.body);
@@ -809,25 +810,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createOtp({ email, code: otp, expiresAt });
       console.log("OTP saved to database");
       
-      // Send OTP email
+      // Send OTP email with timeout handling
       console.log("Attempting to send OTP email for user:", email);
-      const emailSent = await emailService.sendOtpEmail(email, otp, user.firstName || undefined);
       
-      console.log("Email send result:", emailSent);
-      
-      if (!emailSent) {
-        console.log("Email failed, but OTP saved to database. OTP:", otp);
+      try {
+        const emailSent = await Promise.race([
+          emailService.sendOtpEmail(email, otp, user.firstName || undefined),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Email service timeout')), 35000)
+          )
+        ]);
+        
+        console.log("Email send result:", emailSent);
+        
+        if (!emailSent) {
+          console.log("Email failed, but OTP saved to database. OTP:", otp);
+          const response = { 
+            message: "OTP generated successfully. Email service unavailable - check server logs for the code.", 
+            developmentOtp: otp // Always return OTP for debugging
+          };
+          console.log("Sending response:", response);
+          return res.json(response);
+        }
+
+        const successResponse = { message: "OTP sent to your email" };
+        console.log("Sending success response:", successResponse);
+        res.json(successResponse);
+      } catch (emailError) {
+        console.error("Email service error or timeout:", emailError);
+        console.log("Email failed due to timeout/error, but OTP saved to database. OTP:", otp);
         const response = { 
-          message: "OTP generated successfully. Check server logs for the code.", 
+          message: "OTP generated successfully. Email service timeout - check server logs for the code.", 
           developmentOtp: otp // Always return OTP for debugging
         };
         console.log("Sending response:", response);
         return res.json(response);
       }
-
-      const successResponse = { message: "OTP sent to your email" };
-      console.log("Sending success response:", successResponse);
-      res.json(successResponse);
     } catch (error) {
       console.log("=== ERROR IN FORGOT PASSWORD ===");
       console.error("Error details:", error);
