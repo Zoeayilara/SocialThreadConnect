@@ -31,6 +31,11 @@ const resetPasswordSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
 // Extend Express Request type to include userId
 declare global {
   namespace Express {
@@ -684,12 +689,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Login route
   app.post('/api/login', async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password } = loginSchema.parse(req.body);
+      console.log('🔐 Login attempt for:', email);
+      console.log('🔍 Provided password:', password);
       
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      // Check if user exists first
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        console.log('👤 User found in database:', existingUser.id);
+        console.log('🔑 Stored password:', existingUser.password);
+        console.log('🔍 Password match:', existingUser.password === password);
+      } else {
+        console.log('❌ User not found in database for email:', email);
       }
-
+      
       const user = await loginUser(email, password);
       
       // Generate JWT token
@@ -900,7 +913,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user password (if user exists) - use plain text to match system
       const user = await storage.getUserByEmail(email);
       if (user) {
+        console.log('🔄 Updating password for user:', user.id, 'email:', email);
         await storage.updateUser(user.id, { password: password });
+        console.log('✅ Password updated successfully for user:', user.id);
+        
+        // Verify the password was saved correctly
+        const updatedUser = await storage.getUserByEmail(email);
+        console.log('🔍 Password verification - saved password matches:', updatedUser?.password === password);
+      } else {
+        console.error('❌ User not found for password reset:', email);
       }
 
       // Send password change notification (don't block on email)
