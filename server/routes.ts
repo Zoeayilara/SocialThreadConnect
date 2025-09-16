@@ -1189,6 +1189,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Like/Unlike toggle route
+  app.post('/api/posts/:id/like', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId;
+      const postId = parseInt(req.params.id);
+      
+      // Check if already liked
+      const isLiked = await storage.isPostLiked(userId, postId);
+      
+      if (isLiked) {
+        await storage.unlikePost(userId, postId);
+        console.log(`👎 User ${userId} unliked post ${postId}`);
+        res.json({ liked: false });
+      } else {
+        await storage.likePost(userId, postId);
+        console.log(`👍 User ${userId} liked post ${postId}`);
+        res.json({ liked: true });
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      res.status(500).json({ message: "Failed to toggle like" });
+    }
+  });
+
   // Explicit unlike route (to support clients calling /unlike directly)
   app.post('/api/posts/:id/unlike', isAuthenticated, async (req: any, res) => {
     try {

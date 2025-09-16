@@ -154,9 +154,13 @@ export default function CustomerDashboard() {
       return response.json();
     },
     onMutate: async ({ postId }) => {
+      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['/api/posts'] });
+      
+      // Snapshot the previous value
       const previousPosts = queryClient.getQueryData(['/api/posts']);
       
+      // Optimistically update to the new value
       queryClient.setQueryData(['/api/posts'], (old: any) => {
         if (!old) return old;
         return old.map((post: any) => {
@@ -165,7 +169,7 @@ export default function CustomerDashboard() {
             return {
               ...post,
               isLiked: !currentlyLiked,
-              likesCount: Math.max(0, currentlyLiked ? post.likesCount - 1 : post.likesCount + 1)
+              likesCount: Math.max(0, currentlyLiked ? (post.likesCount || 0) - 1 : (post.likesCount || 0) + 1)
             };
           }
           return post;
@@ -175,13 +179,28 @@ export default function CustomerDashboard() {
       return { previousPosts };
     },
     onError: (_, __, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
       if (context?.previousPosts) {
         queryClient.setQueryData(['/api/posts'], context.previousPosts);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+    onSuccess: (data, { postId }) => {
+      // Update with server response to ensure consistency
+      queryClient.setQueryData(['/api/posts'], (old: any) => {
+        if (!old) return old;
+        return old.map((post: any) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              isLiked: data.liked,
+              // Don't update likesCount here as optimistic update should be correct
+            };
+          }
+          return post;
+        });
+      });
     },
+    // Remove onSettled to prevent unnecessary refetching
   });
 
   const commentMutation = useMutation({
