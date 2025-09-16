@@ -5,6 +5,8 @@ import Database from 'better-sqlite3';
 import * as schema from "@shared/schema";
 import session from 'express-session';
 import SqliteStore from 'better-sqlite3-session-store';
+import { mkdirSync } from 'fs';
+import { dirname } from 'path';
 
 // Debug logging
 console.log('Environment variables loaded:', {
@@ -19,9 +21,31 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Extract the file path from the DATABASE_URL
-const dbPath = process.env.DATABASE_URL.replace('file:', '');
+// Configure persistent database path
+const isProduction = process.env.NODE_ENV === 'production';
+const isRailway = process.env.RAILWAY_ENVIRONMENT_NAME;
+
+let dbPath: string;
+if (isProduction && isRailway) {
+  // Use persistent volume path on Railway
+  dbPath = '/app/data/database.db';
+  console.log('🚂 Railway production: Using persistent storage at', dbPath);
+} else {
+  // Extract the file path from the DATABASE_URL for local development
+  dbPath = process.env.DATABASE_URL.replace('file:', '');
+  console.log('🏠 Local development: Using', dbPath);
+}
+
+// Ensure the directory exists
+try {
+  mkdirSync(dirname(dbPath), { recursive: true });
+  console.log('📁 Database directory ensured:', dirname(dbPath));
+} catch (error) {
+  console.log('📁 Database directory already exists or created');
+}
+
 export const sqlite = new Database(dbPath);
+console.log('✅ SQLite database initialized at:', dbPath);
 
 // Create saved_posts table if it doesn't exist
 sqlite.exec(`
