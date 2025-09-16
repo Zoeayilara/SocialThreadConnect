@@ -23,7 +23,7 @@ class EmailService {
     const emailConfig: EmailConfig = {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
+      secure: false, // Use STARTTLS instead of SSL
       auth: {
         user: process.env.SMTP_USER || process.env.EMAIL_USER || '',
         pass: process.env.SMTP_PASS || process.env.EMAIL_PASS || '',
@@ -40,7 +40,19 @@ class EmailService {
 
     // Only create transporter if credentials are available
     if (emailConfig.auth.user && emailConfig.auth.pass) {
-      this.transporter = nodemailer.createTransport(emailConfig);
+      this.transporter = nodemailer.createTransport({
+        ...emailConfig,
+        requireTLS: true, // Force TLS for Gmail
+        tls: {
+          rejectUnauthorized: false // Allow self-signed certificates in production
+        },
+        connectionTimeout: 60000, // 60 seconds - Gmail needs time
+        greetingTimeout: 30000, // 30 seconds
+        socketTimeout: 60000, // 60 seconds
+        pool: true,
+        maxConnections: 5,
+        maxMessages: 100
+      });
       console.log('Email transporter created successfully');
     } else {
       console.warn('Email credentials not configured. Email functionality will be disabled.');
@@ -60,9 +72,19 @@ class EmailService {
       console.log('SMTP Config:', {
         host: process.env.SMTP_HOST,
         port: process.env.SMTP_PORT,
+        secure: process.env.SMTP_SECURE,
         user: process.env.SMTP_USER ? '***configured***' : 'missing',
         pass: process.env.SMTP_PASS ? '***configured***' : 'missing'
       });
+
+      // Test transporter connection before sending
+      try {
+        await this.transporter.verify();
+        console.log('✅ SMTP connection verified successfully');
+      } catch (verifyError) {
+        console.error('❌ SMTP connection verification failed:', verifyError);
+        return false;
+      }
 
       const mailOptions = {
         from: process.env.FROM_EMAIL || 'noreply@entreefox.com',
@@ -88,10 +110,10 @@ class EmailService {
         `,
       };
 
-      // Add timeout to prevent hanging
+      // Send email with reasonable timeout for Gmail
       const emailPromise = this.transporter.sendMail(mailOptions);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Email send timeout after 30 seconds')), 30000)
+        setTimeout(() => reject(new Error('Email send timeout after 45 seconds')), 45000)
       );
 
       const result = await Promise.race([emailPromise, timeoutPromise]);
@@ -110,6 +132,12 @@ class EmailService {
 
   async sendPasswordChangeNotification(email: string, firstName?: string): Promise<boolean> {
     try {
+      // Check if transporter is available
+      if (!this.transporter) {
+        console.error('Email transporter not initialized - missing SMTP credentials');
+        return false;
+      }
+
       const mailOptions = {
         from: process.env.FROM_EMAIL || 'noreply@entreefox.com',
         to: email,
@@ -133,7 +161,13 @@ class EmailService {
         `,
       };
 
-      await this.transporter.sendMail(mailOptions);
+      // Add timeout to prevent hanging
+      const emailPromise = this.transporter.sendMail(mailOptions);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Password change notification timeout after 10 seconds')), 10000)
+      );
+
+      await Promise.race([emailPromise, timeoutPromise]);
       return true;
     } catch (error) {
       console.error('Error sending password change notification:', error);

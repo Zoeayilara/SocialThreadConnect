@@ -83,10 +83,14 @@ export function isAuthenticated(req: any, res: any, next: any) {
   console.log('Session ID:', req.sessionID);
   console.log('Session exists:', !!req.session);
   console.log('User ID from session:', req.session?.userId);
+  console.log('Full session data:', JSON.stringify(req.session, null, 2));
   
-  if (req.session && req.session.userId) {
-    console.log('✅ Session Authentication successful - User ID:', req.session.userId);
-    req.userId = req.session.userId; // For backward compatibility
+  // Check both userId and user.id for compatibility
+  const sessionUserId = req.session?.userId || (req.session as any)?.user?.id;
+  
+  if (req.session && sessionUserId) {
+    console.log('✅ Session Authentication successful - User ID:', sessionUserId);
+    req.userId = sessionUserId; // For backward compatibility
     return next();
   }
   

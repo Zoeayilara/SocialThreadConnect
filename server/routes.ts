@@ -817,7 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const emailSent = await Promise.race([
           emailService.sendOtpEmail(email, otp, user.firstName || undefined),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Email service timeout')), 35000)
+            setTimeout(() => reject(new Error('Email service timeout')), 50000)
           )
         ]);
         
@@ -897,17 +897,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Mark OTP as used
       await storage.markOtpAsUsed(validOtp.id);
 
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Update user password (if user exists)
+      // Update user password (if user exists) - use plain text to match system
       const user = await storage.getUserByEmail(email);
       if (user) {
-        await storage.updateUser(user.id, { password: hashedPassword });
+        await storage.updateUser(user.id, { password: password });
       }
 
-      // Send password change notification
-      await emailService.sendPasswordChangeNotification(email, user?.firstName || undefined);
+      // Send password change notification (don't block on email)
+      try {
+        await Promise.race([
+          emailService.sendPasswordChangeNotification(email, user?.firstName || undefined),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Email notification timeout')), 10000)
+          )
+        ]);
+      } catch (emailError) {
+        console.error("Password change notification failed:", emailError);
+        // Don't fail the password reset if email fails
+      }
 
       res.json({ message: "Password reset successfully" });
     } catch (error) {
