@@ -26,7 +26,7 @@ interface ActivityItem {
 }
 
 export default function Activity({ onBack }: ActivityProps) {
-  const [activeTab, setActiveTab] = useState<'all' | 'follows' | 'conversations' | 'reposts'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'follows' | 'reposts'>('all');
   const queryClient = useQueryClient();
 
   const { data: activities = [] } = useQuery<ActivityItem[]>({
@@ -55,8 +55,7 @@ export default function Activity({ onBack }: ActivityProps) {
   const tabs = [
     { key: 'all', label: 'All' },
     { key: 'follows', label: 'Follows' },
-    { key: 'conversations', label: 'Conversations' },
-    { key: 'reposts', label: 'Reposts' }
+    { key: 'reposts', label: 'Posts' }
   ];
 
   const getUserDisplayName = (activity: ActivityItem) => 

@@ -795,10 +795,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user already exists
+      console.log('🔍 Checking if email exists:', email);
       const existingUser = await storage.getUserByEmail(email);
+      console.log('🔍 Existing user found:', existingUser ? 'YES' : 'NO');
+      
       if (existingUser) {
+        console.log('❌ Registration blocked - active account exists with email:', email);
         return res.status(400).json({ message: "User with this email already exists" });
       }
+      
+      console.log('✅ Email available for registration:', email);
 
       // Split name into first and last name
       const nameParts = name.trim().split(' ');
@@ -1283,29 +1289,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search users
-  app.get('/api/users/search', isAuthenticated, async (req: any, res) => {
-    try {
-      const { q } = req.query;
-      if (!q || typeof q !== 'string') {
-        return res.json([]);
-      }
-
-      const searchTerm = `%${q.toLowerCase()}%`;
-      const users = sqlite.prepare(`
-        SELECT id, first_name, last_name, email, profile_image_url, is_verified
-        FROM users 
-        WHERE (LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(email) LIKE ?)
-        AND user_type != 'admin'
-        LIMIT 10
-      `).all(searchTerm, searchTerm, searchTerm);
-
-      res.json(users);
-    } catch (error) {
-      console.error('Search error:', error);
-      res.status(500).json({ message: 'Search failed' });
-    }
-  });
 
   // Comprehensive search endpoint
   app.get('/api/search', isAuthenticated, async (req: any, res) => {
@@ -1506,8 +1489,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/users/search', isAuthenticated, async (req, res) => {
     try {
       const q = ((req.query.q as string) || '').trim().toLowerCase();
+      console.log('🔍 User search request - Query:', q);
       if (!q) return res.json([]);
       const currentUserId = req.userId as number;
+      console.log('🔍 User search request - Current user ID:', currentUserId);
       
       // naive search in sqlite using LIKE via drizzle
       const results = await db

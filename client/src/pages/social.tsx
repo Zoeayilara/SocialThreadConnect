@@ -298,7 +298,7 @@ export default function Social() {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => window.location.href = user?.userType === 'vendor' ? '/vendor-dashboard' : '/customer-dashboard'}
+              onClick={() => setLocation(user?.userType === 'vendor' ? '/vendor-dashboard' : '/customer-dashboard')}
             >
               Dashboard
             </Button>
