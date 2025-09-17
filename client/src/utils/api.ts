@@ -8,6 +8,8 @@ const getAuthToken = () => {
 // Make authenticated API calls with JWT token
 export const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
   const token = getAuthToken();
+  console.log('🔍 Frontend authenticatedFetch - Token:', token ? 'EXISTS' : 'MISSING');
+  console.log('🔍 Frontend authenticatedFetch - URL:', url);
   
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
@@ -22,6 +24,9 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
   // Add Authorization header if token exists
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    console.log('🔍 Frontend authenticatedFetch - Authorization header set');
+  } else {
+    console.log('❌ Frontend authenticatedFetch - No token, no Authorization header');
   }
   
   const response = await fetch(`${API_URL}${url}`, {

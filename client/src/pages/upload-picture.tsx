@@ -6,7 +6,7 @@ import { Camera } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { authenticatedFetch } from "@/lib/authenticatedFetch";
+import { authenticatedFetch } from "@/utils/api";
 
 export default function UploadPicture() {
   const [, setLocation] = useLocation();

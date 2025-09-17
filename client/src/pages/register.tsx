@@ -60,7 +60,11 @@ export default function Register() {
       
       // Store JWT token if provided
       if (result.token) {
+        console.log('🔑 Frontend - Storing JWT token from registration');
         localStorage.setItem('authToken', result.token);
+        console.log('🔑 Frontend - Token stored, verifying:', localStorage.getItem('authToken') ? 'SUCCESS' : 'FAILED');
+      } else {
+        console.log('❌ Frontend - No token received from registration');
       }
       
       // Store temporary data for use in subsequent pages

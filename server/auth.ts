@@ -56,30 +56,33 @@ export function generateUserToken(user: any): string {
   return generateToken(payload);
 }
 
-export function isAuthenticated(req: any, res: any, next: any) {
+export const isAuthenticated = (req: any, res: any, next: any) => {
   console.log('=== AUTH CHECK START ===');
   console.log('Request URL:', req.url);
   console.log('Request method:', req.method);
-  
-  // Try JWT token first
-  const authHeader = req.headers.authorization;
-  console.log('Authorization header:', authHeader);
-  
-  if (authHeader) {
-    const token = extractTokenFromHeader(authHeader);
-    if (token) {
+  console.log('Authorization header:', req.headers.authorization);
+
+  // First try JWT authentication
+  const token = extractTokenFromHeader(req.headers.authorization);
+  if (token) {
+    try {
       const payload = verifyToken(token);
-      if (payload) {
+      if (payload && payload.userId) {
+        req.userId = payload.userId;
         console.log('✅ JWT Authentication successful - User ID:', payload.userId);
-        req.user = payload; // Store user info in request
-        req.userId = payload.userId; // For backward compatibility
+        console.log('=== AUTH CHECK END ===');
         return next();
+      } else {
+        console.log('❌ JWT payload invalid or missing userId');
       }
+    } catch (error) {
+      console.log('❌ JWT verification failed:', error);
     }
+  } else {
+    console.log('JWT failed, trying session auth...');
   }
-  
+
   // Fallback to session-based auth for backward compatibility
-  console.log('JWT failed, trying session auth...');
   console.log('Session ID:', req.sessionID);
   console.log('Session exists:', !!req.session);
   console.log('User ID from session:', req.session?.userId);
