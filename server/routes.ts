@@ -77,6 +77,17 @@ async function runMigrations() {
     
     // 0) Bootstrap: Ensure base tables exist before altering columns
     try {
+      // sessions (CRITICAL for authentication/login)
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS sessions (
+          sid TEXT PRIMARY KEY,
+          sess TEXT NOT NULL,
+          expire INTEGER NOT NULL
+        )
+      `);
+      sqlite.exec(`CREATE INDEX IF NOT EXISTS IDX_session_expire ON sessions(expire)`);
+      console.log('✅ Ensured sessions table');
+      
       // users
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS users (
@@ -100,64 +111,103 @@ async function runMigrations() {
       `);
       console.log('✅ Ensured users table');
       
-      // posts
+      // posts (fixed column names to match schema)
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS posts (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          userId INTEGER NOT NULL,
-          content TEXT,
+          user_id INTEGER NOT NULL,
+          content TEXT NOT NULL,
           image_url TEXT,
           media_url TEXT,
           media_type TEXT,
-          likesCount INTEGER DEFAULT 0,
-          commentsCount INTEGER DEFAULT 0,
-          repostsCount INTEGER DEFAULT 0,
-          createdAt INTEGER,
-          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+          likes_count INTEGER DEFAULT 0,
+          comments_count INTEGER DEFAULT 0,
+          reposts_count INTEGER DEFAULT 0,
+          created_at INTEGER,
+          updated_at INTEGER,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `);
       console.log('✅ Ensured posts table');
       
-      // comments
+      // comments (fixed column names to match schema)
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS comments (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          userId INTEGER NOT NULL,
-          postId INTEGER NOT NULL,
+          user_id INTEGER NOT NULL,
+          post_id INTEGER NOT NULL,
           content TEXT NOT NULL,
           parent_id INTEGER,
           replies_count INTEGER DEFAULT 0,
           created_at INTEGER,
-          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
-          FOREIGN KEY (postId) REFERENCES posts(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
           FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
         )
       `);
       console.log('✅ Ensured comments table');
       
-      // likes
+      // likes (fixed column names to match schema)
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS likes (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          userId INTEGER NOT NULL,
-          postId INTEGER NOT NULL,
-          createdAt INTEGER,
-          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
-          FOREIGN KEY (postId) REFERENCES posts(id) ON DELETE CASCADE
+          user_id INTEGER NOT NULL,
+          post_id INTEGER NOT NULL,
+          created_at INTEGER,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
         )
       `);
       console.log('✅ Ensured likes table');
       
-      // otps
+      // reposts (was missing!)
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS reposts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          post_id INTEGER NOT NULL,
+          created_at INTEGER,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('✅ Ensured reposts table');
+      
+      // follows (was missing!)
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS follows (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          follower_id INTEGER NOT NULL,
+          following_id INTEGER NOT NULL,
+          created_at INTEGER,
+          FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('✅ Ensured follows table');
+      
+      // saved_posts (was missing!)
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS saved_posts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          post_id INTEGER NOT NULL,
+          created_at INTEGER,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('✅ Ensured saved_posts table');
+      
+      // otps (fixed to match schema)
       sqlite.exec(`
         CREATE TABLE IF NOT EXISTS otps (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          userId INTEGER,
-          email TEXT,
-          otp TEXT NOT NULL,
-          expiresAt INTEGER,
-          createdAt INTEGER,
-          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+          email TEXT NOT NULL,
+          code TEXT NOT NULL,
+          expires_at INTEGER NOT NULL,
+          is_used INTEGER DEFAULT 0,
+          created_at INTEGER
         )
       `);
       console.log('✅ Ensured otps table');
@@ -176,6 +226,26 @@ async function runMigrations() {
         )
       `);
       console.log('✅ Ensured messages table');
+      
+      // reports (was missing!)
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS reports (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          post_id INTEGER NOT NULL,
+          reporter_id INTEGER NOT NULL,
+          reason TEXT NOT NULL,
+          description TEXT,
+          status TEXT DEFAULT 'pending',
+          created_at TEXT DEFAULT (datetime('now')),
+          reviewed_at TEXT,
+          reviewed_by INTEGER,
+          admin_notes TEXT,
+          FOREIGN KEY (post_id) REFERENCES posts(id),
+          FOREIGN KEY (reporter_id) REFERENCES users(id),
+          FOREIGN KEY (reviewed_by) REFERENCES users(id)
+        )
+      `);
+      console.log('✅ Ensured reports table');
     } catch (e: any) {
       console.error('❌ Error ensuring base tables:', e.message);
     }
