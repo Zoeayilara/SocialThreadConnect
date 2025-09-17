@@ -235,7 +235,12 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const getUserDisplayName = (u: any) => 
     (u?.firstName && u?.lastName) ? `${u.firstName} ${u.lastName}` : u?.email?.split('@')[0] || '';
 
-  const getUserHandle = (u: any) => u?.university || u?.email?.split('@')[0] || '';
+  const getUserHandle = (u: any) => {
+    console.log('🔍 Profile user data:', u);
+    console.log('🔍 University field:', u?.university);
+    console.log('🔍 Email field:', u?.email);
+    return u?.university || u?.email?.split('@')[0] || '';
+  };
 
   // Create post mutation
   const createPostMutation = useMutation({

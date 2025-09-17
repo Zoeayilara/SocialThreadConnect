@@ -775,6 +775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.userId; // Use req.userId instead of req.session.userId
       const user = await storage.getUserById(userId);
       console.log('🔍 Fetched user data for ID', userId, ':', JSON.stringify(user, null, 2));
+      console.log('🔍 User university field:', user?.university);
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -812,6 +813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         university, 
         userType 
       });
+      console.log('📝 University field value:', university);
 
       // Create user
       const user = await storage.createUser({
