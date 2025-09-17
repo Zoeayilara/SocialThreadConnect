@@ -154,8 +154,8 @@ export default function Messages({ directUserId }: MessagesProps) {
       
       // Append all files to a single request
       if (files && files.length > 0) {
-        files.forEach((file, index) => {
-          formData.append(`media_${index}`, file);
+        files.forEach((file) => {
+          formData.append('media', file);
         });
       }
 

@@ -2163,6 +2163,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { recipientId, content } = req.body;
       const mediaFiles = req.files as Express.Multer.File[];
       
+      console.log('💬 Message request - Sender:', senderId, 'Recipient:', recipientId);
+      console.log('💬 Message content:', content);
+      console.log('💬 Media files count:', mediaFiles?.length || 0);
+      
       if (!recipientId) {
         return res.status(400).json({ message: 'Recipient ID is required' });
       }
@@ -2216,8 +2220,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `).get(result.lastInsertRowid);
       
       res.json(newMessage);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
+      
+      // Handle Multer errors specifically
+      if (error.code === 'UNEXPECTED_FIELD') {
+        return res.status(400).json({ 
+          message: 'Invalid file field name. Expected "media"',
+          error: error.message 
+        });
+      }
+      
       res.status(500).json({ message: 'Failed to send message' });
     }
   });
