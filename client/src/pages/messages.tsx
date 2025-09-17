@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { authenticatedFetch, getImageUrl } from '../utils/api';
+import { authenticatedFetch, getImageUrl } from "@/utils/api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -457,21 +457,25 @@ export default function Messages({ directUserId }: MessagesProps) {
                             <div className="mt-3 space-y-3">
                               {messageFiles.map((fileUrl: string, index: number) => {
                                 const isVideo = fileUrl.match(/\.(mp4|webm|ogg)$/i);
+                                const finalUrl = getImageUrl(fileUrl);
+                                console.log('💬 Message media - Original URL:', fileUrl);
+                                console.log('💬 Message media - Final URL:', finalUrl);
+                                console.log('💬 Message media - Is video:', isVideo);
                                 return (
                                   <div key={index} className="relative group/media">
                                     {isVideo ? (
                                       <video 
-                                        src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${fileUrl}`} 
+                                        src={getImageUrl(fileUrl)} 
                                         controls 
                                         className="max-w-full h-auto rounded-2xl cursor-pointer shadow-lg group-hover/media:shadow-xl transition-all duration-200"
-                                        onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${fileUrl}`, '_blank')}
+                                        onClick={() => window.open(getImageUrl(fileUrl), '_blank')}
                                       />
                                     ) : (
                                       <img 
-                                        src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${fileUrl}`} 
+                                        src={getImageUrl(fileUrl)} 
                                         alt="Shared media" 
                                         className="max-w-full h-auto rounded-2xl cursor-pointer hover:opacity-90 transition-all duration-200 shadow-lg group-hover/media:shadow-xl group-hover/media:scale-[1.02]"
-                                        onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${fileUrl}`, '_blank')}
+                                        onClick={() => window.open(getImageUrl(fileUrl), '_blank')}
                                       />
                                     )}
                                   </div>

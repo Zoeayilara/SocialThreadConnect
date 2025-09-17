@@ -1643,14 +1643,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/users/profile', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.userId as number;
-      const { firstName, lastName, bio, link, universityHandle, isPrivate } = req.body;
+      const { firstName, lastName, bio, link, university, isPrivate } = req.body;
       
       await storage.updateUserProfile(userId, {
         firstName,
         lastName,
         bio,
         link,
-        universityHandle,
+        university,
         isPrivate
       });
       
@@ -2149,6 +2149,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY m.createdAt ASC
       `).all(currentUserId, otherUserId, otherUserId, currentUserId);
       
+      console.log('💬 Fetched messages count:', messages.length);
+      messages.forEach((msg: any, index: number) => {
+        if (msg.imageUrl) {
+          console.log(`💬 Message ${index + 1} media URL:`, msg.imageUrl);
+        }
+      });
+      
       res.json(messages);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -2196,6 +2203,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fs.writeFileSync(filePath, mediaFile.buffer);
         
         mediaUrl = `${getBaseUrl()}/uploads/${fileName}`;
+        console.log('💬 Media file saved:', fileName);
+        console.log('💬 Media URL generated:', mediaUrl);
       }
       
       const imageUrl = mediaUrl;

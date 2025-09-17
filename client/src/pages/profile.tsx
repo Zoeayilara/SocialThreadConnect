@@ -97,7 +97,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
     lastName: '',
     bio: '',
     link: '',
-    universityHandle: '',
+    university: '',
     isPrivate: false
   });
   const [profileImageKey, setProfileImageKey] = useState(0);
@@ -152,7 +152,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
         lastName: profileUser.lastName || '',
         bio: profileUser.bio || '',
         link: profileUser.link || '',
-        universityHandle: profileUser.universityHandle || '',
+        university: profileUser.university || '',
         isPrivate: !!profileUser.isPrivate
       });
     }
@@ -235,7 +235,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const getUserDisplayName = (u: any) => 
     (u?.firstName && u?.lastName) ? `${u.firstName} ${u.lastName}` : u?.email?.split('@')[0] || '';
 
-  const getUserHandle = (u: any) => u?.universityHandle || u?.email?.split('@')[0] || '';
+  const getUserHandle = (u: any) => u?.university || u?.email?.split('@')[0] || '';
 
   // Create post mutation
   const createPostMutation = useMutation({
@@ -408,7 +408,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: async (profileData: { firstName: string; lastName: string; bio?: string; link?: string; universityHandle?: string; isPrivate?: boolean }) => {
+    mutationFn: async (profileData: { firstName: string; lastName: string; bio?: string; link?: string; university?: string; isPrivate?: boolean }) => {
       const response = await authenticatedFetch('/api/users/profile', {
         method: 'PUT',
         body: JSON.stringify(profileData),
@@ -1509,7 +1509,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       {/* Edit Profile Modal */}
       {showEditProfile && (
         <div className="fixed inset-0 bg-black z-50 flex items-start justify-center">
-          <div className="bg-black w-full max-w-md min-h-screen">
+          <div className="bg-black w-full max-w-md min-h-screen overflow-y-auto">
             {/* Header */}
             <div className="p-4 flex items-center justify-between border-b border-gray-800">
               <div className="flex items-center space-x-4">
@@ -1587,16 +1587,16 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                   />
                 </div>
 
-                {/* University Handle Section */}
+                {/* University Section */}
                 <div className="border-t border-gray-800 pt-4">
-                  <div className="text-white font-medium mb-2">University Handle</div>
-                  <div className="flex items-center space-x-2">
+                  <div className="text-white font-medium mb-2">University</div>
+                  <div className="flex items-center space-x-1">
                     <span className="text-gray-400">@</span>
                     <input
                       type="text"
-                      value={editProfileData.universityHandle || ''}
-                      onChange={(e) => setEditProfileData({...editProfileData, universityHandle: e.target.value})}
-                      placeholder="Enter university handle"
+                      value={editProfileData.university || ''}
+                      onChange={(e) => setEditProfileData({...editProfileData, university: e.target.value})}
+                      placeholder="Enter university name"
                       className="bg-transparent text-gray-300 text-sm outline-none flex-1"
                     />
                   </div>
