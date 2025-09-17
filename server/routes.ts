@@ -75,6 +75,111 @@ async function runMigrations() {
   try {
     console.log('Running database migrations...');
     
+    // 0) Bootstrap: Ensure base tables exist before altering columns
+    try {
+      // users
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT UNIQUE NOT NULL,
+          password TEXT NOT NULL,
+          first_name TEXT,
+          last_name TEXT,
+          phone TEXT,
+          university TEXT,
+          user_type TEXT,
+          is_verified INTEGER DEFAULT 0,
+          profile_image_url TEXT,
+          bio TEXT,
+          link TEXT,
+          is_private INTEGER DEFAULT 0,
+          university_handle TEXT,
+          created_at INTEGER,
+          updated_at INTEGER
+        )
+      `);
+      console.log('✅ Ensured users table');
+      
+      // posts
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS posts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER NOT NULL,
+          content TEXT,
+          image_url TEXT,
+          media_url TEXT,
+          media_type TEXT,
+          likesCount INTEGER DEFAULT 0,
+          commentsCount INTEGER DEFAULT 0,
+          repostsCount INTEGER DEFAULT 0,
+          createdAt INTEGER,
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('✅ Ensured posts table');
+      
+      // comments
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS comments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER NOT NULL,
+          postId INTEGER NOT NULL,
+          content TEXT NOT NULL,
+          parent_id INTEGER,
+          replies_count INTEGER DEFAULT 0,
+          created_at INTEGER,
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (postId) REFERENCES posts(id) ON DELETE CASCADE,
+          FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('✅ Ensured comments table');
+      
+      // likes
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS likes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER NOT NULL,
+          postId INTEGER NOT NULL,
+          createdAt INTEGER,
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (postId) REFERENCES posts(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('✅ Ensured likes table');
+      
+      // otps
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS otps (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER,
+          email TEXT,
+          otp TEXT NOT NULL,
+          expiresAt INTEGER,
+          createdAt INTEGER,
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('✅ Ensured otps table');
+      
+      // messages (kept compatible with existing code below)
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS messages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          senderId INTEGER NOT NULL,
+          recipientId INTEGER NOT NULL,
+          content TEXT,
+          imageUrl TEXT,
+          createdAt INTEGER DEFAULT (unixepoch('now')),
+          FOREIGN KEY (senderId) REFERENCES users(id),
+          FOREIGN KEY (recipientId) REFERENCES users(id)
+        )
+      `);
+      console.log('✅ Ensured messages table');
+    } catch (e: any) {
+      console.error('❌ Error ensuring base tables:', e.message);
+    }
+    
     // Check if columns exist by querying table info using the raw SQLite connection
     const tableInfo = sqlite.prepare('PRAGMA table_info(users)').all();
     const columnNames = tableInfo.map((col: any) => col.name);
