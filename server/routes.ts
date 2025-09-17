@@ -774,6 +774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.userId; // Use req.userId instead of req.session.userId
       const user = await storage.getUserById(userId);
+      console.log('🔍 Fetched user data for ID', userId, ':', JSON.stringify(user, null, 2));
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -803,6 +804,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const firstName = nameParts[0];
       const lastName = nameParts.slice(1).join(' ') || '';
 
+      console.log('📝 Creating user with data:', { 
+        firstName, 
+        lastName, 
+        email, 
+        phone, 
+        university, 
+        userType 
+      });
+
       // Create user
       const user = await storage.createUser({
         firstName,
@@ -819,6 +829,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPrivate: 0,
         isVerified: 0
       });
+
+      console.log('✅ User created successfully with ID:', user.id);
+      console.log('🔍 Created user details:', JSON.stringify(user, null, 2));
 
       // Generate JWT token for auto-login after registration
       const token = generateUserToken(user);
