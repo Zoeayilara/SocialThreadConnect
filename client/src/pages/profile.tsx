@@ -95,6 +95,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const [editProfileData, setEditProfileData] = useState({
     firstName: '',
     lastName: '',
+    fullName: '',
     bio: '',
     link: '',
     university: '',
@@ -150,6 +151,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       setEditProfileData({
         firstName: profileUser.firstName || '',
         lastName: profileUser.lastName || '',
+        fullName: `${profileUser.firstName || ''} ${profileUser.lastName || ''}`.trim(),
         bio: profileUser.bio || '',
         link: profileUser.link || '',
         university: profileUser.university || '',
@@ -1583,7 +1585,19 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                 <h3 className="text-xl font-semibold text-white">Edit profile</h3>
               </div>
               <Button 
-                onClick={() => updateProfileMutation.mutate(editProfileData)}
+                onClick={() => {
+                  // Split fullName before sending
+                  const fullName = editProfileData.fullName?.trim() || '';
+                  const spaceIndex = fullName.lastIndexOf(' ');
+                  
+                  const profileDataToSend = {
+                    ...editProfileData,
+                    firstName: spaceIndex === -1 ? fullName : fullName.substring(0, spaceIndex),
+                    lastName: spaceIndex === -1 ? '' : fullName.substring(spaceIndex + 1)
+                  };
+                  
+                  updateProfileMutation.mutate(profileDataToSend);
+                }}
                 disabled={updateProfileMutation.isPending}
                 className="text-gray-400 hover:text-white bg-transparent p-0 font-medium"
                 variant="ghost"
@@ -1603,27 +1617,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                       <div className="w-4 h-4 text-gray-500">🔒</div>
                       <input
                         type="text"
-                        value={`${editProfileData.firstName || ''} ${editProfileData.lastName || ''}`.trim()}
-                        onChange={(e) => {
-                          const fullName = e.target.value.trim();
-                          const spaceIndex = fullName.lastIndexOf(' ');
-                          
-                          if (spaceIndex === -1) {
-                            // Single name - put it in firstName
-                            setEditProfileData({
-                              ...editProfileData, 
-                              firstName: fullName,
-                              lastName: ''
-                            });
-                          } else {
-                            // Multiple names - split at last space
-                            setEditProfileData({
-                              ...editProfileData, 
-                              firstName: fullName.substring(0, spaceIndex),
-                              lastName: fullName.substring(spaceIndex + 1)
-                            });
-                          }
-                        }}
+                        value={editProfileData.fullName || ''}
+                        onChange={(e) => setEditProfileData({...editProfileData, fullName: e.target.value})}
                         className="bg-transparent text-gray-300 text-sm outline-none flex-1"
                         placeholder="Enter your name"
                       />
