@@ -14,13 +14,13 @@ import { useToast } from "@/hooks/use-toast";
 import { FoxLogo } from "@/components/FoxLogo";
 
 const registerSchema = z.object({
-  name: z.string().min(1, "Full name is required"),
+  name: z.string().min(1, "Name is required"),
   university: z.string().min(1, "University is required"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(1, "Phone number is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
-  userType: z.enum(["vendor", "customer"]),
+  userType: z.enum(["customer", "vendor"]),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -125,7 +125,7 @@ export default function Register() {
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
                       <Input 
-                        placeholder="Enter first name and last name" 
+                        placeholder="Enter your name" 
                         className="pl-12 h-14 rounded-2xl border-gray-300 bg-gray-50 text-gray-900 placeholder:text-gray-500"
                         {...field} 
                       />
@@ -145,7 +145,7 @@ export default function Register() {
                     <div className="relative">
                       <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
                       <Input 
-                        placeholder="Name of University" 
+                        placeholder="University name" 
                         className="pl-12 h-14 rounded-2xl border-gray-300 bg-gray-50 text-gray-900 placeholder:text-gray-500"
                         {...field} 
                       />

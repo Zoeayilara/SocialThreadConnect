@@ -1498,7 +1498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const results = await db
         .select()
         .from(users)
-        .where(sql`lower(${users.firstName}) like ${'%' + q + '%'} or lower(${users.lastName}) like ${'%' + q + '%'} or lower(${users.email}) like ${'%' + q + '%'}`)
+        .where(sql`lower(${users.firstName}) like ${'%' + q + '%'} or lower(${users.lastName}) like ${'%' + q + '%'} or lower(${users.email}) like ${'%' + q + '%'} or lower(${users.university}) like ${'%' + q + '%'}`)
         .limit(20);
       
       // Add follow status for each user
@@ -1510,6 +1510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             firstName: u.firstName,
             lastName: u.lastName,
             email: u.email,
+            university: u.university,
             profileImageUrl: u.profileImageUrl,
             isFollowing
           };
@@ -1837,9 +1838,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let params: any[] = [];
 
       if (search.trim()) {
-        query += ` WHERE lower(first_name) LIKE ? OR lower(last_name) LIKE ? OR lower(email) LIKE ?`;
+        query += ` WHERE lower(first_name) LIKE ? OR lower(last_name) LIKE ? OR lower(email) LIKE ? OR lower(university) LIKE ?`;
         const searchTerm = `%${search.toLowerCase()}%`;
-        params = [searchTerm, searchTerm, searchTerm];
+        params = [searchTerm, searchTerm, searchTerm, searchTerm];
       }
 
       query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
@@ -1852,9 +1853,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let countParams: any[] = [];
       
       if (search.trim()) {
-        countQuery += ` WHERE lower(first_name) LIKE ? OR lower(last_name) LIKE ? OR lower(email) LIKE ?`;
+        countQuery += ` WHERE lower(first_name) LIKE ? OR lower(last_name) LIKE ? OR lower(email) LIKE ? OR lower(university) LIKE ?`;
         const searchTerm = `%${search.toLowerCase()}%`;
-        countParams = [searchTerm, searchTerm, searchTerm];
+        countParams = [searchTerm, searchTerm, searchTerm, searchTerm];
       }
       
       const totalResult = sqlite.prepare(countQuery).get(...countParams) as { total: number };

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, MessageCircle, Repeat2, Share, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Repeat2, UserPlus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { formatRelativeTime } from '@/utils/dateUtils';
+import { useLocation } from 'wouter';
 import { authenticatedFetch } from '@/utils/api';
 
 
@@ -12,39 +13,27 @@ interface ActivityProps {
 }
 
 interface ActivityItem {
-  type: 'like' | 'comment' | 'repost';
+  type: 'like' | 'comment' | 'repost' | 'follow' | 'post';
   timestamp: number;
   user_id: number;
   first_name: string;
   last_name: string;
   profile_image_url?: string;
-  post_id: number;
-  post_content: string;
-  likes_count: number;
-  comments_count: number;
+  post_id?: number;
+  post_content?: string;
+  likes_count?: number;
+  comments_count?: number;
   reposts_count?: number;
 }
 
 export default function Activity({ onBack }: ActivityProps) {
-  const [activeTab, setActiveTab] = useState<'all' | 'follows' | 'reposts'>('all');
-  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<'all' | 'follows' | 'posts'>('all');
+  const [, setLocation] = useLocation();
 
   const { data: activities = [] } = useQuery<ActivityItem[]>({
     queryKey: ['activities', activeTab],
     queryFn: async () => {
-      const token = localStorage.getItem('authToken');
-      const headers: HeadersInit = {
-        'credentials': 'include',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await fetch(`/api/activities`, {
-        credentials: 'include',
-        headers,
-      });
+      const response = await authenticatedFetch(`/api/activities`);
       if (!response.ok) {
         throw new Error('Failed to fetch activities');
       }
@@ -55,19 +44,11 @@ export default function Activity({ onBack }: ActivityProps) {
   const tabs = [
     { key: 'all', label: 'All' },
     { key: 'follows', label: 'Follows' },
-    { key: 'reposts', label: 'Posts' }
+    { key: 'posts', label: 'Posts' }
   ];
 
   const getUserDisplayName = (activity: ActivityItem) => 
     `${activity.first_name} ${activity.last_name}` || 'User';
-
-  const formatNumber = (num: number) => {
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-    }
-    return num.toString();
-  };
-
 
   const getActivityText = (activity: ActivityItem) => {
     switch (activity.type) {
@@ -77,55 +58,35 @@ export default function Activity({ onBack }: ActivityProps) {
         return 'commented on your post';
       case 'repost':
         return 'reposted your post';
+      case 'follow':
+        return 'followed you';
+      case 'post':
+        return 'posted';
       default:
         return 'interacted with your post';
     }
   };
 
-  // Like mutation
-  const likeMutation = useMutation({
-    mutationFn: async ({ postId, isLiked }: { postId: number; isLiked: boolean }) => {
-      const response = await authenticatedFetch(`/api/posts/${postId}/${isLiked ? 'unlike' : 'like'}`, {
-        method: 'POST',
-      });
-      if (!response.ok) throw new Error('Failed to update like');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['activities'] });
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-    },
-    onError: (error) => {
-      console.error('Like mutation error:', error);
-    },
-  });
-
-  // Repost mutation
-  const repostMutation = useMutation({
-    mutationFn: async (postId: number) => {
-      const response = await authenticatedFetch(`/api/posts/${postId}/repost`, {
-        method: 'POST',
-      });
-      if (!response.ok) throw new Error('Failed to toggle repost');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['activities'] });
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-    },
-    onError: (error) => {
-      console.error('Repost mutation error:', error);
-    },
-  });
-
-  const handleLike = (activity: ActivityItem) => {
-    console.log('Like button clicked for post:', activity.post_id);
-    likeMutation.mutate({ postId: activity.post_id, isLiked: false }); // Assume not liked in activity
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'like':
+        return <Heart className="w-4 h-4 text-red-500" />;
+      case 'comment':
+        return <MessageCircle className="w-4 h-4 text-blue-500" />;
+      case 'repost':
+        return <Repeat2 className="w-4 h-4 text-green-500" />;
+      case 'follow':
+        return <UserPlus className="w-4 h-4 text-purple-500" />;
+      case 'post':
+        return <MessageCircle className="w-4 h-4 text-gray-500" />;
+      default:
+        return <Heart className="w-4 h-4 text-gray-500" />;
+    }
   };
 
-  const handleRepost = (postId: number) => {
-    console.log('Repost button clicked for post:', postId);
-    repostMutation.mutate(postId);
+  const handleActivityClick = (activity: ActivityItem) => {
+    // Navigate to the user's profile
+    setLocation(`/profile/${activity.user_id}`);
   };
 
   return (
@@ -166,7 +127,7 @@ export default function Activity({ onBack }: ActivityProps) {
         </div>
 
         {/* Activity Feed */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {activities.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-400">No recent activity</p>
@@ -174,66 +135,44 @@ export default function Activity({ onBack }: ActivityProps) {
             </div>
           ) : (
             activities.map((activity, index) => (
-              <div key={`${activity.user_id}-${activity.post_id}-${index}`} className="space-y-3">
-                <div className="flex items-start space-x-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={activity.profile_image_url} />
-                    <AvatarFallback className="bg-gray-700 text-white">
-                      {activity.first_name?.[0]}{activity.last_name?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-white font-medium">{getUserDisplayName(activity)}</p>
-                        <p className="text-gray-400 text-sm">{getActivityText(activity)}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-gray-500 text-sm">{formatRelativeTime(activity.timestamp)}</span>
-                        <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white p-1">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
+              <div 
+                key={`${activity.user_id}-${activity.post_id || 'follow'}-${index}`} 
+                onClick={() => handleActivityClick(activity)}
+                className="flex items-start space-x-3 p-4 rounded-lg hover:bg-gray-900/50 cursor-pointer transition-colors"
+              >
+                <Avatar className="w-12 h-12">
+                  <AvatarImage src={activity.profile_image_url} />
+                  <AvatarFallback className="bg-gray-700 text-white">
+                    {activity.first_name?.[0]}{activity.last_name?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-2 flex-1">
+                      {getActivityIcon(activity.type)}
+                      <div className="flex-1">
+                        <p className="text-white">
+                          <span className="font-medium">{getUserDisplayName(activity)}</span>
+                          <span className="text-gray-400 ml-1">{getActivityText(activity)}</span>
+                        </p>
+                        <p className="text-gray-500 text-sm mt-1">
+                          {formatRelativeTime(activity.timestamp)}
+                        </p>
                       </div>
                     </div>
-                    
-                    <div className="mt-2">
-                      <p className="text-white text-sm leading-relaxed">
-                        {activity.post_content.length > 100 
-                          ? `${activity.post_content.substring(0, 100)}...` 
+                  </div>
+                  
+                  {activity.post_content && activity.type !== 'follow' && (
+                    <div className="mt-3 p-3 bg-gray-800/50 rounded-lg">
+                      <p className="text-gray-300 text-sm leading-relaxed">
+                        {activity.post_content.length > 120 
+                          ? `${activity.post_content.substring(0, 120)}...` 
                           : activity.post_content
                         }
                       </p>
                     </div>
-
-                    <div className="flex items-center justify-between mt-3 text-gray-400">
-                      <div className="flex items-center space-x-4">
-                        <button 
-                          onClick={() => handleLike(activity)}
-                          disabled={likeMutation.isPending}
-                          className="flex items-center space-x-1 hover:text-red-400 transition-colors disabled:opacity-50"
-                        >
-                          <Heart className="w-4 h-4" />
-                          <span className="text-sm">{formatNumber(activity.likes_count)}</span>
-                        </button>
-                        <button className="flex items-center space-x-1 hover:text-blue-400 transition-colors">
-                          <MessageCircle className="w-4 h-4" />
-                          <span className="text-sm">{formatNumber(activity.comments_count)}</span>
-                        </button>
-                        <button 
-                          onClick={() => handleRepost(activity.post_id)}
-                          disabled={repostMutation.isPending}
-                          className="flex items-center space-x-1 hover:text-green-400 transition-colors disabled:opacity-50"
-                        >
-                          <Repeat2 className="w-4 h-4" />
-                          <span className="text-sm">{formatNumber(activity.reposts_count || 0)}</span>
-                        </button>
-                        <button className="flex items-center space-x-1 hover:text-gray-300 transition-colors">
-                          <Share className="w-4 h-4" />
-                          <span className="text-sm">0</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             ))

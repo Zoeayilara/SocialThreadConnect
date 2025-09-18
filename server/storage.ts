@@ -661,8 +661,27 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(likes.createdAt))
       .limit(50);
 
+    // Get follow notifications
+    const followNotifications = await db
+      .select({
+        id: follows.id,
+        type: sql<string>`'follow'`,
+        message: sql<string>`'followed you'`,
+        createdAt: follows.createdAt,
+        userId: follows.followerId,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        profileImageUrl: users.profileImageUrl,
+        postId: sql<number>`NULL`
+      })
+      .from(follows)
+      .innerJoin(users, eq(follows.followerId, users.id))
+      .where(eq(follows.followingId, userId))
+      .orderBy(desc(follows.createdAt))
+      .limit(50);
+
     // Combine and sort all notifications
-    const allNotifications = [...commentNotifications, ...likeNotifications]
+    const allNotifications = [...commentNotifications, ...likeNotifications, ...followNotifications]
       .map(notification => ({
         id: notification.id,
         type: notification.type,

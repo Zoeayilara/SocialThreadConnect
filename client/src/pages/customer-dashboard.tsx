@@ -192,8 +192,12 @@ export default function CustomerDashboard() {
           return post;
         });
       });
+      
+      // Invalidate queries after a short delay to get accurate counts from backend
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      }, 100);
     },
-    // Remove onSettled to prevent unnecessary refetching
   });
 
   const commentMutation = useMutation({
@@ -228,12 +232,12 @@ export default function CustomerDashboard() {
       if (!response.ok) throw new Error('Failed to toggle repost');
       return response.json();
     },
-    onSuccess: (_, postId) => {
-      // Update repost count for the specific post without reordering
+    onSuccess: (result, postId) => {
+      // Use the backend response to update the post correctly
       queryClient.setQueryData(['/api/posts'], (oldPosts: any[] = []) => {
         return oldPosts.map(post => 
           post.id === postId 
-            ? { ...post, repostsCount: (post.repostsCount || 0) + 1, isReposted: !post.isReposted }
+            ? { ...post, repostsCount: result.repostsCount, isReposted: result.isReposted }
             : post
         );
       });
@@ -518,7 +522,7 @@ export default function CustomerDashboard() {
                         }}
                       >
                         <p className="font-semibold text-white">{getUserDisplayName(searchUser)}</p>
-                        <p className="text-sm text-gray-400">@{searchUser.email.split('@')[0]}</p>
+                        <p className="text-sm text-gray-400">@{searchUser.university || searchUser.email.split('@')[0]}</p>
                       </div>
                       {searchUser.id !== user?.id && (
                         <Button

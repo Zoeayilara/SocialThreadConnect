@@ -272,6 +272,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       return response.json();
     },
     onSuccess: () => {
+      // Update both user posts and reposts queries with correct data from backend
       queryClient.invalidateQueries({ queryKey: ['userPosts', profileUserId] });
       queryClient.invalidateQueries({ queryKey: ['userReposts', profileUserId] });
       queryClient.invalidateQueries({ queryKey: ['posts'] });
@@ -288,10 +289,16 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       return response.json();
     },
     onMutate: async ({ postId }) => {
-      await queryClient.cancelQueries({ queryKey: ['/api/posts'] });
-      const previousPosts = queryClient.getQueryData(['/api/posts']);
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['userPosts', profileUserId] });
+      await queryClient.cancelQueries({ queryKey: ['userReposts', profileUserId] });
       
-      queryClient.setQueryData(['/api/posts'], (old: any) => {
+      // Snapshot the previous values
+      const previousUserPosts = queryClient.getQueryData(['userPosts', profileUserId]);
+      const previousUserReposts = queryClient.getQueryData(['userReposts', profileUserId]);
+      
+      // Optimistically update user posts
+      queryClient.setQueryData(['userPosts', profileUserId], (old: any) => {
         if (!old) return old;
         return old.map((post: any) => {
           if (post.id === postId) {
@@ -299,22 +306,74 @@ export default function Profile({ onBack, userId }: ProfileProps) {
             return {
               ...post,
               isLiked: !currentlyLiked,
-              likesCount: Math.max(0, currentlyLiked ? post.likesCount - 1 : post.likesCount + 1)
+              likesCount: Math.max(0, currentlyLiked ? (post.likesCount || 0) - 1 : (post.likesCount || 0) + 1)
             };
           }
           return post;
         });
       });
       
-      return { previousPosts };
+      // Optimistically update user reposts
+      queryClient.setQueryData(['userReposts', profileUserId], (old: any) => {
+        if (!old) return old;
+        return old.map((post: any) => {
+          if (post.id === postId) {
+            const currentlyLiked = !!post.isLiked;
+            return {
+              ...post,
+              isLiked: !currentlyLiked,
+              likesCount: Math.max(0, currentlyLiked ? (post.likesCount || 0) - 1 : (post.likesCount || 0) + 1)
+            };
+          }
+          return post;
+        });
+      });
+      
+      return { previousUserPosts, previousUserReposts };
     },
     onError: (_, __, context) => {
-      if (context?.previousPosts) {
-        queryClient.setQueryData(['/api/posts'], context.previousPosts);
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousUserPosts) {
+        queryClient.setQueryData(['userPosts', profileUserId], context.previousUserPosts);
+      }
+      if (context?.previousUserReposts) {
+        queryClient.setQueryData(['userReposts', profileUserId], context.previousUserReposts);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+    onSuccess: (data, { postId }) => {
+      // Update with server response to ensure consistency
+      queryClient.setQueryData(['userPosts', profileUserId], (old: any) => {
+        if (!old) return old;
+        return old.map((post: any) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              isLiked: data.liked,
+            };
+          }
+          return post;
+        });
+      });
+      
+      queryClient.setQueryData(['userReposts', profileUserId], (old: any) => {
+        if (!old) return old;
+        return old.map((post: any) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              isLiked: data.liked,
+            };
+          }
+          return post;
+        });
+      });
+      
+      // Invalidate queries after a short delay to get accurate counts from backend
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['userPosts', profileUserId] });
+        queryClient.invalidateQueries({ queryKey: ['userReposts', profileUserId] });
+        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      }, 100);
     },
   });
 
@@ -1544,14 +1603,26 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                       <div className="w-4 h-4 text-gray-500">🔒</div>
                       <input
                         type="text"
-                        value={`${editProfileData.firstName} ${editProfileData.lastName}`.trim()}
+                        value={`${editProfileData.firstName || ''} ${editProfileData.lastName || ''}`.trim()}
                         onChange={(e) => {
-                          const names = e.target.value.split(' ');
-                          setEditProfileData({
-                            ...editProfileData, 
-                            firstName: names[0] || '',
-                            lastName: names.slice(1).join(' ') || ''
-                          });
+                          const fullName = e.target.value.trim();
+                          const spaceIndex = fullName.lastIndexOf(' ');
+                          
+                          if (spaceIndex === -1) {
+                            // Single name - put it in firstName
+                            setEditProfileData({
+                              ...editProfileData, 
+                              firstName: fullName,
+                              lastName: ''
+                            });
+                          } else {
+                            // Multiple names - split at last space
+                            setEditProfileData({
+                              ...editProfileData, 
+                              firstName: fullName.substring(0, spaceIndex),
+                              lastName: fullName.substring(spaceIndex + 1)
+                            });
+                          }
                         }}
                         className="bg-transparent text-gray-300 text-sm outline-none flex-1"
                         placeholder="Enter your name"
@@ -1619,31 +1690,6 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                   />
                 </div>
 
-                {/* Private Profile Toggle */}
-                <div className="border-t border-gray-800 pt-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-white font-medium">Private profile</div>
-                      <div className="text-gray-400 text-sm mt-1">
-                        If you switch to private, only followers can see your threads. Your replies will be visible to followers and individual profiles you reply to.
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const newPrivateState = !editProfileData.isPrivate;
-                        setEditProfileData({...editProfileData, isPrivate: newPrivateState});
-                        console.log('Private account toggled:', newPrivateState);
-                      }}
-                      className="p-0"
-                    >
-                      <div className={`w-12 h-6 rounded-full p-1 transition-colors ${editProfileData.isPrivate ? 'bg-blue-600' : 'bg-gray-600'}`}>
-                        <div className={`w-4 h-4 rounded-full transition-transform ${editProfileData.isPrivate ? 'bg-white translate-x-6' : 'bg-gray-300 translate-x-0'}`} />
-                      </div>
-                    </Button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

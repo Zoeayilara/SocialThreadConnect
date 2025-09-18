@@ -42,8 +42,13 @@ const isAdmin = async (req: any, res: any, next: any) => {
 };
 
 // Report a post
-router.post('/posts/:postId', isAuthenticated, async (req, res) => {
+router.post('/posts/:postId', isAuthenticated, async (req: any, res) => {
   try {
+    console.log('🚨 Report submission started');
+    console.log('📝 Request params:', req.params);
+    console.log('📝 Request body:', req.body);
+    console.log('📝 User ID:', req.userId);
+    
     const postId = parseInt(req.params.postId);
     const { reason, description } = reportSchema.parse({
       postId,
@@ -51,6 +56,7 @@ router.post('/posts/:postId', isAuthenticated, async (req, res) => {
     });
 
     const userId = req.userId;
+    console.log('✅ Validation passed - postId:', postId, 'userId:', userId, 'reason:', reason);
 
     // Get user and post information
     // Use SQLite database from request
@@ -98,40 +104,50 @@ router.post('/posts/:postId', isAuthenticated, async (req, res) => {
       VALUES (?, ?, ?, ?, datetime('now'), 'pending')
     `;
     
+    console.log('📝 Inserting report into database:', { postId, userId, reason, description });
     db.prepare(insertReport).run(postId, userId, reason, description || '');
+    console.log('✅ Report saved to database successfully');
 
-    // Send email to admin
-    const transporter = createTransporter();
-    
-    const emailContent = `
-      <h2>🚨 New Post Report</h2>
+    // Try to send email to admin (optional - don't fail if email fails)
+    try {
+      console.log('📧 Attempting to send email notification...');
+      const transporter = createTransporter();
       
-      <h3>Report Details:</h3>
-      <p><strong>Reason:</strong> ${reason}</p>
-      ${description ? `<p><strong>Description:</strong> ${description}</p>` : ''}
-      <p><strong>Reported by:</strong> ${user.firstName} ${user.lastName} (${user.email})</p>
-      <p><strong>Report Date:</strong> ${new Date().toLocaleString()}</p>
-      
-      <h3>Reported Post:</h3>
-      <p><strong>Author:</strong> ${post.firstName} ${post.lastName} (${post.author_email})</p>
-      <p><strong>Post Date:</strong> ${new Date(post.created_at).toLocaleString()}</p>
-      <p><strong>Content:</strong></p>
-      <blockquote style="background: #f5f5f5; padding: 10px; border-left: 4px solid #ccc;">
-        ${post.content}
-      </blockquote>
-      
-      <p><strong>Post ID:</strong> ${postId}</p>
-      
-      <hr>
-      <p><em>Please review this report and take appropriate action through the admin dashboard.</em></p>
-    `;
+      const emailContent = `
+        <h2>🚨 New Post Report</h2>
+        
+        <h3>Report Details:</h3>
+        <p><strong>Reason:</strong> ${reason}</p>
+        ${description ? `<p><strong>Description:</strong> ${description}</p>` : ''}
+        <p><strong>Reported by:</strong> ${user.firstName} ${user.lastName} (${user.email})</p>
+        <p><strong>Report Date:</strong> ${new Date().toLocaleString()}</p>
+        
+        <h3>Reported Post:</h3>
+        <p><strong>Author:</strong> ${post.firstName} ${post.lastName} (${post.author_email})</p>
+        <p><strong>Post Date:</strong> ${new Date(post.created_at).toLocaleString()}</p>
+        <p><strong>Content:</strong></p>
+        <blockquote style="background: #f5f5f5; padding: 10px; border-left: 4px solid #ccc;">
+          ${post.content}
+        </blockquote>
+        
+        <p><strong>Post ID:</strong> ${postId}</p>
+        
+        <hr>
+        <p><em>Please review this report and take appropriate action through the admin dashboard.</em></p>
+      `;
 
-    await transporter.sendMail({
-      from: process.env.FROM_EMAIL,
-      to: 'Entreefox@gmail.com',
-      subject: `🚨 Post Report - ${reason}`,
-      html: emailContent,
-    });
+      await transporter.sendMail({
+        from: process.env.FROM_EMAIL,
+        to: 'Entreefox@gmail.com',
+        subject: `🚨 Post Report - ${reason}`,
+        html: emailContent,
+      });
+      
+      console.log('✅ Email notification sent successfully');
+    } catch (emailError) {
+      console.warn('⚠️ Failed to send email notification (report still saved):', emailError);
+      // Don't fail the request if email fails - report is still saved
+    }
 
     res.json({ 
       success: true, 
@@ -139,13 +155,20 @@ router.post('/posts/:postId', isAuthenticated, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Report submission error:', error);
-    res.status(500).json({ error: 'Failed to submit report' });
+    console.error('❌ Report submission error:', error);
+    
+    // Provide more specific error information
+    if (error instanceof z.ZodError) {
+      console.error('❌ Validation error:', error.errors);
+      return res.status(400).json({ error: 'Invalid report data', details: error.errors });
+    }
+    
+    res.status(500).json({ error: 'Failed to submit report', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
 // Get all reports (admin only)
-router.get('/', isAuthenticated, isAdmin, async (req, res) => {
+router.get('/', isAuthenticated, isAdmin, async (req: any, res) => {
   try {
     const query = `
       SELECT 
@@ -176,7 +199,7 @@ router.get('/', isAuthenticated, isAdmin, async (req, res) => {
 });
 
 // Update report status (admin only)
-router.patch('/:reportId/status', isAuthenticated, isAdmin, async (req, res) => {
+router.patch('/:reportId/status', isAuthenticated, isAdmin, async (req: any, res) => {
   try {
     const reportId = parseInt(req.params.reportId);
     const { status, admin_notes } = req.body;

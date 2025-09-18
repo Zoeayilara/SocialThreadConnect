@@ -1,39 +1,33 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { authenticatedFetch } from '@/utils/api';
-import { ArrowLeft, Eye, MessageSquare, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, MessageSquare, AlertTriangle, CheckCircle, XCircle, MoreHorizontal, Trash2, Eye } from 'lucide-react';
 
 interface Report {
   id: number;
-  postId: number;
-  reporterId: number;
+  post_id: number;
+  reporter_id: number;
   reason: string;
   description?: string;
   status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
-  createdAt: string;
-  updatedAt: string;
-  post: {
-    id: number;
-    content: string;
-    authorId: number;
-    author: {
-      id: number;
-      username: string;
-      email: string;
-    };
-  };
-  reporter: {
-    id: number;
-    username: string;
-    email: string;
-  };
+  created_at: string;
+  reporter_firstName: string;
+  reporter_lastName: string;
+  reporter_email: string;
+  post_content: string;
+  post_created_at: string;
+  author_firstName: string;
+  author_lastName: string;
+  author_email: string;
 }
 
 interface AdminReportsProps {
@@ -44,6 +38,7 @@ export default function AdminReports({ onBack }: AdminReportsProps) {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [adminNotes, setAdminNotes] = useState('');
+  const [deletePostId, setDeletePostId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -84,6 +79,33 @@ export default function AdminReports({ onBack }: AdminReportsProps) {
         description: "Failed to update report status. Please try again.",
         variant: "destructive",
       });
+    },
+  });
+
+  // Delete post mutation
+  const deletePostMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      const response = await authenticatedFetch(`/api/posts/${postId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete post');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Post Deleted",
+        description: "The reported post has been deleted successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-reports'] });
+      setDeletePostId(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete post. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Delete post error:', error);
     },
   });
 
@@ -182,45 +204,65 @@ export default function AdminReports({ onBack }: AdminReportsProps) {
               <Card key={report.id} className="bg-gray-900 border-gray-700">
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-white flex items-center space-x-2">
-                        {getStatusIcon(report.status)}
-                        <span>Report #{report.id}</span>
-                        {getStatusBadge(report.status)}
-                      </CardTitle>
-                      <CardDescription className="text-gray-400">
-                        Reported by {report.reporter.username} on {new Date(report.createdAt).toLocaleDateString()}
-                      </CardDescription>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <AlertTriangle className="h-5 w-5 text-red-500" />
+                        <span className="text-red-400 font-medium">
+                          {report.reporter_firstName} {report.reporter_lastName} reported this post because of "{report.reason}"
+                        </span>
+                      </div>
+                      {report.description && (
+                        <p className="text-gray-400 text-sm ml-7">Additional details: "{report.description}"</p>
+                      )}
+                      <div className="flex items-center space-x-4 ml-7">
+                        <p className="text-gray-500 text-xs">
+                          Reported on {new Date(report.created_at).toLocaleDateString()}
+                        </p>
+                        <div className="flex items-center space-x-1">
+                          {getStatusIcon(report.status)}
+                          {getStatusBadge(report.status)}
+                        </div>
+                      </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedReport(report)}
-                      className="border-gray-600 text-gray-300 hover:bg-gray-800"
-                    >
-                      View Details
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedReport(report)}
+                        className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                      >
+                        View Details
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+                          <DropdownMenuItem 
+                            onClick={() => setDeletePostId(report.post_id)}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Post
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-sm font-medium text-gray-300 mb-1">Reason:</p>
-                      <p className="text-gray-400">{report.reason}</p>
+                  <div className="bg-gray-800 p-4 rounded-lg border-l-4 border-red-500">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-gray-300 text-sm font-medium">
+                        By {report.author_firstName} {report.author_lastName}
+                      </p>
+                      <p className="text-gray-500 text-xs">
+                        {new Date(report.post_created_at).toLocaleDateString()}
+                      </p>
                     </div>
-                    {report.description && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-300 mb-1">Description:</p>
-                        <p className="text-gray-400">{report.description}</p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-gray-300 mb-1">Reported Post:</p>
-                      <div className="bg-gray-800 p-3 rounded border-l-4 border-red-500">
-                        <p className="text-gray-300 text-sm mb-1">By @{report.post.author.username}</p>
-                        <p className="text-gray-400">{report.post.content}</p>
-                      </div>
-                    </div>
+                    <p className="text-gray-300">{report.post_content}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -248,13 +290,13 @@ export default function AdminReports({ onBack }: AdminReportsProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-gray-300 mb-1">Reporter:</p>
-                  <p className="text-gray-400">{selectedReport.reporter.username}</p>
-                  <p className="text-xs text-gray-500">{selectedReport.reporter.email}</p>
+                  <p className="text-gray-400">{selectedReport.reporter_firstName} {selectedReport.reporter_lastName}</p>
+                  <p className="text-xs text-gray-500">{selectedReport.reporter_email}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-300 mb-1">Post Author:</p>
-                  <p className="text-gray-400">{selectedReport.post.author.username}</p>
-                  <p className="text-xs text-gray-500">{selectedReport.post.author.email}</p>
+                  <p className="text-gray-400">{selectedReport.author_firstName} {selectedReport.author_lastName}</p>
+                  <p className="text-xs text-gray-500">{selectedReport.author_email}</p>
                 </div>
               </div>
               
@@ -273,7 +315,7 @@ export default function AdminReports({ onBack }: AdminReportsProps) {
               <div>
                 <p className="text-sm font-medium text-gray-300 mb-1">Reported Post:</p>
                 <div className="bg-gray-800 p-3 rounded border-l-4 border-red-500">
-                  <p className="text-gray-400">{selectedReport.post.content}</p>
+                  <p className="text-gray-400">{selectedReport.post_content}</p>
                 </div>
               </div>
               
@@ -324,6 +366,30 @@ export default function AdminReports({ onBack }: AdminReportsProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Post Confirmation Dialog */}
+      <AlertDialog open={!!deletePostId} onOpenChange={() => setDeletePostId(null)}>
+        <AlertDialogContent className="bg-gray-900 border-gray-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Delete Post</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Are you sure you want to delete this reported post? This action cannot be undone and will remove the post from everywhere in the app.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-gray-600 text-gray-300 hover:bg-gray-800">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletePostId && deletePostMutation.mutate(deletePostId)}
+              disabled={deletePostMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deletePostMutation.isPending ? "Deleting..." : "Delete Post"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -94,33 +94,54 @@ const Saved = () => {
       return response.json();
     },
     onMutate: async ({ postId }) => {
-      await queryClient.cancelQueries({ queryKey: ['/api/posts'] });
-      const previousPosts = queryClient.getQueryData(['/api/posts']);
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['saved-posts'] });
       
-      queryClient.setQueryData(['/api/posts'], (old: any) => {
-        if (!old) return old;
-        return old.map((post: any) => {
+      // Snapshot the previous value
+      const previousSavedPosts = queryClient.getQueryData(['saved-posts']);
+      
+      // Optimistically update saved posts
+      queryClient.setQueryData(['saved-posts'], (old: SavedPost[] = []) => {
+        return old.map((post: SavedPost) => {
           if (post.id === postId) {
             const currentlyLiked = !!post.isLiked;
             return {
               ...post,
               isLiked: !currentlyLiked,
-              likesCount: Math.max(0, currentlyLiked ? post.likesCount - 1 : post.likesCount + 1)
+              likesCount: Math.max(0, currentlyLiked ? (post.likesCount || 0) - 1 : (post.likesCount || 0) + 1)
             };
           }
           return post;
         });
       });
       
-      return { previousPosts };
+      return { previousSavedPosts };
     },
     onError: (_, __, context) => {
-      if (context?.previousPosts) {
-        queryClient.setQueryData(['/api/posts'], context.previousPosts);
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousSavedPosts) {
+        queryClient.setQueryData(['saved-posts'], context.previousSavedPosts);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+    onSuccess: (data, { postId }) => {
+      // Update with server response to ensure consistency
+      queryClient.setQueryData(['saved-posts'], (old: SavedPost[] = []) => {
+        return old.map((post: SavedPost) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              isLiked: data.liked,
+            };
+          }
+          return post;
+        });
+      });
+      
+      // Invalidate queries after a short delay to get accurate counts from backend
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['saved-posts'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      }, 100);
     },
   });
 
@@ -181,12 +202,12 @@ const Saved = () => {
       if (!response.ok) throw new Error('Failed to toggle repost');
       return response.json();
     },
-    onSuccess: (_, postId) => {
-      // Update repost count for the specific post without reordering
+    onSuccess: (result, postId) => {
+      // Use the backend response to update the post correctly
       queryClient.setQueryData(['saved-posts'], (oldPosts: SavedPost[] = []) => {
         return oldPosts.map(post => 
           post.id === postId 
-            ? { ...post, repostsCount: (post.repostsCount || 0) + 1 }
+            ? { ...post, repostsCount: result.repostsCount, isReposted: result.isReposted }
             : post
         );
       });
