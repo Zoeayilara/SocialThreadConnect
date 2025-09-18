@@ -70,12 +70,76 @@ export const VideoTrimmer: React.FC<VideoTrimmerProps> = ({
 
   const handleTrim = async () => {
     try {
-      // For now, we'll just return the original file
-      // In a real implementation, you'd use FFmpeg.js or similar
-      const trimmedBlob = new Blob([videoFile], { type: videoFile.type });
-      onTrimComplete(trimmedBlob);
+      if (!videoRef.current) return;
+      
+      // Create a new video element for processing
+      const video = document.createElement('video');
+      video.src = videoUrl;
+      video.muted = true;
+      
+      await new Promise((resolve) => {
+        video.onloadedmetadata = resolve;
+      });
+      
+      // Create canvas for frame extraction
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Could not get canvas context');
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      // Use MediaRecorder to create trimmed video
+      const stream = canvas.captureStream(30); // 30 FPS
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9'
+      });
+      
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const trimmedBlob = new Blob(chunks, { type: 'video/webm' });
+        onTrimComplete(trimmedBlob);
+      };
+      
+      // Start recording
+      mediaRecorder.start();
+      
+      // Seek to start time and play
+      video.currentTime = startTime;
+      
+      const drawFrame = () => {
+        if (video.currentTime >= endTime) {
+          mediaRecorder.stop();
+          return;
+        }
+        
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        requestAnimationFrame(drawFrame);
+      };
+      
+      video.onplay = () => {
+        drawFrame();
+      };
+      
+      await video.play();
+      
+      // Stop after duration
+      setTimeout(() => {
+        video.pause();
+        mediaRecorder.stop();
+      }, (endTime - startTime) * 1000);
+      
     } catch (error) {
       console.error('Error trimming video:', error);
+      // Fallback: return original file
+      const trimmedBlob = new Blob([videoFile], { type: videoFile.type });
+      onTrimComplete(trimmedBlob);
     }
   };
 

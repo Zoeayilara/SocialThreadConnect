@@ -13,6 +13,7 @@ import { authenticatedFetch } from "@/utils/api";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { SavePostMenuItem } from '@/components/SavePostMenuItem';
+import ReportDialog from '@/components/ReportDialog';
 
 // # interface save post
 interface SavedPost {
@@ -58,6 +59,8 @@ const Saved = () => {
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [showReplies, setShowReplies] = useState<Set<number>>(new Set());
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportPostId, setReportPostId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -335,11 +338,9 @@ const Saved = () => {
                                     onClick={() => window.open(post.mediaUrl, '_blank')}
                                   />
                                 ) : post.mediaType === 'video' ? (
-                                  <video 
+                                  <VideoPlayer 
                                     src={post.mediaUrl} 
-                                    controls 
                                     className="max-w-full h-auto rounded-lg"
-                                    style={{ maxHeight: '400px' }}
                                   />
                                 ) : null}
                               </div>
@@ -355,7 +356,10 @@ const Saved = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <SavePostMenuItem postId={post.id} onSave={() => {}} onUnsave={handleUnsave} />
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setReportPostId(post.id);
+                            setReportDialogOpen(true);
+                          }}>
                             <Flag className="w-4 h-4 mr-2" />
                             Report Post
                           </DropdownMenuItem>
@@ -638,6 +642,18 @@ const Saved = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Report Dialog */}
+      {reportPostId && (
+        <ReportDialog
+          isOpen={reportDialogOpen}
+          onClose={() => {
+            setReportDialogOpen(false);
+            setReportPostId(null);
+          }}
+          postId={reportPostId}
+        />
+      )}
     </div>
   );
 };

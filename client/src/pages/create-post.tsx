@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { authenticatedFetch, getImageUrl } from '../utils/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, ImageIcon, Scissors } from 'lucide-react';
+import { X, ImageIcon, Scissors, Edit3 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/hooks/useAuth';
 import { VideoPreview } from '@/components/VideoPreview';
 import { VideoTrimmer } from '@/components/VideoTrimmer';
+import { ImageEditor } from '@/components/ImageEditor';
 
 
 interface User {
@@ -27,6 +28,8 @@ export default function CreatePost() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [showVideoTrimmer, setShowVideoTrimmer] = useState(false);
   const [videoToTrim, setVideoToTrim] = useState<File | null>(null);
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState<File | null>(null);
 
   const createPostMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -104,6 +107,31 @@ export default function CreatePost() {
   const handleTrimCancel = () => {
     setShowVideoTrimmer(false);
     setVideoToTrim(null);
+  };
+
+  const handleEditImage = (file: File) => {
+    setImageToEdit(file);
+    setShowImageEditor(true);
+  };
+
+  const handleImageEditComplete = (editedBlob: Blob) => {
+    const editedFile = new File([editedBlob], imageToEdit?.name || 'edited-image.jpg', {
+      type: editedBlob.type || 'image/jpeg'
+    });
+    
+    // Replace the original image with the edited one
+    const updatedFiles = selectedFiles.map(file => 
+      file === imageToEdit ? editedFile : file
+    );
+    setSelectedFiles(updatedFiles);
+    
+    setShowImageEditor(false);
+    setImageToEdit(null);
+  };
+
+  const handleImageEditCancel = () => {
+    setShowImageEditor(false);
+    setImageToEdit(null);
   };
 
   return (
@@ -205,43 +233,77 @@ export default function CreatePost() {
                 Remove all
               </Button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-4">
               {selectedFiles.map((file, index) => (
-                <div key={index} className="relative group animate-scale-in" style={{animationDelay: `${index * 100}ms`}}>
-                  {file.type.startsWith('image/') ? (
-                    <img 
-                      src={URL.createObjectURL(file)} 
-                      alt={`Selected ${index + 1}`}
-                      className="w-full h-32 sm:h-40 object-cover rounded-xl border border-gray-700/50 transition-transform duration-200 group-hover:scale-[1.02]"
-                    />
-                  ) : file.type.startsWith('video/') ? (
-                    <div className="relative">
-                      <VideoPreview videoFile={file} className="w-full h-32 sm:h-40" />
-                      <Button
-                        onClick={() => handleTrimVideo(file)}
-                        variant="ghost"
-                        size="sm"
-                        className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
-                      >
-                        <Scissors className="w-4 h-4" />
-                      </Button>
+                <div key={index} className="relative group animate-scale-in bg-gray-900/50 rounded-xl p-3" style={{animationDelay: `${index * 100}ms`}}>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Media Preview */}
+                    <div className="relative flex-shrink-0">
+                      {file.type.startsWith('image/') ? (
+                        <img 
+                          src={URL.createObjectURL(file)} 
+                          alt={`Selected ${index + 1}`}
+                          className="w-full sm:w-32 h-32 object-cover rounded-lg border border-gray-700/50"
+                        />
+                      ) : file.type.startsWith('video/') ? (
+                        <div className="w-full sm:w-32 h-32">
+                          <VideoPreview videoFile={file} className="w-full h-full rounded-lg" />
+                        </div>
+                      ) : (
+                        <div className="w-full sm:w-32 h-32 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border border-gray-700/50 flex items-center justify-center">
+                          <span className="text-gray-400 text-xs font-medium text-center px-2">{file.name}</span>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="w-full h-32 sm:h-40 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 flex items-center justify-center transition-transform duration-200 group-hover:scale-[1.02]">
-                      <span className="text-gray-400 text-sm font-medium px-4 text-center">{file.name}</span>
+
+                    {/* File Info & Actions */}
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-white font-medium text-sm mb-1 truncate">{file.name}</h4>
+                        <p className="text-gray-400 text-xs">
+                          {file.type.split('/')[0]} • {(file.size / 1024 / 1024).toFixed(1)} MB
+                        </p>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-2 mt-3">
+                        {file.type.startsWith('image/') && (
+                          <Button
+                            onClick={() => handleEditImage(file)}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs px-3 py-1 h-8 border-gray-600 hover:border-blue-500 hover:text-blue-400"
+                          >
+                            <Edit3 className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                        )}
+                        {file.type.startsWith('video/') && (
+                          <Button
+                            onClick={() => handleTrimVideo(file)}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs px-3 py-1 h-8 border-gray-600 hover:border-blue-500 hover:text-blue-400"
+                          >
+                            <Scissors className="w-3 h-3 mr-1" />
+                            Trim
+                          </Button>
+                        )}
+                        <Button
+                          onClick={() => {
+                            const newFiles = selectedFiles.filter((_, i) => i !== index);
+                            setSelectedFiles(newFiles);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs px-3 py-1 h-8 border-red-600/50 hover:border-red-500 hover:text-red-400 text-red-400/80"
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          Remove
+                        </Button>
+                      </div>
                     </div>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const newFiles = selectedFiles.filter((_, i) => i !== index);
-                      setSelectedFiles(newFiles);
-                    }}
-                    className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-black/90 rounded-full backdrop-blur-sm transition-all duration-200 opacity-0 group-hover:opacity-100"
-                  >
-                    <X className="w-4 h-4 text-white" />
-                  </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -254,6 +316,15 @@ export default function CreatePost() {
             videoFile={videoToTrim}
             onTrimComplete={handleTrimComplete}
             onCancel={handleTrimCancel}
+          />
+        )}
+
+        {/* Image Editor Modal */}
+        {showImageEditor && imageToEdit && (
+          <ImageEditor
+            imageFile={imageToEdit}
+            onEditComplete={handleImageEditComplete}
+            onCancel={handleImageEditCancel}
           />
         )}
 

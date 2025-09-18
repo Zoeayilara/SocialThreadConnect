@@ -54,32 +54,33 @@ export default function Notifications({ onBack }: NotificationProps) {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-gray-800">
-        <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-3 flex items-center space-x-3">
-          <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-400 hover:text-white p-2">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-xl font-bold text-white">Notifications</h1>
+      <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl">
+        {/* Header */}
+        <div className="sticky top-0 bg-black/80 backdrop-blur-md border-b border-gray-800 p-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-400 hover:text-white p-2">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-xl font-bold text-white">Notifications</h1>
+          </div>
         </div>
-      </div>
 
-      {/* Notifications List */}
-      <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-6">
+        {/* Notifications List */}
+        <div className="px-4 py-6">
         {notifications.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 text-lg mb-2">No notifications yet</div>
             <div className="text-gray-500 text-sm">When someone likes, comments, or follows you, you'll see it here</div>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-0">
             {notifications.map((notification: Notification) => (
               <div
                 key={notification.id}
-                className={`flex items-center space-x-3 p-4 rounded-xl border transition-all duration-200 hover:shadow-lg ${
+                className={`flex items-center space-x-3 p-4 border-b border-gray-800 transition-all duration-200 hover:bg-gray-900/30 ${
                   !notification.isRead 
-                    ? 'bg-gray-900/50 border-gray-700 shadow-md' 
-                    : 'bg-gray-900/20 border-gray-800 hover:bg-gray-900/30'
+                    ? 'bg-gray-900/50' 
+                    : 'bg-transparent hover:bg-gray-900/20'
                 }`}
               >
                 <div className="relative">
@@ -116,6 +117,7 @@ export default function Notifications({ onBack }: NotificationProps) {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

@@ -112,14 +112,14 @@ export default function CustomerDashboard() {
   const { data: posts = [] } = useQuery({
     queryKey: ['/api/posts'],
     queryFn: async () => {
-      const response = await authenticatedFetch('/api/posts');
+      const response = await authenticatedFetch('/api/posts?sortBy=algorithm');
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
-    refetchInterval: false, // Disable automatic refetching
-    refetchOnWindowFocus: false, // Don't refetch on focus
-    refetchIntervalInBackground: false,
-    staleTime: 30 * 60 * 1000, // 30 minutes stale time
+    refetchInterval: false, // No automatic updates - only manual refresh
+    refetchOnWindowFocus: false, // No interruptions when switching tabs
+    refetchIntervalInBackground: false, // No background updates
+    staleTime: 0, // Always fresh data on manual refresh with Threads algorithm
   });
 
   // Fetch comments for a post with optimized refetching
@@ -132,9 +132,10 @@ export default function CustomerDashboard() {
       return response.json();
     },
     enabled: !!showComments,
-    refetchInterval: false, // Don't auto-refetch comments
-    refetchOnWindowFocus: false,
-    staleTime: 2 * 60 * 1000, // 2 minutes stale time
+    refetchInterval: false, // No automatic comment updates
+    refetchOnWindowFocus: false, // No interruptions when switching tabs
+    refetchIntervalInBackground: false, // No background updates
+    staleTime: 0, // Fresh comments only on manual refresh
   });
 
 
@@ -192,11 +193,6 @@ export default function CustomerDashboard() {
           return post;
         });
       });
-      
-      // Invalidate queries after a short delay to get accurate counts from backend
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-      }, 100);
     },
   });
 

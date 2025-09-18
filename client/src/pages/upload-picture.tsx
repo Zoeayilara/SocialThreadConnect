@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,15 +13,36 @@ export default function UploadPicture() {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const { user, isLoading } = useAuth();
 
-  // Check for temp registration data first
+  // Check for temp registration data and auth token
   const tempUserId = localStorage.getItem('tempUserId');
+  const authToken = localStorage.getItem('authToken');
   
-  // Allow access if we have temp data OR authenticated user
-  const hasAccess = tempUserId || user;
-  
-  if (!hasAccess && isLoading) {
+  // Allow access if we have temp data OR authenticated user OR valid token
+  const hasAccess = tempUserId || user || authToken;
+
+  // Timeout mechanism to prevent infinite loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoadingTimeout(true);
+      setAuthCheckComplete(true);
+    }, 5000); // 5 second timeout
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Mark auth check as complete when we have definitive state
+  useEffect(() => {
+    if (user || (!isLoading && !tempUserId && !authToken)) {
+      setAuthCheckComplete(true);
+    }
+  }, [user, isLoading, tempUserId, authToken]);
+
+  // Show loading only for a reasonable time
+  if (!authCheckComplete && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -32,7 +53,8 @@ export default function UploadPicture() {
     );
   }
   
-  if (!hasAccess && !isLoading) {
+  // Redirect to login if no access after timeout or auth check complete
+  if (!hasAccess && (authCheckComplete || loadingTimeout)) {
     setLocation('/login');
     return null;
   }
@@ -51,21 +73,48 @@ export default function UploadPicture() {
 
       console.log('Making request to /api/upload-profile-picture');
       
-      const response = await authenticatedFetch('/api/upload-profile-picture', {
-        method: 'POST',
-        body: formData,
-      });
+      // Add retry logic for authentication issues
+      let retryCount = 0;
+      const maxRetries = 2;
+      
+      while (retryCount <= maxRetries) {
+        try {
+          const response = await authenticatedFetch('/api/upload-profile-picture', {
+            method: 'POST',
+            body: formData,
+          });
 
-      console.log('Response status:', response.status);
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Upload failed with error:', error);
-        throw new Error(error.message || 'Upload failed');
+          console.log('Response status:', response.status);
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log('Upload successful:', result);
+            return result;
+          }
+          
+          // Handle 401 specifically
+          if (response.status === 401 && retryCount < maxRetries) {
+            console.log(`Auth failed, retrying... (${retryCount + 1}/${maxRetries})`);
+            retryCount++;
+            // Wait a bit before retry to allow session to establish
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+          
+          const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+          console.error('Upload failed with error:', error);
+          throw new Error(error.message || 'Upload failed');
+          
+        } catch (fetchError) {
+          if (retryCount < maxRetries) {
+            console.log(`Network error, retrying... (${retryCount + 1}/${maxRetries})`);
+            retryCount++;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+          throw fetchError;
+        }
       }
-
-      const result = await response.json();
-      console.log('Upload successful:', result);
-      return result;
     },
     onSuccess: () => {
       toast({
@@ -77,8 +126,8 @@ export default function UploadPicture() {
     onError: (error) => {
       console.error('Upload error:', error);
       toast({
-        title: "Upload Failed",
-        description: error.message,
+        title: "Upload Failed", 
+        description: error instanceof Error ? error.message : "Please try again or skip for now.",
         variant: "destructive",
       });
     },

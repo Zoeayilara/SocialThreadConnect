@@ -74,12 +74,13 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({ videoFile, className
       <video
         ref={videoRef}
         src={videoUrl}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain" 
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         muted={isMuted}
+        style={{ aspectRatio: 'auto' }}
       />
       
       {/* Controls Overlay */}

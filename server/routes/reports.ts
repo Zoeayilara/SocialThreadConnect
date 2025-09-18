@@ -184,7 +184,7 @@ router.get('/', isAuthenticated, isAdmin, async (req: any, res) => {
       FROM reports r
       JOIN users u ON r.reporter_id = u.id
       JOIN posts p ON r.post_id = p.id
-      JOIN users author ON p.user_id = author.id
+      JOIN users author ON p.userId = author.id
       ORDER BY r.created_at DESC
     `;
 

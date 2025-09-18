@@ -9,6 +9,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { authenticatedFetch, getImageUrl } from "@/utils/api";
+import { VideoPlayer } from "@/components/VideoPlayer";
+import { VideoPreview } from "@/components/VideoPreview";
+import { VideoTrimmer } from "@/components/VideoTrimmer";
+import { ImageEditor } from "@/components/ImageEditor";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,11 +50,17 @@ export default function Messages({ directUserId }: MessagesProps) {
     }
   });
   const [messageText, setMessageText] = useState("");
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [showVideoTrimmer, setShowVideoTrimmer] = useState(false);
+  const [videoToTrim, setVideoToTrim] = useState<File | null>(null);
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -256,6 +266,28 @@ export default function Messages({ directUserId }: MessagesProps) {
     deleteMessageMutation.mutate(messageId);
   };
 
+  const handleEmojiSelect = (emoji: string) => {
+    setMessageText(prev => prev + emoji);
+    setShowEmojiPicker(false);
+  };
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (files.length > 0) {
@@ -282,6 +314,56 @@ export default function Messages({ directUserId }: MessagesProps) {
       
       setSelectedFiles(prev => [...prev, ...validFiles]);
     }
+  };
+
+  const handleTrimVideo = (file: File) => {
+    setVideoToTrim(file);
+    setShowVideoTrimmer(true);
+  };
+
+  const handleTrimComplete = (trimmedBlob: Blob) => {
+    const trimmedFile = new File([trimmedBlob], videoToTrim?.name || 'trimmed-video.mp4', {
+      type: trimmedBlob.type || 'video/mp4'
+    });
+    
+    // Replace the original video with the trimmed one
+    const updatedFiles = selectedFiles.map(file => 
+      file === videoToTrim ? trimmedFile : file
+    );
+    setSelectedFiles(updatedFiles);
+    
+    setShowVideoTrimmer(false);
+    setVideoToTrim(null);
+  };
+
+  const handleTrimCancel = () => {
+    setShowVideoTrimmer(false);
+    setVideoToTrim(null);
+  };
+
+  const handleEditImage = (file: File) => {
+    setImageToEdit(file);
+    setShowImageEditor(true);
+  };
+
+  const handleImageEditComplete = (editedBlob: Blob) => {
+    const editedFile = new File([editedBlob], imageToEdit?.name || 'edited-image.jpg', {
+      type: editedBlob.type || 'image/jpeg'
+    });
+    
+    // Replace the original image with the edited one
+    const updatedFiles = selectedFiles.map(file => 
+      file === imageToEdit ? editedFile : file
+    );
+    setSelectedFiles(updatedFiles);
+    
+    setShowImageEditor(false);
+    setImageToEdit(null);
+  };
+
+  const handleImageEditCancel = () => {
+    setShowImageEditor(false);
+    setImageToEdit(null);
   };
 
   return (
@@ -464,12 +546,15 @@ export default function Messages({ directUserId }: MessagesProps) {
                                 return (
                                   <div key={index} className="relative group/media">
                                     {isVideo ? (
-                                      <video 
-                                        src={getImageUrl(fileUrl)} 
-                                        controls 
-                                        className="max-w-full h-auto rounded-2xl cursor-pointer shadow-lg group-hover/media:shadow-xl transition-all duration-200"
+                                      <div 
+                                        className="cursor-pointer"
                                         onClick={() => window.open(getImageUrl(fileUrl), '_blank')}
-                                      />
+                                      >
+                                        <VideoPlayer 
+                                          src={getImageUrl(fileUrl) || fileUrl} 
+                                          className="max-w-full h-auto rounded-2xl shadow-lg group-hover/media:shadow-xl transition-all duration-200"
+                                        />
+                                      </div>
                                     ) : (
                                       <img 
                                         src={getImageUrl(fileUrl)} 
@@ -509,19 +594,71 @@ export default function Messages({ directUserId }: MessagesProps) {
               <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl">
                 {selectedFiles.length > 0 && (
                   <div className="mb-4 animate-in fade-in slide-in-from-bottom duration-200">
-                    <div className="flex flex-wrap gap-2">
+                    <div className="space-y-3">
                       {selectedFiles.map((file, index) => (
-                        <div key={index} className="relative bg-gray-800/80 backdrop-blur-sm rounded-xl p-3 flex items-center space-x-3 border border-gray-700/50 group hover:bg-gray-700/80 transition-all duration-200">
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <Paperclip className="w-4 h-4 text-white" />
+                        <div key={index} className="bg-gray-800/80 backdrop-blur-sm rounded-xl p-3 border border-gray-700/50">
+                          <div className="flex items-start gap-3">
+                            {/* Media Preview */}
+                            <div className="flex-shrink-0">
+                              {file.type.startsWith('image/') ? (
+                                <img 
+                                  src={URL.createObjectURL(file)} 
+                                  alt={file.name}
+                                  className="w-16 h-16 object-cover rounded-lg border border-gray-600"
+                                />
+                              ) : file.type.startsWith('video/') ? (
+                                <div className="w-16 h-16">
+                                  <VideoPreview videoFile={file} className="w-full h-full rounded-lg" />
+                                </div>
+                              ) : (
+                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                  <Paperclip className="w-6 h-6 text-white" />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* File Info & Actions */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-white truncate">{file.name}</p>
+                                  <p className="text-xs text-gray-400">
+                                    {file.type.split('/')[0]} • {(file.size / 1024 / 1024).toFixed(1)} MB
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
+                                  className="text-gray-400 hover:text-red-400 transition-colors duration-200 p-1 rounded-full hover:bg-red-500/10 ml-2"
+                                >
+                                  ×
+                                </button>
+                              </div>
+
+                              {/* Edit Actions */}
+                              <div className="flex items-center gap-2 mt-2">
+                                {file.type.startsWith('image/') && (
+                                  <Button
+                                    onClick={() => handleEditImage(file)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs h-6 px-2 border-gray-600 hover:border-blue-500 hover:text-blue-400"
+                                  >
+                                    Edit
+                                  </Button>
+                                )}
+                                {file.type.startsWith('video/') && (
+                                  <Button
+                                    onClick={() => handleTrimVideo(file)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs h-6 px-2 border-gray-600 hover:border-blue-500 hover:text-blue-400"
+                                  >
+                                    Trim
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <span className="text-sm text-gray-300 truncate max-w-[120px] font-medium">{file.name}</span>
-                          <button
-                            onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
-                            className="text-gray-400 hover:text-red-400 transition-colors duration-200 hover:scale-110 w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-500/10"
-                          >
-                            ×
-                          </button>
                         </div>
                       ))}
                     </div>
@@ -571,13 +708,47 @@ export default function Messages({ directUserId }: MessagesProps) {
                     />
                   </div>
                   
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-400 hover:text-yellow-400 p-2 hover:bg-yellow-500/10 rounded-xl transition-all duration-200 hover:scale-105"
-                  >
-                    <Smile className="w-5 h-5" />
-                  </Button>
+                  <div className="relative" ref={emojiPickerRef}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className="text-gray-400 hover:text-yellow-400 p-2 hover:bg-yellow-500/10 rounded-xl transition-all duration-200 hover:scale-105"
+                    >
+                      <Smile className="w-5 h-5" />
+                    </Button>
+                    
+                    {showEmojiPicker && (
+                      <div className="absolute bottom-full right-0 mb-2 bg-gray-800 border border-gray-700 rounded-xl p-3 shadow-xl z-50 animate-in slide-in-from-bottom-2 duration-200">
+                        <div className="grid grid-cols-8 gap-2 w-64">
+                          {['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣',
+                            '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰',
+                            '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜',
+                            '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏',
+                            '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣',
+                            '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠',
+                            '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨',
+                            '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥',
+                            '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙',
+                            '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐️',
+                            '🖖', '👋', '🤝', '👏', '🙌', '👐', '🤲', '🤜',
+                            '🤛', '✊', '👊', '🤚', '👋', '💪', '🦾', '🖕',
+                            '✍️', '🙏', '🦶', '🦵', '🦿', '💄', '💋', '👄',
+                            '🦷', '👅', '👂', '🦻', '👃', '👣', '👁️', '👀',
+                            '🧠', '🫀', '🫁', '🩸', '🦴', '👤', '👥', '🫂',
+                            '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍'].map((emoji) => (
+                            <button
+                              key={emoji}
+                              onClick={() => handleEmojiSelect(emoji)}
+                              className="text-xl hover:bg-gray-700 rounded-lg p-1 transition-colors duration-150 hover:scale-110"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
                   <Button
                     onClick={handleSendMessage}
@@ -716,6 +887,24 @@ export default function Messages({ directUserId }: MessagesProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Video Trimmer Modal */}
+      {showVideoTrimmer && videoToTrim && (
+        <VideoTrimmer
+          videoFile={videoToTrim}
+          onTrimComplete={handleTrimComplete}
+          onCancel={handleTrimCancel}
+        />
+      )}
+
+      {/* Image Editor Modal */}
+      {showImageEditor && imageToEdit && (
+        <ImageEditor
+          imageFile={imageToEdit}
+          onEditComplete={handleImageEditComplete}
+          onCancel={handleImageEditCancel}
+        />
+      )}
     </div>
   );
 }

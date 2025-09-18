@@ -17,6 +17,7 @@ import { VideoPlayer } from "@/components/VideoPlayer";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { VerificationBadge } from '@/components/VerificationBadge';
+import ReportDialog from '@/components/ReportDialog';
 import { SavePostMenuItem } from "@/components/SavePostMenuItem";
 import { useLocation } from "wouter";
 
@@ -91,6 +92,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const [editingPost, setEditingPost] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
   const [carouselIndex, setCarouselIndex] = useState<{[postId: number]: number}>({});
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportPostId, setReportPostId] = useState<number | null>(null);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editProfileData, setEditProfileData] = useState({
     firstName: '',
@@ -187,9 +190,10 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       return postsWithComments;
     },
     enabled: !!profileUserId,
-    refetchInterval: 5000, // Refetch every 5 seconds
+    refetchInterval: 8000, // Refetch every 8 seconds for real-time updates
     refetchOnWindowFocus: true,
-    staleTime: 0,
+    refetchIntervalInBackground: true, // Continue refetching in background
+    staleTime: 3000, // 3 seconds stale time
   });
 
   // Fetch user's reposts
@@ -201,9 +205,10 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       return response.json();
     },
     enabled: !!profileUserId,
-    refetchInterval: 5000, // Refetch every 5 seconds
+    refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
     refetchOnWindowFocus: true,
-    staleTime: 0,
+    refetchIntervalInBackground: true, // Continue refetching in background
+    staleTime: 5000, // 5 seconds stale time
   });
 
   // Fetch follower count and follow status
@@ -234,8 +239,12 @@ export default function Profile({ onBack, userId }: ProfileProps) {
     },
   });
 
-  const getUserDisplayName = (u: any) => 
-    (u?.firstName && u?.lastName) ? `${u.firstName} ${u.lastName}` : u?.email?.split('@')[0] || '';
+  const getUserDisplayName = (u: any) => {
+    if (u?.firstName || u?.lastName) {
+      return `${u?.firstName || ''} ${u?.lastName || ''}`.trim();
+    }
+    return u?.email?.split('@')[0] || '';
+  };
 
   const getUserHandle = (u: any) => {
     console.log('🔍 Profile user data:', u);
@@ -976,7 +985,13 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                   ) : (
                                     <>
                                       <SavePostMenuItem postId={post.id} onSave={handleSavePost} onUnsave={handleUnsavePost} />
-                                      <DropdownMenuItem className="text-red-400 hover:bg-gray-800">
+                                      <DropdownMenuItem 
+                                        className="text-red-400 hover:bg-gray-800"
+                                        onClick={() => {
+                                          setReportPostId(post.id);
+                                          setReportDialogOpen(true);
+                                        }}
+                                      >
                                         <Flag className="mr-2 h-4 w-4" />
                                         Report post
                                       </DropdownMenuItem>
@@ -1040,11 +1055,18 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                             <CarouselItem key={idx} className="pr-2">
                                               <div className="relative w-full max-h-96 overflow-hidden rounded-lg bg-gray-900">
                                                 {url.match(/\.(mp4|mov|webm)$/i) ? (
-                                                  <video
-                                                    src={url}
-                                                    controls
-                                                    className="w-full h-auto max-h-96 object-contain"
-                                                  />
+                                                  <div 
+                                                    className="cursor-pointer"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      openImageModal(url);
+                                                    }}
+                                                  >
+                                                    <VideoPlayer
+                                                      src={url}
+                                                      className="w-full h-auto max-h-96 object-contain"
+                                                    />
+                                                  </div>
                                                 ) : (
                                                   <img
                                                     src={url}
@@ -1070,9 +1092,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                     <div className="mb-3">
                                       <div className="w-full max-h-96 overflow-hidden rounded-lg bg-gray-900">
                                         {urls[0].match(/\.(mp4|mov|webm)$/i) ? (
-                                          <video
+                                          <VideoPlayer
                                             src={urls[0]}
-                                            controls
                                             className="w-full h-auto max-h-96 object-contain"
                                           />
                                         ) : (
@@ -1092,9 +1113,8 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                   <div className="mb-3">
                                     <div className="w-full max-h-96 overflow-hidden rounded-lg bg-gray-900">
                                       {val.match(/\.(mp4|mov|webm)$/i) ? (
-                                        <video
+                                        <VideoPlayer
                                           src={val}
-                                          controls
                                           className="w-full h-auto max-h-96 object-contain"
                                         />
                                       ) : (
@@ -1712,6 +1732,18 @@ export default function Profile({ onBack, userId }: ProfileProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Report Dialog */}
+      {reportPostId && (
+        <ReportDialog
+          isOpen={reportDialogOpen}
+          onClose={() => {
+            setReportDialogOpen(false);
+            setReportPostId(null);
+          }}
+          postId={reportPostId}
+        />
+      )}
     </div>
   );
 }
