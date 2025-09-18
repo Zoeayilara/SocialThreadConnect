@@ -24,47 +24,7 @@ export default function UploadPicture() {
   // Allow access if we have temp data OR authenticated user OR valid token
   const hasAccess = tempUserId || user || authToken;
 
-  // Timeout mechanism to prevent infinite loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoadingTimeout(true);
-      setAuthCheckComplete(true);
-    }, 5000); // 5 second timeout
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Mark auth check as complete when we have definitive state
-  useEffect(() => {
-    if (user || (!isLoading && !tempUserId && !authToken)) {
-      setAuthCheckComplete(true);
-    }
-  }, [user, isLoading, tempUserId, authToken]);
-
-  // Handle redirects with useEffect to avoid breaking Rules of Hooks
-  useEffect(() => {
-    if (!hasAccess && (authCheckComplete || loadingTimeout)) {
-      setLocation('/login');
-    }
-  }, [hasAccess, authCheckComplete, loadingTimeout, setLocation]);
-
-  // Show loading only for a reasonable time
-  if (!authCheckComplete && !loadingTimeout) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  // Don't render main content if no access
-  if (!hasAccess) {
-    return null;
-  }
-
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       console.log('Starting upload for file:', file.name);
@@ -138,6 +98,47 @@ export default function UploadPicture() {
       });
     },
   });
+
+  // Timeout mechanism to prevent infinite loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoadingTimeout(true);
+      setAuthCheckComplete(true);
+    }, 5000); // 5 second timeout
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Mark auth check as complete when we have definitive state
+  useEffect(() => {
+    if (user || (!isLoading && !tempUserId && !authToken)) {
+      setAuthCheckComplete(true);
+    }
+  }, [user, isLoading, tempUserId, authToken]);
+
+  // Handle redirects with useEffect to avoid breaking Rules of Hooks
+  useEffect(() => {
+    if (!hasAccess && (authCheckComplete || loadingTimeout)) {
+      setLocation('/login');
+    }
+  }, [hasAccess, authCheckComplete, loadingTimeout, setLocation]);
+
+  // Show loading only for a reasonable time
+  if (!authCheckComplete && !loadingTimeout) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Don't render main content if no access
+  if (!hasAccess) {
+    return null;
+  }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
