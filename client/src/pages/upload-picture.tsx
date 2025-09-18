@@ -41,6 +41,13 @@ export default function UploadPicture() {
     }
   }, [user, isLoading, tempUserId, authToken]);
 
+  // Handle redirects with useEffect to avoid breaking Rules of Hooks
+  useEffect(() => {
+    if (!hasAccess && (authCheckComplete || loadingTimeout)) {
+      setLocation('/login');
+    }
+  }, [hasAccess, authCheckComplete, loadingTimeout, setLocation]);
+
   // Show loading only for a reasonable time
   if (!authCheckComplete && !loadingTimeout) {
     return (
@@ -53,9 +60,8 @@ export default function UploadPicture() {
     );
   }
   
-  // Redirect to login if no access after timeout or auth check complete
-  if (!hasAccess && (authCheckComplete || loadingTimeout)) {
-    setLocation('/login');
+  // Don't render main content if no access
+  if (!hasAccess) {
     return null;
   }
 
