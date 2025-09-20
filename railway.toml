@@ -1,6 +1,9 @@
 [build]
 builder = "NIXPACKS"
 
+[build.nixpacksConfig]
+nodeVersion = "20.18.0"
+
 [deploy]
 healthcheckPath = "/"
 healthcheckTimeout = 300

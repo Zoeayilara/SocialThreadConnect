@@ -1,8 +1,12 @@
 [phases.setup]
-nixPkgs = ['nodejs_18']
+nixPkgs = ['nodejs_20']
 
 [phases.install]
-cmds = ['npm ci']
+cmds = [
+  'rm -rf node_modules package-lock.json',
+  'npm install --no-optional',
+  'npm install @rollup/rollup-linux-x64-gnu --save-optional'
+]
 
 [phases.build]
 cmds = ['npm run build']
