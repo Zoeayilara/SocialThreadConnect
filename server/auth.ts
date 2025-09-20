@@ -77,9 +77,15 @@ export const isAuthenticated = (req: any, res: any, next: any) => {
       }
     } catch (error) {
       console.log('❌ JWT verification failed:', error);
+      
+      // If JWT verification fails and we're in Railway environment, 
+      // it might be due to environment loading issues
+      if (process.env.RAILWAY_ENVIRONMENT_NAME && !process.env.JWT_SECRET) {
+        console.log('🚨 JWT_SECRET missing in Railway - environment may not be fully loaded');
+      }
     }
   } else {
-    console.log('JWT failed, trying session auth...');
+    console.log('No JWT token found, trying session auth...');
   }
 
   // Fallback to session-based auth for backward compatibility

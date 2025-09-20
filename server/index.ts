@@ -3,6 +3,19 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic, log } from "./production";
 
+// Validate critical environment variables
+console.log('🔍 Environment validation:');
+console.log('  - NODE_ENV:', process.env.NODE_ENV);
+console.log('  - RAILWAY_ENVIRONMENT_NAME:', process.env.RAILWAY_ENVIRONMENT_NAME);
+console.log('  - JWT_SECRET exists:', !!process.env.JWT_SECRET);
+console.log('  - SESSION_SECRET exists:', !!process.env.SESSION_SECRET);
+
+// Ensure JWT_SECRET is set in production
+if (process.env.RAILWAY_ENVIRONMENT_NAME && !process.env.JWT_SECRET) {
+  console.error('🚨 CRITICAL: JWT_SECRET not set in Railway environment!');
+  console.error('🔧 Please set JWT_SECRET environment variable in Railway dashboard');
+}
+
 const app = express();
 
 // CORS middleware

@@ -1,6 +1,5 @@
 import express from 'express';
 import { z } from 'zod';
-import nodemailer from 'nodemailer';
 import { isAuthenticated } from '../auth';
 
 const router = express.Router();
@@ -10,20 +9,6 @@ const reportSchema = z.object({
   reason: z.string().min(1).max(500),
   description: z.string().optional()
 });
-
-// Create email transporter
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-};
-
 
 const isAdmin = async (req: any, res: any, next: any) => {
   try {
@@ -107,47 +92,6 @@ router.post('/posts/:postId', isAuthenticated, async (req: any, res) => {
     console.log('📝 Inserting report into database:', { postId, userId, reason, description });
     db.prepare(insertReport).run(postId, userId, reason, description || '');
     console.log('✅ Report saved to database successfully');
-
-    // Try to send email to admin (optional - don't fail if email fails)
-    try {
-      console.log('📧 Attempting to send email notification...');
-      const transporter = createTransporter();
-      
-      const emailContent = `
-        <h2>🚨 New Post Report</h2>
-        
-        <h3>Report Details:</h3>
-        <p><strong>Reason:</strong> ${reason}</p>
-        ${description ? `<p><strong>Description:</strong> ${description}</p>` : ''}
-        <p><strong>Reported by:</strong> ${user.firstName} ${user.lastName} (${user.email})</p>
-        <p><strong>Report Date:</strong> ${new Date().toLocaleString()}</p>
-        
-        <h3>Reported Post:</h3>
-        <p><strong>Author:</strong> ${post.firstName} ${post.lastName} (${post.author_email})</p>
-        <p><strong>Post Date:</strong> ${new Date(post.created_at * 1000).toLocaleString()}</p>
-        <p><strong>Content:</strong></p>
-        <blockquote style="background: #f5f5f5; padding: 10px; border-left: 4px solid #ccc;">
-          ${post.content}
-        </blockquote>
-        
-        <p><strong>Post ID:</strong> ${postId}</p>
-        
-        <hr>
-        <p><em>Please review this report and take appropriate action through the admin dashboard.</em></p>
-      `;
-
-      await transporter.sendMail({
-        from: process.env.FROM_EMAIL,
-        to: 'Entreefox@gmail.com',
-        subject: `🚨 Post Report - ${reason}`,
-        html: emailContent,
-      });
-      
-      console.log('✅ Email notification sent successfully');
-    } catch (emailError) {
-      console.warn('⚠️ Failed to send email notification (report still saved):', emailError);
-      // Don't fail the request if email fails - report is still saved
-    }
 
     res.json({ 
       success: true, 
