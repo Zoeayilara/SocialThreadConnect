@@ -101,15 +101,30 @@ export default function UploadPicture() {
 
   // Timeout mechanism to prevent infinite loading
   useEffect(() => {
+    // Set a timeout to handle loading state
     const timer = setTimeout(() => {
       setLoadingTimeout(true);
       setAuthCheckComplete(true);
-    }, 5000); // 5 second timeout
+    }, 3000); // Reduced to 3 seconds for faster recovery
+
+    // Clear timeout if auth check completes
+    if (!isLoading) {
+      clearTimeout(timer);
+      setAuthCheckComplete(true);
+    }
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [isLoading]);
 
-  // Mark auth check as complete when we have definitive state
+  // Additional effect to handle registration flow specifically
+  useEffect(() => {
+    // If we have temp data from registration, bypass auth loading
+    if (tempUserId && authToken) {
+      setAuthCheckComplete(true);
+      setLoadingTimeout(false);
+    }
+  }, [tempUserId, authToken]);
+
   useEffect(() => {
     if (user || (!isLoading && !tempUserId && !authToken)) {
       setAuthCheckComplete(true);

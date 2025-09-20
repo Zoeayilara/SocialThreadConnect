@@ -59,7 +59,7 @@ export default function AdminReports({ onBack }: AdminReportsProps) {
       const response = await authenticatedFetch(`/api/reports/${reportId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, adminNotes: notes }),
+        body: JSON.stringify({ status, admin_notes: notes }),
       });
       if (!response.ok) throw new Error('Failed to update report status');
       return response.json();
@@ -85,7 +85,7 @@ export default function AdminReports({ onBack }: AdminReportsProps) {
   // Delete post mutation
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await authenticatedFetch(`/api/posts/${postId}`, {
+      const response = await authenticatedFetch(`/api/reports/posts/${postId}`, {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Failed to delete post');

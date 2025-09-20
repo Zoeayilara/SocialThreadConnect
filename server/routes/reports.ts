@@ -226,4 +226,34 @@ router.patch('/:reportId/status', isAuthenticated, isAdmin, async (req: any, res
   }
 });
 
+// Delete reported post (admin only)
+router.delete('/posts/:postId', isAuthenticated, isAdmin, async (req: any, res) => {
+  try {
+    const postId = parseInt(req.params.postId);
+    const db = (req as any).db || require('../db').sqlite;
+
+    // Check if post exists
+    const post = db.prepare('SELECT id FROM posts WHERE id = ?').get(postId);
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    // Delete related data first (foreign key constraints)
+    db.prepare('DELETE FROM comments WHERE post_id = ?').run(postId);
+    db.prepare('DELETE FROM likes WHERE post_id = ?').run(postId);
+    db.prepare('DELETE FROM reposts WHERE post_id = ?').run(postId);
+    db.prepare('DELETE FROM saved_posts WHERE post_id = ?').run(postId);
+    db.prepare('DELETE FROM reports WHERE post_id = ?').run(postId);
+    
+    // Finally delete the post
+    db.prepare('DELETE FROM posts WHERE id = ?').run(postId);
+
+    res.json({ success: true, message: 'Post deleted successfully' });
+
+  } catch (error) {
+    console.error('Delete reported post error:', error);
+    res.status(500).json({ error: 'Failed to delete post' });
+  }
+});
+
 export default router;
