@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { authenticatedFetch, getImageUrl } from '../utils/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, ImageIcon, Scissors, Edit3 } from 'lucide-react';
+import { X, ImageIcon, Edit3 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/hooks/useAuth';
 import { VideoPreview } from '@/components/VideoPreview';
-import { VideoTrimmer } from '@/components/VideoTrimmer';
 import { ImageEditor } from '@/components/ImageEditor';
 
 
@@ -26,8 +25,6 @@ export default function CreatePost() {
   const { user } = useAuth();
   const [newPost, setNewPost] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [showVideoTrimmer, setShowVideoTrimmer] = useState(false);
-  const [videoToTrim, setVideoToTrim] = useState<File | null>(null);
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [imageToEdit, setImageToEdit] = useState<File | null>(null);
 
@@ -93,30 +90,6 @@ export default function CreatePost() {
     return 'User';
   };
 
-  const handleTrimVideo = (file: File) => {
-    setVideoToTrim(file);
-    setShowVideoTrimmer(true);
-  };
-
-  const handleTrimComplete = (trimmedBlob: Blob) => {
-    const trimmedFile = new File([trimmedBlob], videoToTrim?.name || 'trimmed-video.mp4', {
-      type: trimmedBlob.type || 'video/mp4'
-    });
-    
-    // Replace the original video with the trimmed one
-    const updatedFiles = selectedFiles.map(file => 
-      file === videoToTrim ? trimmedFile : file
-    );
-    setSelectedFiles(updatedFiles);
-    
-    setShowVideoTrimmer(false);
-    setVideoToTrim(null);
-  };
-
-  const handleTrimCancel = () => {
-    setShowVideoTrimmer(false);
-    setVideoToTrim(null);
-  };
 
   const handleEditImage = (file: File) => {
     setImageToEdit(file);
@@ -287,17 +260,6 @@ export default function CreatePost() {
                             Edit
                           </Button>
                         )}
-                        {file.type.startsWith('video/') && (
-                          <Button
-                            onClick={() => handleTrimVideo(file)}
-                            variant="outline"
-                            size="sm"
-                            className="text-xs px-3 py-1 h-8 border-gray-600 hover:border-blue-500 hover:text-blue-400"
-                          >
-                            <Scissors className="w-3 h-3 mr-1" />
-                            Trim
-                          </Button>
-                        )}
                         <Button
                           onClick={() => {
                             const newFiles = selectedFiles.filter((_, i) => i !== index);
@@ -319,14 +281,6 @@ export default function CreatePost() {
           </div>
         )}
 
-        {/* Video Trimmer Modal */}
-        {showVideoTrimmer && videoToTrim && (
-          <VideoTrimmer
-            videoFile={videoToTrim}
-            onTrimComplete={handleTrimComplete}
-            onCancel={handleTrimCancel}
-          />
-        )}
 
         {/* Image Editor Modal */}
         {showImageEditor && imageToEdit && (

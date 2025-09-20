@@ -1141,24 +1141,24 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                             <div className="flex items-center space-x-4 text-gray-400">
                               <button 
                                 onClick={() => handleLike(post)}
-                                className="flex items-center space-x-3 hover:text-red-500 transition-colors p-3 rounded-full hover:bg-red-500/10"
+                                className={`flex items-center space-x-3 transition-colors p-3 rounded-full ${post.isLiked ? 'text-red-500 bg-red-500/10 hover:bg-red-500/20' : 'text-gray-500 hover:text-gray-400 hover:bg-gray-500/10'}`}
                               >
-                                <Heart className={`w-7 h-7 ${post.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                                <span className="text-base font-medium">{post.likesCount}</span>
+                                <Heart className={`w-5 h-5 ${post.isLiked ? 'fill-current text-red-500' : 'text-gray-500'}`} />
+                                <span className="text-sm font-semibold">{post.likesCount}</span>
                               </button>
                               <button 
                                 onClick={() => setShowComments(showComments === post.id ? null : post.id)}
                                 className="flex items-center space-x-3 hover:text-blue-500 transition-colors p-3 rounded-full hover:bg-blue-500/10"
                               >
-                                <MessageCircle className="w-7 h-7" />
-                                <span className="text-base font-medium">{post.commentsCount}</span>
+                                <MessageCircle className="w-5 h-5" />
+                                <span className="text-sm font-semibold">{post.commentsCount}</span>
                               </button>
                               <button 
                                 onClick={() => handleRepost(post.id)}
                                 className={`flex items-center space-x-3 hover:text-green-500 transition-colors p-3 rounded-full hover:bg-green-500/10 ${post.isReposted ? 'text-green-500' : 'text-gray-400'}`}
                               >
-                                <Repeat2 className="w-7 h-7" />
-                                <span className="text-base font-medium">{post.repostsCount}</span>
+                                <Repeat2 className="w-5 h-5" />
+                                <span className="text-sm font-semibold">{post.repostsCount}</span>
                               </button>
                             </div>
                             
@@ -1416,24 +1416,24 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                         <div className="px-6 flex items-center space-x-6 pt-3">
                           <button 
                             onClick={() => handleLike(post)}
-                            className={`flex items-center space-x-2 hover:text-red-500 transition-colors ${post.isLiked ? 'text-red-500' : 'text-gray-400'}`}
+                            className={`flex items-center space-x-2 transition-colors ${post.isLiked ? 'text-red-500' : 'text-gray-400 hover:text-gray-600'}`}
                           >
-                            <Heart className={`w-5 h-5 ${post.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                            <span className="text-sm">{post.likesCount}</span>
+                            <Heart className={`w-5 h-5 ${post.isLiked ? 'fill-current text-red-500' : 'text-gray-400'}`} />
+                            <span className="text-xs font-semibold">{post.likesCount}</span>
                           </button>
                           <button 
                             onClick={() => setShowComments(showComments === post.id ? null : post.id)}
                             className="flex items-center space-x-2 hover:text-blue-500 transition-colors"
                           >
                             <MessageCircle className="w-5 h-5" />
-                            <span className="text-sm">{post.commentsCount}</span>
+                            <span className="text-xs font-semibold">{post.commentsCount}</span>
                           </button>
                           <button 
                             onClick={() => handleRepost(post.id)}
                             className={`flex items-center space-x-2 hover:text-green-500 transition-colors ${post.isReposted ? 'text-green-500' : 'text-gray-400'}`}
                           >
                             <Repeat2 className="w-5 h-5" />
-                            <span className="text-sm">{post.repostsCount}</span>
+                            <span className="text-xs font-semibold">{post.repostsCount}</span>
                           </button>
                           <button className="flex items-center space-x-2 hover:text-gray-300 transition-colors">
                             <Share className="w-5 h-5" />

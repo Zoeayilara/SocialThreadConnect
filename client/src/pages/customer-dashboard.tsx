@@ -11,7 +11,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
-import { Heart, MessageCircle, MoreHorizontal, MessageSquare, Shield, Search, Edit3, X, Trash2, Flag, Send } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Send, Search, Shield, Repeat2, MessageSquare, Edit3, Trash2, Flag, X } from "lucide-react";
 import { FoxLogo } from "@/components/FoxLogo";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { authenticatedFetch, getImageUrl } from "@/utils/api";
@@ -773,19 +773,17 @@ export default function CustomerDashboard() {
                 );
               })() : null}
               <div className="flex items-center space-x-4 pt-4">
-                <Button variant="ghost" size="lg" onClick={() => handleLike(post)} className={`p-3 h-auto rounded-full hover:bg-red-500/10 transition-all duration-200 ${post.isLiked ? 'text-red-500 bg-red-500/10' : 'text-gray-500 hover:text-red-500'}`}>
-                  <Heart className={`w-7 h-7 mr-3 ${post.isLiked ? 'fill-current' : ''}`} />
-                  <span className="text-base font-medium">{post.likesCount}</span>
+                <Button variant="ghost" size="lg" onClick={() => handleLike(post)} className={`p-3 h-auto rounded-full transition-all duration-200 ${post.isLiked ? 'text-red-500 bg-red-500/10 hover:bg-red-500/20' : 'text-gray-500 hover:text-gray-400 hover:bg-gray-500/10'}`}>
+                  <Heart className={`w-5 h-5 mr-2 ${post.isLiked ? 'fill-current' : ''}`} />
+                  <span className="text-sm font-semibold">{post.likesCount}</span>
                 </Button>
                 <Button variant="ghost" size="lg" onClick={() => setShowComments(showComments === post.id ? null : post.id)} className="p-3 h-auto rounded-full text-gray-500 hover:text-blue-500 hover:bg-blue-500/10 transition-all duration-200">
-                  <MessageCircle className="w-7 h-7 mr-3" />
-                  <span className="text-base font-medium">{post.commentsCount}</span>
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  <span className="text-sm font-semibold">{post.commentsCount}</span>
                 </Button>
                 <Button variant="ghost" size="lg" onClick={() => handleRepost(post.id)} className={`p-3 h-auto rounded-full hover:bg-green-500/10 transition-all duration-200 ${post.isReposted ? 'text-green-500 bg-green-500/10' : 'text-gray-500 hover:text-green-500'}`}>
-                  <svg className="w-7 h-7 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span className="text-base font-medium">{post.repostsCount}</span>
+                  <Repeat2 className="w-5 h-5 mr-2" />
+                  <span className="text-sm font-semibold">{post.repostsCount}</span>
                 </Button>
               </div>
 

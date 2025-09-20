@@ -64,9 +64,9 @@ router.post('/posts/:postId', isAuthenticated, async (req: any, res) => {
     
     const userQuery = `SELECT first_name as firstName, last_name as lastName, email FROM users WHERE id = ?`;
     const postQuery = `
-      SELECT p.content, p.createdAt as created_at, u.first_name as firstName, u.last_name as lastName, u.email as author_email 
+      SELECT p.content, p.created_at, u.first_name as firstName, u.last_name as lastName, u.email as author_email 
       FROM posts p 
-      JOIN users u ON p.userId = u.id 
+      JOIN users u ON p.user_id = u.id 
       WHERE p.id = ?
     `;
 
@@ -124,7 +124,7 @@ router.post('/posts/:postId', isAuthenticated, async (req: any, res) => {
         
         <h3>Reported Post:</h3>
         <p><strong>Author:</strong> ${post.firstName} ${post.lastName} (${post.author_email})</p>
-        <p><strong>Post Date:</strong> ${new Date(post.created_at).toLocaleString()}</p>
+        <p><strong>Post Date:</strong> ${new Date(post.created_at * 1000).toLocaleString()}</p>
         <p><strong>Content:</strong></p>
         <blockquote style="background: #f5f5f5; padding: 10px; border-left: 4px solid #ccc;">
           ${post.content}
@@ -173,18 +173,18 @@ router.get('/', isAuthenticated, isAdmin, async (req: any, res) => {
     const query = `
       SELECT 
         r.*,
-        u.firstName as reporter_firstName,
-        u.lastName as reporter_lastName,
+        u.first_name as reporter_firstName,
+        u.last_name as reporter_lastName,
         u.email as reporter_email,
         p.content as post_content,
         p.created_at as post_created_at,
-        author.firstName as author_firstName,
-        author.lastName as author_lastName,
+        author.first_name as author_firstName,
+        author.last_name as author_lastName,
         author.email as author_email
       FROM reports r
       JOIN users u ON r.reporter_id = u.id
       JOIN posts p ON r.post_id = p.id
-      JOIN users author ON p.userId = author.id
+      JOIN users author ON p.user_id = author.id
       ORDER BY r.created_at DESC
     `;
 

@@ -36,8 +36,8 @@ export const AnimatedLikeButton: React.FC<AnimatedLikeButtonProps> = ({
     }, 600);
   };
 
-  const heartSize = size === 'sm' ? 'w-5 h-5' : 'w-7 h-7';
-  const textSize = size === 'sm' ? 'text-sm' : 'text-base';
+  const heartSize = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
+  const textSize = size === 'sm' ? 'text-xs' : 'text-sm';
 
   return (
     <Button
@@ -47,19 +47,19 @@ export const AnimatedLikeButton: React.FC<AnimatedLikeButtonProps> = ({
       disabled={disabled}
       className={`
         flex items-center gap-1 p-0 h-auto font-normal transition-all duration-200
-        ${isLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'}
+        ${isLiked ? 'text-red-500' : 'text-gray-400 hover:text-gray-600'}
         ${className}
       `}
     >
       <div className="relative flex items-center">
-        {/* Pulse animation background */}
-        {showPulse && (
+        {/* Pulse animation background - only when liking */}
+        {showPulse && isLiked && (
           <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" />
         )}
         
         {/* Heart icon with animations */}
         <Heart 
-          className={`${heartSize} mr-3 transition-all duration-300 ${
+          className={`${heartSize} mr-2 transition-all duration-300 ${
             isLiked ? 'fill-current' : ''
           } ${
             isAnimating ? 'animate-bounce scale-125' : ''
@@ -68,7 +68,7 @@ export const AnimatedLikeButton: React.FC<AnimatedLikeButtonProps> = ({
         
         {/* Count with animation */}
         <span 
-          className={`${textSize} font-medium transition-all duration-200 ${
+          className={`${textSize} font-semibold transition-all duration-200 ${
             isAnimating ? 'scale-110' : ''
           }`}
         >
