@@ -240,10 +240,17 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   });
 
   const getUserDisplayName = (u: any) => {
-    if (u?.firstName || u?.lastName) {
-      return `${u?.firstName || ''} ${u?.lastName || ''}`.trim();
+    if (!u) return 'User';
+    if (u.firstName && u.lastName) {
+      return `${u.firstName} ${u.lastName}`;
     }
-    return u?.email?.split('@')[0] || '';
+    if (u.firstName) {
+      return u.firstName;
+    }
+    if (u.lastName) {
+      return u.lastName;
+    }
+    return u.universityHandle || u.email?.split('@')[0] || 'User';
   };
 
   const getUserHandle = (u: any) => {

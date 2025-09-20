@@ -81,7 +81,16 @@ export default function CreatePost() {
 
   const getUserDisplayName = (user: User | null) => {
     if (!user) return 'User';
-    return (user.firstName && user.lastName) ? `${user.firstName} ${user.lastName}` : 'User';
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user.firstName) {
+      return user.firstName;
+    }
+    if (user.lastName) {
+      return user.lastName;
+    }
+    return 'User';
   };
 
   const handleTrimVideo = (file: File) => {
@@ -174,7 +183,7 @@ export default function CreatePost() {
           <Avatar className="w-12 h-12 ring-2 ring-gray-700/50">
             <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
             <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-semibold">
-              {user?.firstName?.[0]}{user?.lastName?.[0]}
+              {user?.firstName?.[0] || user?.lastName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">

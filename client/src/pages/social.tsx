@@ -279,9 +279,17 @@ export default function Social() {
   };
 
   const getUserDisplayName = (user: any) => {
-    return user.firstName && user.lastName 
-      ? `${user.firstName} ${user.lastName}`
-      : user.email.split('@')[0];
+    if (!user) return 'User';
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user.firstName) {
+      return user.firstName;
+    }
+    if (user.lastName) {
+      return user.lastName;
+    }
+    return user.email ? user.email.split('@')[0] : 'User';
   };
 
   // Remove loading spinner for posts - let content load naturally
@@ -307,7 +315,7 @@ export default function Social() {
             <Avatar className="w-8 h-8">
               <AvatarImage src={user?.profileImageUrl ?? undefined} />
               <AvatarFallback>
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
+                {user?.firstName?.[0] || user?.lastName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
             <Button variant="ghost" size="sm" onClick={handleLogout} disabled={isLoggingOut}>
@@ -325,7 +333,7 @@ export default function Social() {
               <Avatar>
                 <AvatarImage src={user?.profileImageUrl ?? undefined} />
                 <AvatarFallback>
-                  {user?.firstName?.[0]}{user?.lastName?.[0]}
+                  {user?.firstName?.[0] || user?.lastName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
@@ -405,7 +413,7 @@ export default function Social() {
                   <Avatar>
                     <AvatarImage src={post.user.profileImageUrl ?? undefined} />
                     <AvatarFallback>
-                      {post.user.firstName?.[0]}{post.user.lastName?.[0]}
+                      {post.user.firstName?.[0] || post.user.lastName?.[0] || post.user.email?.[0]?.toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div>
@@ -637,7 +645,7 @@ export default function Social() {
                     <Avatar className="w-8 h-8">
                       <AvatarImage src={user?.profileImageUrl ?? undefined} />
                       <AvatarFallback className="text-xs">
-                        {user?.firstName?.[0]}{user?.lastName?.[0]}
+                        {user?.firstName?.[0] || user?.lastName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 flex">
@@ -669,7 +677,7 @@ export default function Social() {
                       <Avatar className="w-8 h-8">
                         <AvatarImage src={comment.user.profileImageUrl} />
                         <AvatarFallback className="text-xs">
-                          {comment.user.firstName?.[0]}{comment.user.lastName?.[0]}
+                          {comment.user.firstName?.[0] || comment.user.lastName?.[0] || 'U'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">

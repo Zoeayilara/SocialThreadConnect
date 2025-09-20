@@ -22,6 +22,8 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
   const [rotation, setRotation] = useState(0);
   const [cropMode, setCropMode] = useState(false);
   const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const drawImage = useCallback((img: HTMLImageElement) => {
     const canvas = canvasRef.current;
@@ -54,11 +56,38 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
     ctx.restore();
 
     // Draw crop overlay if in crop mode
-    if (cropMode) {
+    if (cropMode && cropArea.width > 0 && cropArea.height > 0) {
+      // Draw semi-transparent overlay on non-cropped areas
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      
+      // Top
+      ctx.fillRect(0, 0, canvas.width, cropArea.y);
+      // Bottom
+      ctx.fillRect(0, cropArea.y + cropArea.height, canvas.width, canvas.height - cropArea.y - cropArea.height);
+      // Left
+      ctx.fillRect(0, cropArea.y, cropArea.x, cropArea.height);
+      // Right
+      ctx.fillRect(cropArea.x + cropArea.width, cropArea.y, canvas.width - cropArea.x - cropArea.width, cropArea.height);
+      
+      // Draw crop border
       ctx.strokeStyle = '#3b82f6';
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 5]);
       ctx.strokeRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
+      
+      // Draw corner handles
+      ctx.fillStyle = '#3b82f6';
+      ctx.setLineDash([]);
+      const handleSize = 8;
+      
+      // Top-left
+      ctx.fillRect(cropArea.x - handleSize/2, cropArea.y - handleSize/2, handleSize, handleSize);
+      // Top-right
+      ctx.fillRect(cropArea.x + cropArea.width - handleSize/2, cropArea.y - handleSize/2, handleSize, handleSize);
+      // Bottom-left
+      ctx.fillRect(cropArea.x - handleSize/2, cropArea.y + cropArea.height - handleSize/2, handleSize, handleSize);
+      // Bottom-right
+      ctx.fillRect(cropArea.x + cropArea.width - handleSize/2, cropArea.y + cropArea.height - handleSize/2, handleSize, handleSize);
     }
   }, [brightness, contrast, saturation, rotation, cropMode, cropArea]);
 
@@ -88,13 +117,99 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
 
   const handleCrop = () => {
     setCropMode(!cropMode);
+    if (!cropMode && originalImage) {
+      // Initialize crop area to center quarter of image
+      const quarterWidth = originalImage.width / 4;
+      const quarterHeight = originalImage.height / 4;
+      setCropArea({
+        x: quarterWidth,
+        y: quarterHeight,
+        width: quarterWidth * 2,
+        height: quarterHeight * 2
+      });
+    }
+  };
+
+  const getCanvasCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!cropMode) return;
+
+    const coords = getCanvasCoordinates(e);
+    setIsDragging(true);
+    setDragStart(coords);
+    setCropArea({ x: coords.x, y: coords.y, width: 0, height: 0 });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!cropMode || !isDragging) return;
+
+    const coords = getCanvasCoordinates(e);
+    const width = coords.x - dragStart.x;
+    const height = coords.y - dragStart.y;
+
+    setCropArea({
+      x: width < 0 ? coords.x : dragStart.x,
+      y: height < 0 ? coords.y : dragStart.y,
+      width: Math.abs(width),
+      height: Math.abs(height)
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
   };
 
   const handleSave = async () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !originalImage) return;
 
-    canvas.toBlob((blob) => {
+    // Create a new canvas for the final output
+    const outputCanvas = document.createElement('canvas');
+    const outputCtx = outputCanvas.getContext('2d');
+    if (!outputCtx) return;
+
+    // If cropping, use crop dimensions, otherwise use full image
+    if (cropMode && cropArea.width > 0 && cropArea.height > 0) {
+      outputCanvas.width = cropArea.width;
+      outputCanvas.height = cropArea.height;
+
+      // Apply filters
+      outputCtx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+      
+      // Draw cropped portion
+      outputCtx.drawImage(
+        originalImage,
+        cropArea.x, cropArea.y, cropArea.width, cropArea.height,
+        0, 0, cropArea.width, cropArea.height
+      );
+    } else {
+      // Use full image with filters and rotation
+      outputCanvas.width = originalImage.width;
+      outputCanvas.height = originalImage.height;
+
+      outputCtx.save();
+      outputCtx.translate(outputCanvas.width / 2, outputCanvas.height / 2);
+      outputCtx.rotate((rotation * Math.PI) / 180);
+      outputCtx.translate(-outputCanvas.width / 2, -outputCanvas.height / 2);
+      outputCtx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+      outputCtx.drawImage(originalImage, 0, 0);
+      outputCtx.restore();
+    }
+
+    outputCanvas.toBlob((blob) => {
       if (blob) {
         onEditComplete(blob);
       }
@@ -125,8 +240,12 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
             <div className="relative max-w-full max-h-full overflow-auto">
               <canvas
                 ref={canvasRef}
-                className="max-w-full max-h-full object-contain border border-gray-600 rounded-lg"
+                className={`max-w-full max-h-full object-contain border border-gray-600 rounded-lg ${cropMode ? 'cursor-crosshair' : 'cursor-default'}`}
                 style={{ maxHeight: '60vh' }}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
               />
             </div>
           </div>
@@ -136,6 +255,11 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
             {/* Quick Actions */}
             <div className="space-y-3">
               <h4 className="text-white font-medium">Quick Actions</h4>
+              {cropMode && (
+                <p className="text-sm text-blue-400 bg-blue-500/10 p-2 rounded">
+                  Click and drag on the image to select the area you want to crop
+                </p>
+              )}
               <div className="flex gap-2">
                 <Button
                   onClick={handleRotate}

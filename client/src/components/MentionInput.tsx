@@ -74,7 +74,10 @@ export const MentionInput: React.FC<MentionInputProps> = ({
     
     const mentionStart = textBeforeCursor.lastIndexOf('@');
     const beforeMention = textBeforeCursor.substring(0, mentionStart);
-    const mentionText = `@${user.firstName}${user.lastName} `;
+    const displayName = user.firstName && user.lastName 
+      ? `${user.firstName}${user.lastName}` 
+      : user.firstName || user.lastName || user.email?.split('@')[0] || 'User';
+    const mentionText = `@${displayName} `;
     
     const newValue = beforeMention + mentionText + textAfterCursor;
     onChange(newValue);
@@ -108,9 +111,12 @@ export const MentionInput: React.FC<MentionInputProps> = ({
       // For now, we'll just track that mentions exist
       const mentionText = match[1];
       // Find user by name (simplified)
-      const user = mentionSuggestions.find((u: User) => 
-        `${u.firstName}${u.lastName}`.toLowerCase() === mentionText.toLowerCase()
-      );
+      const user = mentionSuggestions.find((u: User) => {
+        const displayName = u.firstName && u.lastName 
+          ? `${u.firstName}${u.lastName}` 
+          : u.firstName || u.lastName || u.email?.split('@')[0] || 'User';
+        return displayName.toLowerCase() === mentionText.toLowerCase();
+      });
       if (user) {
         mentions.push(user);
       }
@@ -166,15 +172,19 @@ export const MentionInput: React.FC<MentionInputProps> = ({
               <Avatar className="w-8 h-8">
                 <AvatarImage src={user.profileImageUrl} />
                 <AvatarFallback>
-                  {user.firstName[0]}{user.lastName[0]}
+                  {user.firstName?.[0] || user.lastName?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <div className="font-medium text-sm">
-                  {user.firstName} {user.lastName}
+                  {user.firstName && user.lastName 
+                    ? `${user.firstName} ${user.lastName}` 
+                    : user.firstName || user.lastName || user.email?.split('@')[0] || 'User'}
                 </div>
                 <div className="text-xs text-gray-500">
-                  @{user.firstName}{user.lastName}
+                  @{user.firstName && user.lastName 
+                    ? `${user.firstName}${user.lastName}` 
+                    : user.firstName || user.lastName || user.email?.split('@')[0] || 'user'}
                 </div>
               </div>
             </div>

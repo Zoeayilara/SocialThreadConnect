@@ -383,7 +383,19 @@ export default function CustomerDashboard() {
     return user?.id === post.user.id;
   };
 
-  const getUserDisplayName = (u: any) => (u.firstName && u.lastName) ? `${u.firstName} ${u.lastName}` : u.email.split('@')[0];
+  const getUserDisplayName = (u: any) => {
+    if (!u) return 'User';
+    if (u.firstName && u.lastName) {
+      return `${u.firstName} ${u.lastName}`;
+    }
+    if (u.firstName) {
+      return u.firstName;
+    }
+    if (u.lastName) {
+      return u.lastName;
+    }
+    return u.email ? u.email.split('@')[0] : 'User';
+  };
 
   // Search users mutation
   const searchUsersMutation = useMutation({
@@ -476,7 +488,7 @@ export default function CustomerDashboard() {
             </Button>
             <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleUserClick()}>
               <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
-              <AvatarFallback className="bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+              <AvatarFallback className="bg-gray-700 text-white">{user?.firstName?.[0] || user?.lastName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
             </Avatar>
           </div>
         </div>
@@ -514,7 +526,7 @@ export default function CustomerDashboard() {
                         }}
                       >
                         <AvatarImage src={getImageUrl(searchUser.profileImageUrl)} />
-                        <AvatarFallback className="bg-gray-700 text-white">{searchUser.firstName?.[0]}{searchUser.lastName?.[0]}</AvatarFallback>
+                        <AvatarFallback className="bg-gray-700 text-white">{searchUser.firstName?.[0] || searchUser.lastName?.[0] || searchUser.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                       </Avatar>
                       <div 
                         className="flex-1 cursor-pointer"
@@ -567,7 +579,7 @@ export default function CustomerDashboard() {
             <div className="flex space-x-3">
               <Avatar className="w-12 h-12">
                 <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
-                <AvatarFallback className="bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                <AvatarFallback className="bg-gray-700 text-white">{user?.firstName?.[0] || user?.lastName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex-1 cursor-pointer" onClick={() => setLocation('/create-post')}>
                 <div className="mb-1">
@@ -587,7 +599,7 @@ export default function CustomerDashboard() {
                 <div className="flex items-start space-x-3">
                   <Avatar className="w-10 h-10 cursor-pointer" onClick={() => handleUserClick(post.user.id)}>
                     <AvatarImage src={getImageUrl(post.user.profileImageUrl)} />
-                    <AvatarFallback className="bg-gray-700 text-white">{post.user.firstName?.[0]}{post.user.lastName?.[0]}</AvatarFallback>
+                    <AvatarFallback className="bg-gray-700 text-white">{post.user.firstName?.[0] || post.user.lastName?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
@@ -788,7 +800,7 @@ export default function CustomerDashboard() {
                   <div className="flex space-x-2">
                     <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleUserClick(user?.id)}>
                       <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
-                      <AvatarFallback className="text-xs bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                      <AvatarFallback className="text-xs bg-gray-700 text-white">{user?.firstName?.[0] || user?.lastName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 flex">
                       <Input
@@ -809,7 +821,7 @@ export default function CustomerDashboard() {
                       <div className="flex space-x-2">
                         <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleUserClick(comment.user.id)}>
                           <AvatarImage src={getImageUrl(comment.user.profileImageUrl)} />
-                          <AvatarFallback className="bg-gray-700 text-white">{comment.user.firstName?.[0]}{comment.user.lastName?.[0]}</AvatarFallback>
+                          <AvatarFallback className="bg-gray-700 text-white">{comment.user.firstName?.[0] || comment.user.lastName?.[0] || 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <div className="bg-gray-900 rounded-lg px-3 py-2">
@@ -842,7 +854,7 @@ export default function CustomerDashboard() {
                             <div className="mt-2 ml-3 flex space-x-2">
                               <Avatar className="w-6 h-6">
                                 <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
-                                <AvatarFallback className="text-xs bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                                <AvatarFallback className="text-xs bg-gray-700 text-white">{user?.firstName?.[0] || user?.lastName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                               </Avatar>
                               <div className="flex-1 flex">
                                 <Input
@@ -874,7 +886,7 @@ export default function CustomerDashboard() {
                               <div className="flex space-x-2">
                                 <Avatar className="w-6 h-6 cursor-pointer" onClick={() => handleUserClick(reply.user.id)}>
                                   <AvatarImage src={getImageUrl(reply.user.profileImageUrl)} />
-                                  <AvatarFallback className="bg-gray-700 text-white text-xs">{reply.user.firstName?.[0]}{reply.user.lastName?.[0]}</AvatarFallback>
+                                  <AvatarFallback className="bg-gray-700 text-white text-xs">{reply.user.firstName?.[0] || reply.user.lastName?.[0] || 'U'}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1">
                                   <div className="bg-gray-800 rounded-lg px-3 py-2">
@@ -897,7 +909,7 @@ export default function CustomerDashboard() {
                                     <div className="mt-2 ml-3 flex space-x-2">
                                       <Avatar className="w-5 h-5">
                                         <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
-                                        <AvatarFallback className="text-xs bg-gray-700 text-white">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+                                        <AvatarFallback className="text-xs bg-gray-700 text-white">{user?.firstName?.[0] || user?.lastName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                                       </Avatar>
                                       <div className="flex-1 flex">
                                         <Input

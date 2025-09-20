@@ -366,6 +366,20 @@ export default function Messages({ directUserId }: MessagesProps) {
     setImageToEdit(null);
   };
 
+  const getUserDisplayName = (user: any) => {
+    if (!user) return 'User';
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user.firstName) {
+      return user.firstName;
+    }
+    if (user.lastName) {
+      return user.lastName;
+    }
+    return user.email ? user.email.split('@')[0] : 'User';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
       {/* Header */}
@@ -395,16 +409,13 @@ export default function Messages({ directUserId }: MessagesProps) {
                   <Avatar className="w-10 h-10 cursor-pointer ring-2 ring-blue-500/20 hover:ring-blue-500/40 transition-all duration-200" onClick={() => setLocation(`/profile/${selectedUser.id}`)}>
                     <AvatarImage src={getImageUrl(selectedUser.profileImageUrl)} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-semibold">
-                      {selectedUser.firstName?.[0] || selectedUser.email[0].toUpperCase()}
+                      {selectedUser.firstName?.[0] || selectedUser.lastName?.[0] || selectedUser.email[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </div>
                 <div>
                   <div className="font-semibold text-white text-lg">
-                    {selectedUser.firstName && selectedUser.lastName 
-                      ? `${selectedUser.firstName} ${selectedUser.lastName}`
-                      : selectedUser.email.split('@')[0]
-                    }
+                    {getUserDisplayName(selectedUser)}
                   </div>
                   <div className="text-sm text-gray-400">
                     <span>@{selectedUser.email.split('@')[0]}</span>
@@ -463,17 +474,14 @@ export default function Messages({ directUserId }: MessagesProps) {
                   <Avatar className="w-20 h-20 mb-6 cursor-pointer" onClick={() => setLocation(`/profile/${selectedUser.id}`)}>
                     <AvatarImage src={getImageUrl(selectedUser.profileImageUrl)} />
                     <AvatarFallback className="bg-gray-700 text-white text-2xl">
-                      {selectedUser.firstName?.[0] || selectedUser.email[0].toUpperCase()}
+                      {selectedUser.firstName?.[0] || selectedUser.lastName?.[0] || selectedUser.email[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <h3 className="text-xl font-semibold text-white mb-2">
-                    {selectedUser.firstName && selectedUser.lastName 
-                      ? `${selectedUser.firstName} ${selectedUser.lastName}`
-                      : selectedUser.email.split('@')[0]
-                    }
+                    {getUserDisplayName(selectedUser)}
                   </h3>
                   <p className="text-gray-400 text-sm mb-8">
-                    Start a conversation with {selectedUser.firstName || selectedUser.email.split('@')[0]}
+                    Start a conversation with {getUserDisplayName(selectedUser)}
                   </p>
                 </div>
               ) : (
@@ -524,11 +532,11 @@ export default function Messages({ directUserId }: MessagesProps) {
                               <Avatar className="w-6 h-6">
                                 <AvatarImage src={getImageUrl(selectedUser.profileImageUrl)} />
                                 <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white text-xs">
-                                  {selectedUser.firstName?.[0] || selectedUser.email[0].toUpperCase()}
+                                  {selectedUser.firstName?.[0] || selectedUser.lastName?.[0] || selectedUser.email[0].toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                               <span className="text-xs text-gray-400 font-medium">
-                                {selectedUser.firstName || selectedUser.email.split('@')[0]}
+                                {getUserDisplayName(selectedUser)}
                               </span>
                             </div>
                           )}
@@ -552,7 +560,7 @@ export default function Messages({ directUserId }: MessagesProps) {
                                       >
                                         <VideoPlayer 
                                           src={getImageUrl(fileUrl) || fileUrl} 
-                                          className="max-w-full h-auto rounded-2xl shadow-lg group-hover/media:shadow-xl transition-all duration-200"
+                                          className="max-w-sm max-h-64 w-full h-auto rounded-2xl shadow-lg group-hover/media:shadow-xl transition-all duration-200 object-cover"
                                         />
                                       </div>
                                     ) : (
@@ -794,22 +802,16 @@ export default function Messages({ directUserId }: MessagesProps) {
                   <Avatar className="w-14 h-14 ring-2 ring-gray-700/50 group-hover:ring-blue-500/30 transition-all duration-300">
                     <AvatarImage src={getImageUrl(user.profileImageUrl)} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
-                      {user.firstName?.[0] || user.email[0].toUpperCase()}
+                      {user.firstName?.[0] || user.lastName?.[0] || user.email[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-white truncate group-hover:text-blue-300 transition-colors duration-200">
-                    {user.firstName && user.lastName 
-                      ? `${user.firstName} ${user.lastName}`
-                      : user.email.split('@')[0]
-                    }
+                    {getUserDisplayName(user)}
                   </div>
                   <div className="text-sm text-gray-400 truncate">
-                    {user.firstName && user.lastName 
-                      ? user.email.split('@')[0]
-                      : user.email
-                    }
+                    @{user.email.split('@')[0]}
                   </div>
                   {user.lastMessage && (
                     <div className="text-sm text-gray-500 truncate mt-1 flex items-center space-x-1">
