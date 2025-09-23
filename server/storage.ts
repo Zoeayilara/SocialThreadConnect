@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { sqlite } from "./db";
 import {
   users,
   posts,
@@ -17,6 +18,21 @@ import {
   type InsertOtp,
 } from "../shared/schema";
 import { eq, desc, sql, and, ne } from "drizzle-orm";
+
+// Utility function to get the correct base URL for media files
+function getBaseUrl(): string {
+  // Use BASE_URL if set, otherwise detect environment
+  if (process.env.BASE_URL) {
+    return process.env.BASE_URL;
+  }
+  
+  // Check if running on Railway
+  if (process.env.RAILWAY_ENVIRONMENT) {
+    return 'https://web-production-aff5b.up.railway.app';
+  }
+  
+  return 'http://localhost:5000';
+}
 
 export interface IStorage {
   // User operations
@@ -680,8 +696,31 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(follows.createdAt))
       .limit(50);
 
+    // Get mention notifications from SQLite notifications table
+    const mentionNotifications = sqlite.prepare(`
+      SELECT 
+        n.id,
+        'mention' as type,
+        n.message,
+        n.createdAt,
+        n.fromUserId as userId,
+        u.first_name as firstName,
+        u.last_name as lastName,
+        CASE 
+          WHEN u.profile_image_url LIKE 'http://localhost:5000%' THEN 
+            REPLACE(u.profile_image_url, 'http://localhost:5000', '${getBaseUrl()}')
+          ELSE u.profile_image_url 
+        END as profileImageUrl,
+        n.postId
+      FROM notifications n
+      JOIN users u ON n.fromUserId = u.id
+      WHERE n.userId = ? AND n.type = 'mention'
+      ORDER BY n.createdAt DESC
+      LIMIT 50
+    `).all(userId) as any[];
+
     // Combine and sort all notifications
-    const allNotifications = [...commentNotifications, ...likeNotifications, ...followNotifications]
+    const allNotifications = [...commentNotifications, ...likeNotifications, ...followNotifications, ...mentionNotifications]
       .map(notification => ({
         id: notification.id,
         type: notification.type,

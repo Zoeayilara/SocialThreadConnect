@@ -90,8 +90,9 @@ export default function TermsDialog({ isOpen, onAccept, userType }: TermsDialogP
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 pr-4">
-          <div className="space-y-4">
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full pr-4">
+            <div className="space-y-4">
             {terms.content.map((section, index) => (
               <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div className="flex items-start space-x-3">
@@ -123,8 +124,9 @@ export default function TermsDialog({ isOpen, onAccept, userType }: TermsDialogP
                 </div>
               </div>
             </div>
-          </div>
-        </ScrollArea>
+            </div>
+          </ScrollArea>
+        </div>
 
         <DialogFooter className="flex justify-center pt-6 mt-4 border-t border-gray-200 flex-shrink-0">
           <Button 

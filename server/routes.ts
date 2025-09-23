@@ -228,6 +228,23 @@ async function runMigrations() {
       `);
       console.log('✅ Ensured messages table');
       
+      // notifications table for mentions and other notifications
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS notifications (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER NOT NULL,
+          type TEXT NOT NULL,
+          message TEXT NOT NULL,
+          fromUserId INTEGER NOT NULL,
+          postId INTEGER,
+          createdAt INTEGER NOT NULL,
+          FOREIGN KEY (userId) REFERENCES users(id),
+          FOREIGN KEY (fromUserId) REFERENCES users(id),
+          FOREIGN KEY (postId) REFERENCES posts(id)
+        )
+      `);
+      console.log('✅ Ensured notifications table');
+      
       // Add isRead column to existing messages table if it doesn't exist
       try {
         const columns = sqlite.prepare("PRAGMA table_info(messages)").all();
@@ -2354,6 +2371,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         VALUES (?, ?, ?, ?, unixepoch('now'), 0)
       `).run(senderId, recipientId, content?.trim() || '', imageUrl);
       
+      console.log(`📨 Created message from ${senderId} to ${recipientId} with isRead=0`);
+      
       const newMessage = sqlite.prepare(`
         SELECT m.*, 
                sender.first_name as senderFirstName, 
@@ -2426,6 +2445,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         WHERE recipientId = ? AND isRead = 0
       `).get(currentUserId) as { count: number };
       
+      console.log(`📨 Unread count for user ${currentUserId}:`, unreadCount.count);
+      
       res.json({ unreadCount: unreadCount.count });
     } catch (error) {
       console.error('Error fetching unread count:', error);
@@ -2440,11 +2461,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const otherUserId = parseInt(req.params.userId);
       
       // Mark all messages from otherUserId to currentUserId as read
-      sqlite.prepare(`
+      const updateResult = sqlite.prepare(`
         UPDATE messages 
         SET isRead = 1 
         WHERE senderId = ? AND recipientId = ? AND isRead = 0
       `).run(otherUserId, currentUserId);
+      
+      console.log(`📨 Marked ${updateResult.changes} messages as read from user ${otherUserId} to user ${currentUserId}`);
       
       res.json({ success: true });
     } catch (error) {

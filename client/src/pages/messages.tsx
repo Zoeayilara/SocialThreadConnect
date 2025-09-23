@@ -100,17 +100,13 @@ export default function Messages({ directUserId }: MessagesProps) {
     }
   }, [directUserId, directUser]);
 
-  // Mark messages as read when conversation is actually viewed (with a delay)
-  useEffect(() => {
-    if (selectedUser?.id && messages.length > 0) {
-      // Only mark as read after user has been viewing the conversation for 2 seconds
-      const timer = setTimeout(() => {
-        markAsRead(selectedUser.id);
-      }, 2000);
-      
-      return () => clearTimeout(timer);
+  // Mark messages as read when user scrolls to bottom or sends a message
+  const handleMarkAsRead = () => {
+    if (selectedUser?.id) {
+      console.log('🔴 Marking messages as read for user:', selectedUser.id);
+      markAsRead(selectedUser.id);
     }
-  }, [selectedUser?.id, messages.length, markAsRead]);
+  };
 
   // Save state to localStorage when it changes
   useEffect(() => {
@@ -195,6 +191,8 @@ export default function Messages({ directUserId }: MessagesProps) {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       // Force refetch conversations to get updated last message
       queryClient.refetchQueries({ queryKey: ['conversations'] });
+      // Mark messages as read when user sends a message (they've engaged with the conversation)
+      handleMarkAsRead();
       toast({ title: "Message sent successfully" });
     },
     onError: () => {
@@ -209,9 +207,35 @@ export default function Messages({ directUserId }: MessagesProps) {
       if (container) {
         // Jump to bottom instantly without animation
         container.scrollTop = container.scrollHeight;
+        
+        // Add scroll listener to mark as read when user scrolls to bottom
+        const handleScroll = () => {
+          const { scrollTop, scrollHeight, clientHeight } = container;
+          const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px threshold
+          
+          if (isAtBottom && messages.length > 0) {
+            // User has scrolled to bottom, mark messages as read
+            handleMarkAsRead();
+          }
+        };
+        
+        container.addEventListener('scroll', handleScroll);
+        
+        // Mark as read immediately if already at bottom
+        setTimeout(() => {
+          const { scrollTop, scrollHeight, clientHeight } = container;
+          const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
+          if (isAtBottom) {
+            handleMarkAsRead();
+          }
+        }, 1000); // Give time for messages to load
+        
+        return () => {
+          container.removeEventListener('scroll', handleScroll);
+        };
       }
     }
-  }, [selectedUser]); // Only when selectedUser changes (opening chat)
+  }, [selectedUser?.id, messages.length, handleMarkAsRead]); // Only when selectedUser changes (opening chat)
   
 
   // Typing indicator effect

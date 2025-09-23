@@ -222,12 +222,19 @@ export default function CustomerDashboard() {
 
   // Check if user needs to see terms dialog (first time after registration)
   useEffect(() => {
-    const hasSeenTerms = localStorage.getItem(`terms-accepted-${user?.id}`);
+    if (!user?.id) return; // Wait for user to be loaded
+    
+    const hasSeenTerms = localStorage.getItem(`terms-accepted-${user.id}`);
     const isFromRegistration = sessionStorage.getItem('from-registration');
     
-    if (!hasSeenTerms && isFromRegistration && user?.id) {
+    console.log('Terms check:', { hasSeenTerms, isFromRegistration, userId: user.id });
+    
+    // Show terms if user hasn't seen them yet (either from registration or first time)
+    if (!hasSeenTerms) {
       setShowTermsDialog(true);
-      sessionStorage.removeItem('from-registration');
+      if (isFromRegistration) {
+        sessionStorage.removeItem('from-registration');
+      }
     }
   }, [user?.id]);
 
