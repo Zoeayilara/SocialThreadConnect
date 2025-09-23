@@ -67,6 +67,32 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({ videoFile, className
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  const toggleFullscreen = async () => {
+    if (!videoRef.current) return;
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        // Try different fullscreen methods for browser compatibility
+        const video = videoRef.current;
+        if (video.requestFullscreen) {
+          await video.requestFullscreen();
+        } else if ((video as any).webkitRequestFullscreen) {
+          (video as any).webkitRequestFullscreen();
+        } else if ((video as any).mozRequestFullScreen) {
+          (video as any).mozRequestFullScreen();
+        } else if ((video as any).msRequestFullscreen) {
+          (video as any).msRequestFullscreen();
+        } else {
+          console.warn('Fullscreen not supported on this browser');
+        }
+      }
+    } catch (err) {
+      console.error('Error toggling fullscreen:', err);
+    }
+  };
+
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
@@ -137,6 +163,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({ videoFile, className
             </div>
 
             <Button
+              onClick={toggleFullscreen}
               variant="ghost"
               size="sm"
               className="text-white hover:text-gray-300 p-1"

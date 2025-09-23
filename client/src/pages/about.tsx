@@ -31,6 +31,25 @@ export default function About({ onBack }: AboutProps) {
           </p>
         </div>
 
+        {/* Announcement Section */}
+        <div className="bg-gradient-to-r from-orange-500/20 to-red-600/20 rounded-xl p-6 border border-orange-500/30 mb-6 relative overflow-hidden">
+          <div className="absolute top-4 right-4 text-4xl">📢</div>
+          <h3 className="text-2xl font-bold text-white mb-4 text-center">
+            ENTREEFOX IS COMING!!
+          </h3>
+          <div className="space-y-4 text-gray-200 leading-relaxed">
+            <p>
+              <strong>Entreefox</strong> is a web app that is mainly for university students to connect with each other which means <strong>Entreefox</strong> gives a social media interface and a market place where student Entrepreneurs and business owners can interact, connect with each other and render services to their potential clients giving students a platform to interact and chat with not just students within their school community but with students from other schools.
+            </p>
+            <p>
+              We also give a platform for startup Entrepreneurs to get their business and the services they render known to students in their community and outside their community.
+            </p>
+            <p className="font-semibold text-orange-300">
+              We cant wait to show you all what we have been working on behind the scenes!
+            </p>
+          </div>
+        </div>
+
         {/* Mission Statement */}
         <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl p-6 border border-gray-600/30 mb-6">
           <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
@@ -38,8 +57,9 @@ export default function About({ onBack }: AboutProps) {
             Our Mission
           </h3>
           <p className="text-gray-300 leading-relaxed">
-            EntreeFox is dedicated to building a vibrant social platform where users can share their thoughts, 
-            connect with like-minded individuals, and create lasting relationships in a safe and engaging environment.
+            EntreeFox is dedicated to building a vibrant social platform where university students can connect, share their thoughts, 
+            and create meaningful relationships. We provide both a social media interface and a marketplace where student entrepreneurs 
+            and business owners can interact, connect, and render services to their potential clients in a safe and engaging environment.
           </p>
         </div>
 
@@ -51,8 +71,8 @@ export default function About({ onBack }: AboutProps) {
             <div className="flex items-start space-x-3">
               <Users className="w-6 h-6 text-blue-400 mt-1 flex-shrink-0" />
               <div>
-                <h4 className="text-white font-medium mb-1">Community First</h4>
-                <p className="text-gray-400 text-sm">Built for meaningful connections and authentic conversations</p>
+                <h4 className="text-white font-medium mb-1">University Community</h4>
+                <p className="text-gray-400 text-sm">Connect with students within your school and across other universities</p>
               </div>
             </div>
           </div>
@@ -81,8 +101,8 @@ export default function About({ onBack }: AboutProps) {
             <div className="flex items-start space-x-3">
               <Globe className="w-6 h-6 text-orange-400 mt-1 flex-shrink-0" />
               <div>
-                <h4 className="text-white font-medium mb-1">Global Reach</h4>
-                <p className="text-gray-400 text-sm">Connect with people from around the world in real-time</p>
+                <h4 className="text-white font-medium mb-1">Entrepreneurship Hub</h4>
+                <p className="text-gray-400 text-sm">Platform for student entrepreneurs to showcase their businesses and services</p>
               </div>
             </div>
           </div>
@@ -97,19 +117,19 @@ export default function About({ onBack }: AboutProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-400 mb-1">✓</div>
-              <p className="text-gray-300 text-sm">Real-time Messaging</p>
+              <p className="text-gray-300 text-sm">Social Media Interface</p>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-400 mb-1">✓</div>
-              <p className="text-gray-300 text-sm">Media Sharing</p>
+              <p className="text-gray-300 text-sm">Marketplace Platform</p>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-400 mb-1">✓</div>
-              <p className="text-gray-300 text-sm">User Verification</p>
+              <p className="text-gray-300 text-sm">Cross-University Chat</p>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-orange-400 mb-1">✓</div>
-              <p className="text-gray-300 text-sm">Activity Tracking</p>
+              <p className="text-gray-300 text-sm">Business Networking</p>
             </div>
           </div>
         </div>
@@ -118,13 +138,19 @@ export default function About({ onBack }: AboutProps) {
         <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl p-6 border border-gray-600/30 mb-6">
           <h3 className="text-lg font-semibold text-white mb-3">About the Platform</h3>
           <p className="text-gray-400 text-sm leading-relaxed mb-4">
-            EntreeFox was created with the vision of bringing people together through technology. 
-            We believe in the power of authentic connections and strive to provide a platform 
-            where users can express themselves freely while maintaining a respectful community environment.
+            EntreeFox was created specifically for university students with the vision of combining social networking 
+            with entrepreneurial opportunities. We provide a unique dual-platform experience that serves as both a 
+            social media interface and a marketplace where student entrepreneurs and business owners can thrive.
+          </p>
+          <p className="text-gray-400 text-sm leading-relaxed mb-4">
+            Our platform enables students to connect not just within their own school community, but with students 
+            from universities across the globe. This creates unprecedented opportunities for collaboration, 
+            networking, and business development.
           </p>
           <p className="text-gray-400 text-sm leading-relaxed">
-            Our team is committed to continuous improvement, user feedback, and creating 
-            innovative features that enhance the social media experience for everyone.
+            We're dedicated to empowering the next generation of entrepreneurs by providing them with the tools 
+            and connections they need to turn their ideas into successful ventures while building meaningful 
+            relationships along the way.
           </p>
         </div>
 

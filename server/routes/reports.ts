@@ -200,4 +200,129 @@ router.delete('/posts/:postId', isAuthenticated, isAdmin, async (req: any, res) 
   }
 });
 
+// Report an account
+router.post('/accounts/:userId', isAuthenticated, async (req: any, res) => {
+  try {
+    console.log('🚨 Account report submission started');
+    console.log('📝 Request params:', req.params);
+    console.log('📝 Request body:', req.body);
+    console.log('📝 Reporter ID:', req.userId);
+    
+    const reportedUserId = parseInt(req.params.userId);
+    const { reason, description } = req.body;
+    const reporterId = req.userId;
+
+    if (!reason) {
+      return res.status(400).json({ error: 'Reason is required' });
+    }
+
+    // Check if reported user exists
+    const db = (req as any).db || require('../db').sqlite;
+    const reportedUser = db.prepare('SELECT id, first_name, last_name, email FROM users WHERE id = ?').get(reportedUserId);
+    
+    if (!reportedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Prevent self-reporting
+    if (reportedUserId === reporterId) {
+      return res.status(400).json({ error: 'You cannot report yourself' });
+    }
+
+    // Check if user already reported this account
+    const existingReport = db.prepare(`
+      SELECT id FROM account_reports 
+      WHERE reported_user_id = ? AND reporter_id = ? AND status = 'pending'
+    `).get(reportedUserId, reporterId);
+
+    if (existingReport) {
+      return res.status(400).json({ error: 'You have already reported this account' });
+    }
+
+    // Insert account report into database
+    const insertReport = `
+      INSERT INTO account_reports (reported_user_id, reporter_id, reason, description, created_at, status)
+      VALUES (?, ?, ?, ?, datetime('now'), 'pending')
+    `;
+    
+    console.log('📝 Inserting account report into database:', { reportedUserId, reporterId, reason, description });
+    db.prepare(insertReport).run(reportedUserId, reporterId, reason, description || '');
+    console.log('✅ Account report saved to database successfully');
+
+    res.json({ 
+      success: true, 
+      message: 'Account report submitted successfully. Our team will review it shortly.' 
+    });
+
+  } catch (error) {
+    console.error('❌ Account report submission error:', error);
+    res.status(500).json({ error: 'Failed to submit account report', details: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// Get all account reports (admin only)
+router.get('/accounts', isAuthenticated, isAdmin, async (req: any, res) => {
+  try {
+    const { status } = req.query;
+    const db = (req as any).db || require('../db').sqlite;
+    
+    let query = `
+      SELECT 
+        ar.*,
+        reporter.first_name as reporter_firstName,
+        reporter.last_name as reporter_lastName,
+        reporter.email as reporter_email,
+        reported.first_name as reported_firstName,
+        reported.last_name as reported_lastName,
+        reported.email as reported_email,
+        reported.profile_image_url as reported_profileImageUrl
+      FROM account_reports ar
+      JOIN users reporter ON ar.reporter_id = reporter.id
+      JOIN users reported ON ar.reported_user_id = reported.id
+    `;
+    
+    const params: any[] = [];
+    if (status && status !== 'all') {
+      query += ' WHERE ar.status = ?';
+      params.push(status);
+    }
+    
+    query += ' ORDER BY ar.created_at DESC';
+    
+    const reports = db.prepare(query).all(...params);
+    res.json(reports);
+  } catch (error) {
+    console.error('Get account reports error:', error);
+    res.status(500).json({ error: 'Failed to fetch account reports' });
+  }
+});
+
+// Update account report status (admin only)
+router.patch('/accounts/:reportId/status', isAuthenticated, isAdmin, async (req: any, res) => {
+  try {
+    const reportId = parseInt(req.params.reportId);
+    const { status, admin_notes } = req.body;
+
+    if (!['pending', 'reviewed', 'resolved', 'dismissed'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    const updateQuery = `
+      UPDATE account_reports 
+      SET status = ?, admin_notes = ?, reviewed_at = datetime('now'), reviewed_by = ?
+      WHERE id = ?
+    `;
+
+    const userId = req.userId;
+    const db = (req as any).db || require('../db').sqlite;
+    db.prepare(updateQuery).run(status, admin_notes || '', userId, reportId);
+
+    res.json({ success: true, message: 'Account report status updated' });
+
+  } catch (error) {
+    console.error('Update account report status error:', error);
+    res.status(500).json({ error: 'Failed to update account report status' });
+  }
+});
+
 export default router;

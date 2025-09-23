@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { authenticatedFetch } from '@/utils/api';
+import { formatRelativeTime } from '@/utils/dateUtils';
 import { ArrowLeft, MessageSquare, AlertTriangle, CheckCircle, XCircle, MoreHorizontal, Trash2, Eye } from 'lucide-react';
 
 interface Report {
@@ -216,7 +217,7 @@ export default function AdminReports({ onBack }: AdminReportsProps) {
                       )}
                       <div className="flex items-center space-x-4 ml-7">
                         <p className="text-gray-500 text-xs">
-                          Reported on {new Date(report.created_at).toLocaleDateString()}
+                          Reported {formatRelativeTime(report.created_at)}
                         </p>
                         <div className="flex items-center space-x-1">
                           {getStatusIcon(report.status)}
@@ -259,7 +260,7 @@ export default function AdminReports({ onBack }: AdminReportsProps) {
                         By {report.author_firstName} {report.author_lastName}
                       </p>
                       <p className="text-gray-500 text-xs">
-                        {new Date(report.post_created_at).toLocaleDateString()}
+                        Posted {formatRelativeTime(report.post_created_at)}
                       </p>
                     </div>
                     <p className="text-gray-300">{report.post_content}</p>

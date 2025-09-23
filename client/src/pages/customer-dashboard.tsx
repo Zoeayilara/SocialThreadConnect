@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -12,6 +12,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { Heart, MessageCircle, MoreHorizontal, Send, Search, Shield, Repeat2, MessageSquare, Edit3, Trash2, Flag, X } from "lucide-react";
+import { NotificationBadge } from "@/components/NotificationBadge";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { FoxLogo } from "@/components/FoxLogo";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { authenticatedFetch, getImageUrl } from "@/utils/api";
@@ -21,6 +23,7 @@ import { SavePostMenuItem } from '@/components/SavePostMenuItem';
 import ReportDialog from '@/components/ReportDialog';
 import { VerificationBadge } from '@/components/VerificationBadge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import TermsDialog from '@/components/TermsDialog';
 import { useLocation } from "wouter";
 
 interface Post {
@@ -65,6 +68,10 @@ export default function CustomerDashboard() {
   const { user, isLoggingOut } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { unreadCount } = useUnreadMessages();
+  
+  // Scroll position preservation
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // Image modal state
   const [imageModal, setImageModal] = useState<{
@@ -94,6 +101,8 @@ export default function CustomerDashboard() {
   const [carouselIndex, setCarouselIndex] = useState<{[postId: number]: number}>({});
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportPostId, setReportPostId] = useState<number | null>(null);
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
+  const [, setLocation] = useLocation();
   const [viewingUserId, setViewingUserId] = useState<number | undefined>(undefined);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showUser, setShowUser] = useState(false);
@@ -132,12 +141,96 @@ export default function CustomerDashboard() {
       return response.json();
     },
     enabled: !!showComments,
-    refetchInterval: false, // No automatic comment updates
-    refetchOnWindowFocus: false, // No interruptions when switching tabs
-    refetchIntervalInBackground: false, // No background updates
-    staleTime: 0, // Fresh comments only on manual refresh
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 
+  // Save scroll position when navigating away
+  useEffect(() => {
+    const saveScrollPosition = () => {
+      if (scrollContainerRef.current) {
+        const scrollTop = scrollContainerRef.current.scrollTop;
+        sessionStorage.setItem('dashboard-scroll-position', scrollTop.toString());
+        
+        // Find the currently visible post to save as reference
+        const posts = scrollContainerRef.current.querySelectorAll('[data-post-id]');
+        const containerRect = scrollContainerRef.current.getBoundingClientRect();
+        
+        for (const postElement of posts) {
+          const postRect = postElement.getBoundingClientRect();
+          if (postRect.top >= containerRect.top && postRect.top <= containerRect.top + 200) {
+            const postId = postElement.getAttribute('data-post-id');
+            if (postId) {
+              sessionStorage.setItem('dashboard-last-viewed-post', postId);
+              break;
+            }
+          }
+        }
+      }
+    };
+
+    const handleBeforeUnload = () => saveScrollPosition();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        saveScrollPosition();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Restore scroll position when posts are loaded
+  useEffect(() => {
+    if (posts.length > 0 && scrollContainerRef.current) {
+      const savedScrollPosition = sessionStorage.getItem('dashboard-scroll-position');
+      const savedPostId = sessionStorage.getItem('dashboard-last-viewed-post');
+      
+      if (savedPostId) {
+        // Try to scroll to the saved post
+        const postElement = scrollContainerRef.current.querySelector(`[data-post-id="${savedPostId}"]`);
+        if (postElement) {
+          postElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          sessionStorage.removeItem('dashboard-last-viewed-post');
+          sessionStorage.removeItem('dashboard-scroll-position');
+          return;
+        }
+      }
+      
+      if (savedScrollPosition) {
+        // Fallback to scroll position
+        setTimeout(() => {
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = parseInt(savedScrollPosition);
+            sessionStorage.removeItem('dashboard-scroll-position');
+          }
+        }, 100);
+      }
+    }
+  }, [posts]);
+
+  // Check if user needs to see terms dialog (first time after registration)
+  useEffect(() => {
+    const hasSeenTerms = localStorage.getItem(`terms-accepted-${user?.id}`);
+    const isFromRegistration = sessionStorage.getItem('from-registration');
+    
+    if (!hasSeenTerms && isFromRegistration && user?.id) {
+      setShowTermsDialog(true);
+      sessionStorage.removeItem('from-registration');
+    }
+  }, [user?.id]);
+
+  const handleTermsAccept = () => {
+    if (user?.id) {
+      localStorage.setItem(`terms-accepted-${user.id}`, 'true');
+    }
+    setShowTermsDialog(false);
+  };
 
   const likeMutation = useMutation({
     mutationFn: async ({ postId }: { postId: number }) => {
@@ -429,8 +522,6 @@ export default function CustomerDashboard() {
     }
   };
 
-  const [, setLocation] = useLocation();
-
   const handleUserClick = (userId?: number) => {
     if (userId) {
       setLocation(`/profile/${userId}`);
@@ -566,7 +657,7 @@ export default function CustomerDashboard() {
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 pt-6 pb-24 space-y-1">
+      <div ref={scrollContainerRef} className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 pt-6 pb-24 space-y-1 overflow-y-auto">
         {/* Create Post */}
         <Card className="mx-2 md:mx-0 border-0 shadow-none bg-transparent">
           <CardContent className="pt-4 pb-2 px-0">
@@ -587,7 +678,7 @@ export default function CustomerDashboard() {
 
         {/* Feed */}
         {posts.map((post: Post) => (
-          <Card key={post.id} className="overflow-hidden border-0 shadow-none bg-transparent border-b border-gray-800 rounded-none">
+          <Card key={post.id} data-post-id={post.id} className="overflow-hidden border-0 shadow-none bg-transparent border-b border-gray-800 rounded-none">
             <CardHeader className="pb-2 px-0">
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3">
@@ -716,7 +807,13 @@ export default function CustomerDashboard() {
                               <CarouselItem key={idx} className="pr-2">
                                 <div className="relative w-full max-h-[500px] overflow-hidden rounded-2xl bg-black">
                                   {url.match(/\.(mp4|mov|webm)$/i) ? (
-                                    <VideoPlayer src={url} className="w-full h-auto max-h-[500px] object-contain" />
+                                    <VideoPlayer 
+                                      src={url} 
+                                      className="w-full h-auto max-h-[500px]" 
+                                      showFullscreenButton={true}
+                                      controls={false}
+                                      playsInline={true}
+                                    />
                                   ) : (
                                     <img 
                                       src={url} 
@@ -743,7 +840,13 @@ export default function CustomerDashboard() {
                     return (
                       <div className="relative w-full max-h-[500px] mb-4 overflow-hidden rounded-2xl bg-black">
                         {only.match(/\.(mp4|mov|webm)$/i) ? (
-                          <VideoPlayer src={only} className="w-full h-auto max-h-[500px] object-contain" />
+                          <VideoPlayer 
+                            src={only} 
+                            className="w-full h-auto max-h-[500px]" 
+                            showFullscreenButton={true}
+                            controls={false}
+                            playsInline={true}
+                          />
                         ) : (
                           <img 
                             src={only} 
@@ -760,7 +863,13 @@ export default function CustomerDashboard() {
                 return (
                   <div className="relative w-full max-h-[500px] mb-4 overflow-hidden rounded-2xl bg-black">
                     {val.match(/\.(mp4|mov|webm)$/i) ? (
-                      <VideoPlayer src={val} className="w-full h-auto max-h-[500px] object-contain" />
+                      <VideoPlayer 
+                        src={val} 
+                        className="w-full h-auto max-h-[500px]" 
+                        showFullscreenButton={true}
+                        controls={false}
+                        playsInline={true}
+                      />
                     ) : (
                       <img 
                         src={val} 
@@ -951,7 +1060,11 @@ export default function CustomerDashboard() {
       <div className="fixed bottom-0 left-0 right-0 border-t bg-black/95 backdrop-blur-sm border-gray-800 shadow-2xl">
         <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-3 flex items-center justify-between">
           <Button variant="ghost" size="icon" className="text-white h-14 w-14 hover:bg-gray-800/50 transition-all duration-200"><span className="sr-only">Home</span><svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg></Button>
-          <Button variant="ghost" size="icon" onClick={() => setLocation('/messages')} className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200"><span className="sr-only">MessageSquare</span><svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></Button>
+          <Button variant="ghost" size="icon" onClick={() => setLocation('/messages')} className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200 relative">
+            <span className="sr-only">MessageSquare</span>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <NotificationBadge count={unreadCount} />
+          </Button>
           <Button variant="ghost" size="icon" className="bg-blue-600 hover:bg-blue-700 rounded-full h-16 w-16 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105" onClick={() => setLocation('/create-post')}><span className="sr-only">Create</span><svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></svg></Button>
           <Button variant="ghost" size="icon" className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200" onClick={() => setLocation('/activity')}><span className="sr-only">Activity</span><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></Button>
           <Button variant="ghost" size="icon" className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200" onClick={() => handleUserClick()}><span className="sr-only">User</span><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M6 20a6 6 0 0 1 12 0"/></svg></Button>
@@ -991,6 +1104,13 @@ export default function CustomerDashboard() {
           postId={reportPostId}
         />
       )}
+
+      {/* Terms Dialog */}
+      <TermsDialog
+        isOpen={showTermsDialog}
+        onAccept={handleTermsAccept}
+        userType="customer"
+      />
     </div>
   );
 }

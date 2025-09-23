@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Shield, Users, FileText, MessageSquare, CheckCircle, XCircle, Eye, AlertTriangle } from 'lucide-react';
 import { useState } from "react";
 import AdminReports from './admin-reports';
+import AdminAccountReports from './admin-account-reports';
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +47,7 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [showReports, setShowReports] = useState(false);
+  const [showAccountReports, setShowAccountReports] = useState(false);
   
   // Redirect if not admin
   if (user && user.userType !== 'admin') {
@@ -142,6 +144,11 @@ export default function AdminDashboard() {
     return <AdminReports onBack={() => setShowReports(false)} />;
   }
 
+  // Show account reports page if requested
+  if (showAccountReports) {
+    return <AdminAccountReports onBack={() => setShowAccountReports(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
@@ -163,7 +170,16 @@ export default function AdminDashboard() {
               className="border-gray-600 text-white hover:bg-gray-800"
             >
               <AlertTriangle className="w-4 h-4 mr-2" />
-              Reports
+              Post Reports
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowAccountReports(true)}
+              className="border-gray-600 text-white hover:bg-gray-800"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Account Reports
             </Button>
             <Button 
               variant="outline" 

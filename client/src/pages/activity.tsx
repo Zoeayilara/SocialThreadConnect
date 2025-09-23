@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, MessageCircle, Repeat2, UserPlus } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Repeat2, UserPlus, AtSign } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery } from '@tanstack/react-query';
 import { formatRelativeTime } from '@/utils/dateUtils';
@@ -13,7 +13,7 @@ interface ActivityProps {
 }
 
 interface ActivityItem {
-  type: 'like' | 'comment' | 'repost' | 'follow' | 'post';
+  type: 'like' | 'comment' | 'repost' | 'follow' | 'post' | 'mention';
   timestamp: number;
   user_id: number;
   first_name: string;
@@ -62,6 +62,8 @@ export default function Activity({ onBack }: ActivityProps) {
         return 'followed you';
       case 'post':
         return 'posted';
+      case 'mention':
+        return 'tagged you in a post';
       default:
         return 'interacted with your post';
     }
@@ -70,23 +72,31 @@ export default function Activity({ onBack }: ActivityProps) {
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'like':
-        return <Heart className="w-4 h-4 text-red-500" />;
+        return <Heart className="w-5 h-5 text-red-500 fill-current" />;
       case 'comment':
-        return <MessageCircle className="w-4 h-4 text-blue-500" />;
+        return <MessageCircle className="w-5 h-5 text-blue-500" />;
       case 'repost':
-        return <Repeat2 className="w-4 h-4 text-green-500" />;
+        return <Repeat2 className="w-5 h-5 text-purple-500" />;
       case 'follow':
-        return <UserPlus className="w-4 h-4 text-purple-500" />;
+        return <UserPlus className="w-5 h-5 text-green-500" />;
       case 'post':
-        return <MessageCircle className="w-4 h-4 text-gray-500" />;
+        return <MessageCircle className="w-5 h-5 text-gray-500" />;
+      case 'mention':
+        return <AtSign className="w-5 h-5 text-orange-500" />;
       default:
-        return <Heart className="w-4 h-4 text-gray-500" />;
+        return <Heart className="w-5 h-5 text-gray-500" />;
     }
   };
 
   const handleActivityClick = (activity: ActivityItem) => {
-    // Navigate to the user's profile
-    setLocation(`/profile/${activity.user_id}`);
+    // For mentions, navigate to the post; for others, navigate to profile
+    if (activity.type === 'mention' && activity.post_id) {
+      // Navigate to dashboard and scroll to the specific post
+      setLocation(`/?post=${activity.post_id}`);
+    } else {
+      // Navigate to the user's profile
+      setLocation(`/profile/${activity.user_id}`);
+    }
   };
 
   return (
@@ -127,52 +137,56 @@ export default function Activity({ onBack }: ActivityProps) {
         </div>
 
         {/* Activity Feed */}
-        <div className="space-y-4">
+        <div className="space-y-0">
           {activities.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-400">No recent activity</p>
-              <p className="text-gray-500 text-sm mt-2">When people interact with your posts, you'll see it here</p>
+              <div className="text-gray-400 text-lg mb-2">No recent activity</div>
+              <div className="text-gray-500 text-sm">When people interact with your posts, you'll see it here</div>
             </div>
           ) : (
             activities.map((activity, index) => (
               <div 
                 key={`${activity.user_id}-${activity.post_id || 'follow'}-${index}`} 
                 onClick={() => handleActivityClick(activity)}
-                className="flex items-start space-x-3 p-4 rounded-lg hover:bg-gray-900/50 cursor-pointer transition-colors"
+                className="flex items-center space-x-3 p-4 border-b border-gray-800 transition-all duration-200 hover:bg-gray-900/30 cursor-pointer"
               >
-                <Avatar className="w-12 h-12">
-                  <AvatarImage src={activity.profile_image_url} />
-                  <AvatarFallback className="bg-gray-700 text-white">
-                    {activity.first_name?.[0]}{activity.last_name?.[0]}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="w-12 h-12 ring-2 ring-gray-700">
+                    <AvatarImage src={activity.profile_image_url} />
+                    <AvatarFallback className="bg-gradient-to-br from-gray-600 to-gray-800 text-white text-sm font-medium">
+                      {activity.first_name?.[0]}{activity.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-1 -right-1 bg-black rounded-full p-1.5 border-2 border-gray-800">
+                    {getActivityIcon(activity.type)}
+                  </div>
+                </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-2 flex-1">
-                      {getActivityIcon(activity.type)}
-                      <div className="flex-1">
-                        <p className="text-white">
-                          <span className="font-medium">{getUserDisplayName(activity)}</span>
-                          <span className="text-gray-400 ml-1">{getActivityText(activity)}</span>
-                        </p>
-                        <p className="text-gray-500 text-sm mt-1">
-                          {formatRelativeTime(activity.timestamp)}
-                        </p>
-                      </div>
+                    <div className="flex-1">
+                      <p className="text-white text-sm leading-relaxed">
+                        <span className="font-semibold">
+                          {getUserDisplayName(activity)}
+                        </span>{' '}
+                        <span className="text-gray-300">{getActivityText(activity)}</span>
+                      </p>
+                      <p className="text-gray-500 text-xs mt-2 font-medium">
+                        {formatRelativeTime(activity.timestamp)}
+                      </p>
+                      
+                      {activity.post_content && activity.type !== 'follow' && (
+                        <div className="mt-3 p-2 bg-gray-800/30 rounded-lg border-l-2 border-gray-600">
+                          <p className="text-gray-300 text-xs leading-relaxed">
+                            {activity.post_content.length > 100 
+                              ? `${activity.post_content.substring(0, 100)}...` 
+                              : activity.post_content
+                            }
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  
-                  {activity.post_content && activity.type !== 'follow' && (
-                    <div className="mt-3 p-3 bg-gray-800/50 rounded-lg">
-                      <p className="text-gray-300 text-sm leading-relaxed">
-                        {activity.post_content.length > 120 
-                          ? `${activity.post_content.substring(0, 120)}...` 
-                          : activity.post_content
-                        }
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             ))

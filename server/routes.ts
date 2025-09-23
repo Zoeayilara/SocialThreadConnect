@@ -221,11 +221,24 @@ async function runMigrations() {
           content TEXT,
           imageUrl TEXT,
           createdAt INTEGER DEFAULT (unixepoch('now')),
+          isRead INTEGER DEFAULT 0,
           FOREIGN KEY (senderId) REFERENCES users(id),
           FOREIGN KEY (recipientId) REFERENCES users(id)
         )
       `);
       console.log('✅ Ensured messages table');
+      
+      // Add isRead column to existing messages table if it doesn't exist
+      try {
+        const columns = sqlite.prepare("PRAGMA table_info(messages)").all();
+        const hasIsRead = columns.some((col: any) => col.name === 'isRead');
+        if (!hasIsRead) {
+          sqlite.exec('ALTER TABLE messages ADD COLUMN isRead INTEGER DEFAULT 0');
+          console.log('✅ Added isRead column to messages table');
+        }
+      } catch (error) {
+        console.log('⚠️ Could not add isRead column (may already exist):', error);
+      }
       
       // reports (was missing!)
       sqlite.exec(`
@@ -241,6 +254,25 @@ async function runMigrations() {
           reviewed_by INTEGER,
           admin_notes TEXT,
           FOREIGN KEY (post_id) REFERENCES posts(id),
+          FOREIGN KEY (reporter_id) REFERENCES users(id),
+          FOREIGN KEY (reviewed_by) REFERENCES users(id)
+        )
+      `);
+      
+      // account_reports (for reporting user accounts)
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS account_reports (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          reported_user_id INTEGER NOT NULL,
+          reporter_id INTEGER NOT NULL,
+          reason TEXT NOT NULL,
+          description TEXT,
+          status TEXT DEFAULT 'pending',
+          created_at TEXT DEFAULT (datetime('now')),
+          reviewed_at TEXT,
+          reviewed_by INTEGER,
+          admin_notes TEXT,
+          FOREIGN KEY (reported_user_id) REFERENCES users(id),
           FOREIGN KEY (reporter_id) REFERENCES users(id),
           FOREIGN KEY (reviewed_by) REFERENCES users(id)
         )
@@ -1215,6 +1247,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Files saved:', { mediaUrls, mediaTypes });
       }
       
+      // Extract mentions from content
+      const mentionRegex = /@(\w+(?:\s+\w+)?)/g;
+      const mentions: string[] = [];
+      let match: RegExpExecArray | null;
+      
+      while ((match = mentionRegex.exec(content || "")) !== null) {
+        const mentionName: string = match[1].trim();
+        mentions.push(mentionName);
+      }
+      
+      console.log('Extracted mentions:', mentions);
+
       const post = await storage.createPost({
         userId,
         content: (content || "").trim(),
@@ -1222,6 +1266,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mediaUrl: mediaUrls.length > 0 ? JSON.stringify(mediaUrls.map(url => `${getBaseUrl()}${url}`)) : null,
         mediaType: mediaTypes.length > 0 ? JSON.stringify(mediaTypes) : null,
       });
+
+      // Process mentions and create notifications
+      if (mentions.length > 0 && post.id) {
+        for (const mentionName of mentions) {
+          try {
+            // Find user by name (first name + last name combination)
+            const nameParts = mentionName.split(' ');
+            let mentionedUser;
+            
+            if (nameParts.length === 1) {
+              // Single name - could be first or last name
+              mentionedUser = sqlite.prepare(`
+                SELECT id, firstName, lastName FROM users 
+                WHERE LOWER(firstName) = LOWER(?) OR LOWER(lastName) = LOWER(?)
+              `).get(nameParts[0], nameParts[0]);
+            } else {
+              // Multiple names - try first + last name combination
+              mentionedUser = sqlite.prepare(`
+                SELECT id, firstName, lastName FROM users 
+                WHERE LOWER(firstName) = LOWER(?) AND LOWER(lastName) = LOWER(?)
+              `).get(nameParts[0], nameParts.slice(1).join(' '));
+            }
+            
+            if (mentionedUser && mentionedUser.id !== userId) {
+              // Create notification for the mentioned user
+              sqlite.prepare(`
+                INSERT INTO notifications (userId, type, message, fromUserId, postId, createdAt)
+                VALUES (?, 'mention', 'tagged you in a post', ?, ?, ?)
+              `).run(
+                mentionedUser.id,
+                userId,
+                post.id,
+                Math.floor(Date.now() / 1000)
+              );
+              
+              console.log(`Created mention notification for user ${mentionedUser.id} (${mentionedUser.firstName} ${mentionedUser.lastName})`);
+            }
+          } catch (error) {
+            console.error('Error processing mention:', mentionName, error);
+          }
+        }
+      }
 
       // Get the user data to include in the response
       const user = await storage.getUserById(userId);
@@ -1907,6 +1993,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete user account (admin only)
+  app.delete('/api/admin/users/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const currentUserId = req.userId;
+      
+      // Prevent admin from deleting themselves
+      if (userId === currentUserId) {
+        return res.status(400).json({ message: "You cannot delete your own account" });
+      }
+      
+      // Check if user exists
+      const user = sqlite.prepare('SELECT id, user_type FROM users WHERE id = ?').get(userId) as { id: number; user_type: string } | undefined;
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Prevent deleting other admin accounts
+      if (user.user_type === 'admin') {
+        return res.status(403).json({ message: "Cannot delete admin accounts" });
+      }
+      
+      console.log('🗑️ Deleting user account:', userId);
+      
+      // Delete user's posts first (due to foreign key constraints)
+      sqlite.prepare('DELETE FROM posts WHERE user_id = ?').run(userId);
+      
+      // Delete user's comments
+      sqlite.prepare('DELETE FROM comments WHERE user_id = ?').run(userId);
+      
+      // Delete user's likes
+      sqlite.prepare('DELETE FROM likes WHERE user_id = ?').run(userId);
+      
+      // Delete user's saved posts
+      sqlite.prepare('DELETE FROM saved_posts WHERE user_id = ?').run(userId);
+      
+      // Delete user's reposts
+      sqlite.prepare('DELETE FROM reposts WHERE user_id = ?').run(userId);
+      
+      // Delete user's messages
+      sqlite.prepare('DELETE FROM messages WHERE senderId = ? OR recipientId = ?').run(userId, userId);
+      
+      // Delete reports made by this user
+      sqlite.prepare('DELETE FROM reports WHERE reporter_id = ?').run(userId);
+      
+      // Delete account reports made by this user
+      sqlite.prepare('DELETE FROM account_reports WHERE reporter_id = ?').run(userId);
+      
+      // Delete account reports about this user
+      sqlite.prepare('DELETE FROM account_reports WHERE reported_user_id = ?').run(userId);
+      
+      // Finally delete the user
+      sqlite.prepare('DELETE FROM users WHERE id = ?').run(userId);
+      
+      console.log('✅ User account deleted successfully:', userId);
+      
+      res.json({ 
+        success: true, 
+        message: "User account deleted successfully" 
+      });
+    } catch (error) {
+      console.error("Error deleting user account:", error);
+      res.status(500).json({ message: "Failed to delete user account" });
+    }
+  });
+
   // Get admin dashboard stats
   app.get('/api/admin/stats', isAuthenticated, isAdmin, async (req, res) => {
     try {
@@ -2260,6 +2412,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting message:', error);
       res.status(500).json({ message: 'Failed to delete message' });
+    }
+  });
+
+  // Get unread message count for current user
+  app.get('/api/messages/unread-count', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUserId = req.userId as number;
+      
+      const unreadCount = sqlite.prepare(`
+        SELECT COUNT(*) as count
+        FROM messages
+        WHERE recipientId = ? AND isRead = 0
+      `).get(currentUserId) as { count: number };
+      
+      res.json({ unreadCount: unreadCount.count });
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      res.status(500).json({ message: 'Failed to fetch unread count' });
+    }
+  });
+
+  // Mark messages as read when user opens a conversation
+  app.post('/api/messages/mark-read/:userId', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUserId = req.userId as number;
+      const otherUserId = parseInt(req.params.userId);
+      
+      // Mark all messages from otherUserId to currentUserId as read
+      sqlite.prepare(`
+        UPDATE messages 
+        SET isRead = 1 
+        WHERE senderId = ? AND recipientId = ? AND isRead = 0
+      `).run(otherUserId, currentUserId);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      res.status(500).json({ message: 'Failed to mark messages as read' });
     }
   });
 

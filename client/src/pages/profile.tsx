@@ -18,6 +18,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { VerificationBadge } from '@/components/VerificationBadge';
 import ReportDialog from '@/components/ReportDialog';
+import ReportAccountDialog from '@/components/ReportAccountDialog';
 import { SavePostMenuItem } from "@/components/SavePostMenuItem";
 import { useLocation } from "wouter";
 
@@ -94,6 +95,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const [carouselIndex, setCarouselIndex] = useState<{[postId: number]: number}>({});
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportPostId, setReportPostId] = useState<number | null>(null);
+  const [reportAccountDialogOpen, setReportAccountDialogOpen] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editProfileData, setEditProfileData] = useState({
     firstName: '',
@@ -701,7 +703,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
               <p className="text-sm text-gray-400">{userPosts.length} posts</p>
             </div>
           </div>
-          {isOwnProfile && (
+          {isOwnProfile ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
@@ -714,6 +716,23 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                   className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
                 >
                   Settings
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                  <MoreHorizontal className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700">
+                <DropdownMenuItem 
+                  onClick={() => setReportAccountDialogOpen(true)}
+                  className="text-red-400 hover:text-red-300 hover:bg-gray-800 cursor-pointer"
+                >
+                  <Flag className="w-4 h-4 mr-2" />
+                  Report Account
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1749,6 +1768,16 @@ export default function Profile({ onBack, userId }: ProfileProps) {
             setReportPostId(null);
           }}
           postId={reportPostId}
+        />
+      )}
+
+      {/* Report Account Dialog */}
+      {profileUser && (
+        <ReportAccountDialog
+          isOpen={reportAccountDialogOpen}
+          onClose={() => setReportAccountDialogOpen(false)}
+          userId={profileUser.id}
+          userName={getUserHandle(profileUser)}
         />
       )}
     </div>

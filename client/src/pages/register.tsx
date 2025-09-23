@@ -82,6 +82,9 @@ export default function Register() {
         localStorage.setItem('tempEmail', formData.email);
         localStorage.setItem('tempPassword', formData.password);
         localStorage.setItem('registrationComplete', 'true');
+        
+        // Set flag to show terms dialog when user reaches dashboard
+        sessionStorage.setItem('from-registration', 'true');
 
         toast({
           title: "Registration successful!",

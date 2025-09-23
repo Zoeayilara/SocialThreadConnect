@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { authenticatedFetch, getImageUrl } from '../utils/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, ImageIcon, Edit3 } from 'lucide-react';
+import { X, ImageIcon, Edit3, AtSign } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,6 +27,12 @@ export default function CreatePost() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [imageToEdit, setImageToEdit] = useState<File | null>(null);
+  
+  // Mention functionality
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionUsers, setMentionUsers] = useState<User[]>([]);
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const createPostMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -62,6 +68,73 @@ export default function CreatePost() {
       toast({ title: "Failed to create post", variant: "destructive" });
     },
   });
+
+  // Search for users when typing @ mentions
+  const searchUsers = async (query: string) => {
+    if (query.length < 1) {
+      setMentionUsers([]);
+      return;
+    }
+    
+    try {
+      const response = await authenticatedFetch(`/api/users/search?q=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const users = await response.json();
+        setMentionUsers(users.slice(0, 5)); // Limit to 5 suggestions
+      }
+    } catch (error) {
+      console.error('Error searching users:', error);
+    }
+  };
+
+  // Handle text change and detect @ mentions
+  const handleTextChange = (value: string) => {
+    setNewPost(value);
+    
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    const cursorPos = textarea.selectionStart;
+    setCursorPosition(cursorPos);
+    
+    // Find @ mentions
+    const textBeforeCursor = value.substring(0, cursorPos);
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+    
+    if (mentionMatch) {
+      const query = mentionMatch[1];
+      setShowMentions(true);
+      searchUsers(query);
+    } else {
+      setShowMentions(false);
+      setMentionUsers([]);
+    }
+  };
+
+  // Insert mention into text
+  const insertMention = (mentionedUser: User) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    const textBeforeCursor = newPost.substring(0, cursorPosition);
+    const textAfterCursor = newPost.substring(cursorPosition);
+    
+    // Replace the @ and partial name with full mention
+    const mentionText = `@${mentionedUser.firstName || 'User'}${mentionedUser.lastName ? ` ${mentionedUser.lastName}` : ''}`;
+    const beforeMention = textBeforeCursor.replace(/@\w*$/, '');
+    const newText = beforeMention + mentionText + ' ' + textAfterCursor;
+    
+    setNewPost(newText);
+    setShowMentions(false);
+    setMentionUsers([]);
+    
+    // Focus back to textarea
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = beforeMention.length + mentionText.length + 1;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
 
   const handleCreatePost = () => {
     if (newPost.trim() || selectedFiles.length > 0) {
@@ -166,14 +239,44 @@ export default function CreatePost() {
         </div>
 
         {/* Text Area */}
-        <div className="mb-6 animate-fade-in-delay">
+        <div className="mb-6 animate-fade-in-delay relative">
           <Textarea
-            placeholder="What's new?"
+            ref={textareaRef}
+            placeholder="What's new? Use @ to mention someone"
             value={newPost}
-            onChange={(e) => setNewPost(e.target.value)}
+            onChange={(e) => handleTextChange(e.target.value)}
             className="min-h-[60px] max-h-[200px] border-none resize-none focus:ring-0 text-lg placeholder:text-gray-500 bg-transparent text-white p-0 leading-relaxed transition-all duration-200 focus:placeholder:text-gray-600"
             autoFocus
           />
+          
+          {/* Mention Suggestions Dropdown */}
+          {showMentions && mentionUsers.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+              {mentionUsers.map((mentionUser) => (
+                <div
+                  key={mentionUser.id}
+                  onClick={() => insertMention(mentionUser)}
+                  className="flex items-center space-x-3 p-3 hover:bg-gray-800 cursor-pointer transition-colors border-b border-gray-800 last:border-b-0"
+                >
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={getImageUrl(mentionUser.profileImageUrl)} />
+                    <AvatarFallback className="bg-gray-700 text-white text-sm">
+                      {mentionUser.firstName?.[0]}{mentionUser.lastName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="text-white font-medium">
+                      {getUserDisplayName(mentionUser)}
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      @{mentionUser.firstName || 'user'}{mentionUser.lastName ? mentionUser.lastName : ''}
+                    </p>
+                  </div>
+                  <AtSign className="w-4 h-4 text-gray-500" />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Media Button */}

@@ -12,6 +12,7 @@ import { authenticatedFetch, getImageUrl } from "@/utils/api";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { VideoPreview } from "@/components/VideoPreview";
 import { ImageEditor } from "@/components/ImageEditor";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,6 +62,7 @@ export default function Messages({ directUserId }: MessagesProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { markAsRead } = useUnreadMessages();
 
   // Fetch user data for direct message
   const { data: directUser } = useQuery({
@@ -81,6 +83,13 @@ export default function Messages({ directUserId }: MessagesProps) {
       setShowSearch(false);
     }
   }, [directUserId, directUser]);
+
+  // Mark messages as read when a user is selected
+  useEffect(() => {
+    if (selectedUser?.id) {
+      markAsRead(selectedUser.id);
+    }
+  }, [selectedUser?.id, markAsRead]);
 
   // Save state to localStorage when it changes
   useEffect(() => {
@@ -527,15 +536,13 @@ export default function Messages({ directUserId }: MessagesProps) {
                                 return (
                                   <div key={index} className="relative group/media">
                                     {isVideo ? (
-                                      <div 
-                                        className="cursor-pointer"
-                                        onClick={() => window.open(getImageUrl(fileUrl), '_blank')}
-                                      >
-                                        <VideoPlayer 
-                                          src={getImageUrl(fileUrl) || fileUrl} 
-                                          className="max-w-sm max-h-64 w-full h-auto rounded-2xl shadow-lg group-hover/media:shadow-xl transition-all duration-200 object-cover"
-                                        />
-                                      </div>
+                                      <VideoPlayer 
+                                        src={getImageUrl(fileUrl) || fileUrl} 
+                                        className="max-w-sm max-h-64 rounded-2xl shadow-lg group-hover/media:shadow-xl transition-all duration-200"
+                                        showFullscreenButton={true}
+                                        controls={false}
+                                        playsInline={true}
+                                      />
                                     ) : (
                                       <img 
                                         src={getImageUrl(fileUrl)} 
@@ -552,7 +559,7 @@ export default function Messages({ directUserId }: MessagesProps) {
                           <div className={`text-xs mt-2 flex items-center justify-between ${
                             isOwn ? 'text-blue-100' : 'text-gray-400'
                           }`}>
-                            <p className="text-xs text-gray-500">{formatMessageTime(message.createdAt)}</p>
+                            <p className={`text-xs ${isOwn ? 'text-white' : 'text-gray-500'}`}>{formatMessageTime(message.createdAt)}</p>
                             {isOwn && (
                               <div className="flex items-center space-x-1">
                                 <div className="w-1 h-1 bg-blue-200 rounded-full"></div>
