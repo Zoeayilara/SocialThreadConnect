@@ -84,12 +84,17 @@ export default function Messages({ directUserId }: MessagesProps) {
     }
   }, [directUserId, directUser]);
 
-  // Mark messages as read when a user is selected
+  // Mark messages as read when conversation is actually viewed (with a delay)
   useEffect(() => {
-    if (selectedUser?.id) {
-      markAsRead(selectedUser.id);
+    if (selectedUser?.id && messages.length > 0) {
+      // Only mark as read after user has been viewing the conversation for 2 seconds
+      const timer = setTimeout(() => {
+        markAsRead(selectedUser.id);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
     }
-  }, [selectedUser?.id, markAsRead]);
+  }, [selectedUser?.id, messages.length, markAsRead]);
 
   // Save state to localStorage when it changes
   useEffect(() => {
@@ -534,15 +539,17 @@ export default function Messages({ directUserId }: MessagesProps) {
                                 console.log('💬 Message media - Final URL:', finalUrl);
                                 console.log('💬 Message media - Is video:', isVideo);
                                 return (
-                                  <div key={index} className="relative group/media">
+                                  <div key={index} className="relative group/media max-w-sm">
                                     {isVideo ? (
-                                      <VideoPlayer 
-                                        src={getImageUrl(fileUrl) || fileUrl} 
-                                        className="max-w-sm max-h-64 rounded-2xl shadow-lg group-hover/media:shadow-xl transition-all duration-200"
-                                        showFullscreenButton={true}
-                                        controls={false}
-                                        playsInline={true}
-                                      />
+                                      <div className="w-full max-w-sm max-h-64 overflow-hidden rounded-2xl shadow-lg group-hover/media:shadow-xl transition-all duration-200">
+                                        <VideoPlayer 
+                                          src={getImageUrl(fileUrl) || fileUrl} 
+                                          className="w-full h-auto max-h-64 object-cover"
+                                          showFullscreenButton={true}
+                                          controls={false}
+                                          playsInline={true}
+                                        />
+                                      </div>
                                     ) : (
                                       <img 
                                         src={getImageUrl(fileUrl)} 

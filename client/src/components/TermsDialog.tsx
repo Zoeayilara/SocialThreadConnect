@@ -77,8 +77,8 @@ export default function TermsDialog({ isOpen, onAccept, userType }: TermsDialogP
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md bg-white border-gray-200 max-h-[80vh]">
-        <DialogHeader className="text-center">
+      <DialogContent className="sm:max-w-2xl w-[95vw] bg-white border-gray-200 max-h-[90vh] overflow-hidden p-6">
+        <DialogHeader className="text-center pb-4">
           <div className="flex items-center justify-center mb-2">
             {terms.icon}
           </div>
@@ -90,7 +90,7 @@ export default function TermsDialog({ isOpen, onAccept, userType }: TermsDialogP
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[400px] pr-4">
+        <ScrollArea className="max-h-[60vh] pr-4">
           <div className="space-y-4">
             {terms.content.map((section, index) => (
               <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -126,7 +126,7 @@ export default function TermsDialog({ isOpen, onAccept, userType }: TermsDialogP
           </div>
         </ScrollArea>
 
-        <DialogFooter className="flex justify-center pt-4">
+        <DialogFooter className="flex justify-center pt-6 mt-4 border-t border-gray-200">
           <Button 
             onClick={onAccept}
             className="bg-green-600 hover:bg-green-700 text-white font-medium px-8 py-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center space-x-2"

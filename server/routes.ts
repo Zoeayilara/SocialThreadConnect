@@ -2350,8 +2350,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const imageUrl = mediaUrl;
       
       const result = sqlite.prepare(`
-        INSERT INTO messages (senderId, recipientId, content, imageUrl, createdAt)
-        VALUES (?, ?, ?, ?, unixepoch('now'))
+        INSERT INTO messages (senderId, recipientId, content, imageUrl, createdAt, isRead)
+        VALUES (?, ?, ?, ?, unixepoch('now'), 0)
       `).run(senderId, recipientId, content?.trim() || '', imageUrl);
       
       const newMessage = sqlite.prepare(`
