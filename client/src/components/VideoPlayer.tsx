@@ -25,7 +25,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [controlsTimeout, setControlsTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [controlsTimeout, setControlsTimeout] = useState<number | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -80,9 +80,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleMouseMove = () => {
     setShowControls(true);
     if (controlsTimeout) {
-      clearTimeout(controlsTimeout);
+      window.clearTimeout(controlsTimeout);
     }
-    const timeout = setTimeout(() => {
+    const timeout = window.setTimeout(() => {
       if (isPlaying && isFullscreen) {
         setShowControls(false);
       }
