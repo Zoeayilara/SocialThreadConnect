@@ -681,7 +681,7 @@ async function runMigrations() {
 // Configure multer for file uploads
 const upload = multer({ 
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit for videos
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit for videos and large files
   fileFilter: (_, file, cb) => {
     const allowedTypes = [
       'image/jpeg', 'image/png', 'image/gif', 'image/webp',
@@ -699,8 +699,8 @@ const upload = multer({
 const profileUpload = multer({ 
   storage: multer.memoryStorage(),
   limits: { 
-    fileSize: 5 * 1024 * 1024, // Reduced to 5MB for Railway compatibility
-    fieldSize: 5 * 1024 * 1024,
+    fileSize: 100 * 1024 * 1024, // Increased to 100MB for better user experience
+    fieldSize: 100 * 1024 * 1024,
     fields: 10,
     files: 1
   },
@@ -999,7 +999,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use((error: any, _req: any, res: any, next: any) => {
     if (error instanceof multer.MulterError) {
       if (error.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ message: 'File too large. Maximum size is 50MB.' });
+        return res.status(400).json({ message: 'File too large. Maximum size is 100MB.' });
       }
       return res.status(400).json({ message: `Upload error: ${error.message}` });
     }

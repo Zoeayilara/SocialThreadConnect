@@ -7,7 +7,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle, AlertTriangle, Shield, Users } from 'lucide-react';
 
 interface TermsDialogProps {
@@ -52,23 +51,35 @@ export default function TermsDialog({ isOpen, onAccept, userType }: TermsDialogP
     content: [
       {
         title: "Vendor Trust & Verification",
-        text: "Always verify vendor credibility before making any purchase. Check their reviews, ratings, and verification status. EntreeFox recommends dealing with verified vendors for better security."
+        text: "Always verify vendor credibility before making any purchase. Check their reviews, ratings, and verification status. EntreeFox recommends dealing with verified vendors for better security. Look for the blue verification badge which indicates that the vendor has been verified by our admin team for authenticity and reliability."
       },
       {
         title: "Transaction Safety",
-        text: "EntreeFox serves as a platform to connect customers and vendors but does not take responsibility for failed transactions, product quality issues, or fraudulent activities. Exercise caution in all dealings."
+        text: "EntreeFox serves as a platform to connect customers and vendors but does not take responsibility for failed transactions, product quality issues, or fraudulent activities. Exercise caution in all dealings. Always communicate through our platform's messaging system to maintain a record of your conversations. Never share personal financial information outside of secure payment methods."
       },
       {
-        title: "Content Guidelines",
-        text: "No illegal content, hate speech, harassment, or offensive material should be posted. Respect community guidelines and maintain a positive environment for all users."
+        title: "Content Guidelines & File Sharing",
+        text: "No illegal content, hate speech, harassment, or offensive material should be posted. Respect community guidelines and maintain a positive environment for all users. When sharing files or media, ensure they comply with our content policy. Maximum file upload size is 100MB per file. Supported formats include images (JPG, PNG, GIF), videos (MP4, MOV), and documents (PDF, DOC, TXT)."
       },
       {
-        title: "Community Standards",
-        text: "Be respectful to other users, vendors, and the community. Follow proper etiquette when communicating and engaging with others on the platform."
+        title: "Community Standards & Behavior",
+        text: "Be respectful to other users, vendors, and the community. Follow proper etiquette when communicating and engaging with others on the platform. Treat all users with dignity regardless of their background, beliefs, or business type. Constructive feedback is encouraged, but personal attacks or discriminatory behavior will not be tolerated."
       },
       {
-        title: "Chat Guidelines", 
-        text: "Be respectful and courteous in your messages. No spamming or sharing of sensitive content. No hate speech, harassment, or offensive language. Report any suspicious or inappropriate behavior."
+        title: "Chat Guidelines & Communication", 
+        text: "Be respectful and courteous in your messages. No spamming or sharing of sensitive content. No hate speech, harassment, or offensive language. Report any suspicious or inappropriate behavior immediately. Use the platform's built-in reporting system to flag problematic content or users. Response times may vary, but we strive to address all reports within 24-48 hours."
+      },
+      {
+        title: "Privacy & Data Protection",
+        text: "Your privacy is important to us. We collect and use your data in accordance with our Privacy Policy. Never share personal information such as passwords, social security numbers, or banking details with other users. EntreeFox will never ask for sensitive information through direct messages or posts."
+      },
+      {
+        title: "Account Security & Responsibility",
+        text: "You are responsible for maintaining the security of your account credentials. Use a strong, unique password and enable two-factor authentication when available. Report any suspicious account activity immediately. Do not share your account with others or allow unauthorized access to your profile."
+      },
+      {
+        title: "Platform Usage & Limitations",
+        text: "Use the platform for its intended purpose of connecting with student entrepreneurs and businesses. Do not use automated tools, bots, or scripts to interact with the platform. Respect rate limits and do not attempt to overload our servers. Commercial use outside of the intended marketplace functionality requires prior approval."
       }
     ]
   };
@@ -77,7 +88,7 @@ export default function TermsDialog({ isOpen, onAccept, userType }: TermsDialogP
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-2xl w-[95vw] bg-white border-gray-200 max-h-[90vh] overflow-hidden p-6 flex flex-col">
+      <DialogContent className="sm:max-w-2xl w-[95vw] bg-white border-gray-200 max-h-[85vh] overflow-hidden p-6 flex flex-col">
         <DialogHeader className="text-center pb-4 flex-shrink-0">
           <div className="flex items-center justify-center mb-2">
             {terms.icon}
@@ -90,8 +101,8 @@ export default function TermsDialog({ isOpen, onAccept, userType }: TermsDialogP
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full pr-4">
+        <div className="flex-1 overflow-auto max-h-[50vh]">
+          <div className="pr-4">
             <div className="space-y-4">
             {terms.content.map((section, index) => (
               <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -125,7 +136,7 @@ export default function TermsDialog({ isOpen, onAccept, userType }: TermsDialogP
               </div>
             </div>
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
         <DialogFooter className="flex justify-center pt-6 mt-4 border-t border-gray-200 flex-shrink-0">

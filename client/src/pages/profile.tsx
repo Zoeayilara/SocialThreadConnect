@@ -640,12 +640,12 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Check file size (5MB limit for Railway compatibility)
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      // Check file size (100MB limit for better user experience)
+      const maxSize = 100 * 1024 * 1024; // 100MB
       if (file.size > maxSize) {
         toast({
           title: "File too large",
-          description: "Profile picture must be smaller than 5MB. Please choose a smaller image.",
+          description: "Profile picture must be smaller than 100MB. Please choose a smaller image.",
           variant: "destructive",
         });
         return;

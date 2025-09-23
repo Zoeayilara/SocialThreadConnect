@@ -332,7 +332,7 @@ export default function Messages({ directUserId }: MessagesProps) {
         // Check file type and size
         const isImage = file.type.startsWith('image/');
         const isVideo = file.type.startsWith('video/');
-        const maxSize = 10 * 1024 * 1024; // 10MB
+        const maxSize = 100 * 1024 * 1024; // 100MB
         
         if (!isImage && !isVideo) {
           toast({ title: `${file.name} is not a valid image or video file`, variant: "destructive" });
@@ -340,7 +340,7 @@ export default function Messages({ directUserId }: MessagesProps) {
         }
         
         if (file.size > maxSize) {
-          toast({ title: `${file.name} is too large (max 10MB)`, variant: "destructive" });
+          toast({ title: `${file.name} is too large (max 100MB)`, variant: "destructive" });
           continue;
         }
         
