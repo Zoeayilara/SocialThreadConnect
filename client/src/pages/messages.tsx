@@ -76,6 +76,22 @@ export default function Messages({ directUserId }: MessagesProps) {
     enabled: !!directUserId,
   });
 
+  // Get messages for selected user
+  const { data: messages = [] } = useQuery({
+    queryKey: ['messages', selectedUser?.id],
+    queryFn: async () => {
+      if (!selectedUser) return [];
+      const response = await authenticatedFetch(`/api/messages/${selectedUser.id}`);
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      return response.json();
+    },
+    enabled: !!selectedUser,
+    staleTime: 0,
+    refetchInterval: 3000, // Poll every 3 seconds for new messages
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true
+  });
+
   // Handle direct user selection from URL
   useEffect(() => {
     if (directUserId && directUser) {
@@ -145,22 +161,6 @@ export default function Messages({ directUserId }: MessagesProps) {
       return response.json();
     },
     enabled: searchTerm.length > 0
-  });
-
-  // Get messages for selected user
-  const { data: messages = [] } = useQuery({
-    queryKey: ['messages', selectedUser?.id],
-    queryFn: async () => {
-      if (!selectedUser) return [];
-      const response = await authenticatedFetch(`/api/messages/${selectedUser.id}`);
-      if (!response.ok) throw new Error('Failed to fetch messages');
-      return response.json();
-    },
-    enabled: !!selectedUser,
-    staleTime: 0,
-    refetchInterval: 3000, // Poll every 3 seconds for new messages
-    refetchIntervalInBackground: true,
-    refetchOnWindowFocus: true
   });
 
   // Send message mutation
