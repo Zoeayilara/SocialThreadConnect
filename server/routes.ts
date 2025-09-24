@@ -1826,82 +1826,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.userId;
       
-      // Get recent activities - likes, comments, and reposts on user's posts
-      const activities = sqlite.prepare(`
-        SELECT 
-          'like' as type,
-          l.created_at as timestamp,
-          u.id as user_id,
-          u.first_name,
-          u.last_name,
-          CASE 
-            WHEN u.profile_image_url LIKE 'http://localhost:5000%' THEN 
-              REPLACE(u.profile_image_url, 'http://localhost:5000', '${getBaseUrl()}')
-            ELSE u.profile_image_url 
-          END as profile_image_url,
-          p.id as post_id,
-          p.content as post_content,
-          p.likes_count,
-          p.comments_count
-        FROM likes l
-        JOIN users u ON l.user_id = u.id
-        JOIN posts p ON l.post_id = p.id
-        WHERE p.user_id = ? AND l.user_id != ?
-        
-        UNION ALL
-        
-        SELECT 
-          'comment' as type,
-          c.created_at as timestamp,
-          u.id as user_id,
-          u.first_name,
-          u.last_name,
-          CASE 
-            WHEN u.profile_image_url LIKE 'http://localhost:5000%' THEN 
-              REPLACE(u.profile_image_url, 'http://localhost:5000', '${getBaseUrl()}')
-            ELSE u.profile_image_url 
-          END as profile_image_url,
-          p.id as post_id,
-          c.content as post_content,
-          p.likes_count,
-          p.comments_count
-        FROM comments c
-        JOIN users u ON c.user_id = u.id
-        JOIN posts p ON c.post_id = p.id
-        WHERE p.user_id = ? AND c.user_id != ?
-        
-        UNION ALL
-        
-        SELECT 
-          'repost' as type,
-          r.created_at as timestamp,
-          u.id as user_id,
-          u.first_name,
-          u.last_name,
-          CASE 
-            WHEN u.profile_image_url LIKE 'http://localhost:5000%' THEN 
-              REPLACE(u.profile_image_url, 'http://localhost:5000', '${getBaseUrl()}')
-            ELSE u.profile_image_url 
-          END as profile_image_url,
-          p.id as post_id,
-          p.content as post_content,
-          p.likes_count,
-          p.comments_count
-        FROM reposts r
-        JOIN users u ON r.user_id = u.id
-        JOIN posts p ON r.post_id = p.id
-        WHERE p.user_id = ? AND r.user_id != ?
-        
-        ORDER BY timestamp DESC
-        LIMIT 50
-      `).all(userId, userId, userId, userId, userId, userId);
+      // Use the comprehensive getNotifications function that includes all types
+      const activities = await storage.getNotifications(userId);
       
       res.json(activities);
     } catch (error) {
-      console.error('Error fetching activities:', error);
-      res.status(500).json({ error: 'Failed to fetch activities' });
+      console.error("Error fetching activities:", error);
+      res.status(500).json({ message: "Failed to fetch activities" });
     }
   });
+
 
   // Admin middleware to check if user is admin
   const isAdmin = async (req: any, res: any, next: any) => {

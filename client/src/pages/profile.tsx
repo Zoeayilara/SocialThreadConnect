@@ -136,7 +136,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   const isOwnProfile = !userId || userId === currentUser?.id;
 
   // Fetch user profile data
-  const { data: profileUser } = useQuery({
+  const { data: profileUser, isLoading: isProfileLoading, error: profileError } = useQuery({
     queryKey: ['user', profileUserId],
     queryFn: async () => {
       if (isOwnProfile) return currentUser;
@@ -666,24 +666,26 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   };
 
 
-  // No loading spinner for profile page - let content load naturally
-  if (!profileUser && profileUserId) {
+  // Show loading spinner while profile is loading
+  if (isProfileLoading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
-          <FoxLogo size={60} className="mx-auto mb-4" />
-          <p>Profile not found</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading profile...</p>
         </div>
       </div>
     );
   }
 
-  if (!profileUser) {
+  // Show error message only if there's an actual error (not during loading)
+  if (profileError || (!profileUser && profileUserId && !isProfileLoading)) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <FoxLogo size={60} className="mx-auto mb-4 opacity-50" />
-          <p>Profile not found</p>
+          <p className="text-red-400 mb-2">Profile not found</p>
+          <p className="text-gray-500 text-sm">This user may not exist or may have been removed.</p>
         </div>
       </div>
     );

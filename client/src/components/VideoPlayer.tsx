@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useVideoAutoPause } from '../hooks/useVideoAutoPause';
-import { Maximize, Minimize, Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { Maximize, Minimize, Play, Pause, Volume2, VolumeX, Rewind, FastForward } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface VideoPlayerProps {
@@ -77,6 +77,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setIsMuted(videoRef.current.muted);
   };
 
+  const skipBackward = () => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
+  };
+
+  const skipForward = () => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 10);
+  };
+
   const handleMouseMove = () => {
     setShowControls(true);
     if (controlsTimeout) {
@@ -121,20 +131,43 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       
       {showFullscreenButton && (
         <div className={`absolute inset-0 transition-opacity duration-300 ${showControls || !isFullscreen ? 'opacity-100' : 'opacity-0'}`}>
-          {/* Play/Pause Overlay */}
+          {/* Play/Pause Overlay with Skip Controls */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={togglePlay}
-              className={`bg-black/50 hover:bg-black/70 text-white rounded-full w-16 h-16 transition-all duration-200 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}
-            >
-              {isPlaying ? (
-                <Pause className="w-8 h-8" />
-              ) : (
-                <Play className="w-8 h-8 ml-1" />
-              )}
-            </Button>
+            <div className="flex items-center space-x-4">
+              {/* Skip Backward Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={skipBackward}
+                className={`bg-black/50 hover:bg-black/70 text-white rounded-full w-12 h-12 transition-all duration-200 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}
+              >
+                <Rewind className="w-6 h-6" />
+              </Button>
+
+              {/* Play/Pause Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={togglePlay}
+                className={`bg-black/50 hover:bg-black/70 text-white rounded-full w-16 h-16 transition-all duration-200 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}
+              >
+                {isPlaying ? (
+                  <Pause className="w-8 h-8" />
+                ) : (
+                  <Play className="w-8 h-8 ml-1" />
+                )}
+              </Button>
+
+              {/* Skip Forward Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={skipForward}
+                className={`bg-black/50 hover:bg-black/70 text-white rounded-full w-12 h-12 transition-all duration-200 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}
+              >
+                <FastForward className="w-6 h-6" />
+              </Button>
+            </div>
           </div>
 
           {/* Control Bar */}

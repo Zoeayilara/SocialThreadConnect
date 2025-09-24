@@ -208,27 +208,23 @@ export default function Messages({ directUserId }: MessagesProps) {
         // Jump to bottom instantly without animation
         container.scrollTop = container.scrollHeight;
         
-        // Add scroll listener to mark as read when user scrolls to bottom
+        // Add scroll listener to mark as read only after user actively scrolls
+        let hasUserScrolled = false;
+        
         const handleScroll = () => {
+          hasUserScrolled = true; // User has actively scrolled
           const { scrollTop, scrollHeight, clientHeight } = container;
           const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px threshold
           
-          if (isAtBottom && messages.length > 0) {
-            // User has scrolled to bottom, mark messages as read
+          // Only mark as read if user has actively scrolled AND is at bottom
+          if (isAtBottom && messages.length > 0 && hasUserScrolled) {
             handleMarkAsRead();
           }
         };
         
         container.addEventListener('scroll', handleScroll);
         
-        // Mark as read immediately if already at bottom
-        setTimeout(() => {
-          const { scrollTop, scrollHeight, clientHeight } = container;
-          const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
-          if (isAtBottom) {
-            handleMarkAsRead();
-          }
-        }, 1000); // Give time for messages to load
+        // Don't automatically mark as read - wait for user interaction
         
         return () => {
           container.removeEventListener('scroll', handleScroll);
@@ -238,16 +234,20 @@ export default function Messages({ directUserId }: MessagesProps) {
   }, [selectedUser?.id, messages.length, handleMarkAsRead]); // Only when selectedUser changes (opening chat)
   
 
-  // Typing indicator effect
+  // Typing indicator effect and mark as read when user starts typing
   useEffect(() => {
     if (messageText.length > 0) {
       setIsTyping(true);
+      // Mark messages as read when user starts typing (shows engagement)
+      if (messageText.length === 1) { // First character typed
+        handleMarkAsRead();
+      }
       const timer = setTimeout(() => setIsTyping(false), 1000);
       return () => clearTimeout(timer);
     } else {
       setIsTyping(false);
     }
-  }, [messageText]);
+  }, [messageText, handleMarkAsRead]);
 
   // Delete message mutation
   const deleteMessageMutation = useMutation({
