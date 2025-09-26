@@ -19,9 +19,21 @@ export default function Success() {
       // Get the temporary user data
       const tempUserType = localStorage.getItem('tempUserType');
       const authToken = localStorage.getItem('authToken');
+      const tempUserId = localStorage.getItem('tempUserId');
+      const debugTempEmail = localStorage.getItem('tempEmail');
+      
+      console.log('🔍 Success page - Debug info:', {
+        tempUserType,
+        authToken: authToken ? 'EXISTS' : 'MISSING',
+        tempUserId,
+        tempEmail: debugTempEmail,
+        allLocalStorage: Object.keys(localStorage)
+      });
       
       // Check if we already have a valid auth token from registration
       if (authToken && tempUserType) {
+        console.log('✅ Success page - Using auth token path, navigating to:', tempUserType === 'vendor' ? 'vendor-dashboard' : 'customer-dashboard');
+        
         // Invalidate auth queries to force refetch with new token
         queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
         
@@ -44,6 +56,8 @@ export default function Success() {
         await new Promise(resolve => setTimeout(resolve, 100));
         return;
       }
+      
+      console.log('⚠️ Success page - No auth token or tempUserType, trying fallback login...');
       
       // Fallback: try to login with temp credentials if no token
       const tempEmail = localStorage.getItem('tempEmail');
