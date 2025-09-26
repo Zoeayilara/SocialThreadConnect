@@ -25,9 +25,9 @@ export default function Success() {
         // Invalidate auth queries to force refetch with new token
         queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
         
-        // Clean up temp data
+        // Clean up temp data (but keep tempUserId for terms dialog)
         localStorage.removeItem('tempUserType');
-        localStorage.removeItem('tempUserId');
+        // Keep tempUserId until terms dialog is shown in dashboard
         localStorage.removeItem('tempEmail');
         localStorage.removeItem('tempPassword');
         
@@ -71,9 +71,9 @@ export default function Success() {
             localStorage.setItem('authToken', data.token);
           }
           
-          // Login successful, clean up temp data
+          // Login successful, clean up temp data (but keep tempUserId for terms dialog)
           localStorage.removeItem('tempUserType');
-          localStorage.removeItem('tempUserId');
+          // Keep tempUserId until terms dialog is shown in dashboard
           localStorage.removeItem('tempEmail');
           localStorage.removeItem('tempPassword');
           

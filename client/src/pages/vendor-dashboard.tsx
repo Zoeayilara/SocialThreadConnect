@@ -247,6 +247,12 @@ export default function VendorDashboard() {
     if (userId) {
       localStorage.setItem(`terms-accepted-${userId}`, 'true');
     }
+    
+    // Clean up tempUserId after terms are accepted (registration flow complete)
+    if (!user?.id && localStorage.getItem('tempUserId')) {
+      localStorage.removeItem('tempUserId');
+    }
+    
     setShowTermsDialog(false);
   };
 
