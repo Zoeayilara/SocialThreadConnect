@@ -19,25 +19,16 @@ export default function Success() {
       // Get the temporary user data
       const tempUserType = localStorage.getItem('tempUserType');
       const authToken = localStorage.getItem('authToken');
-      const tempUserId = localStorage.getItem('tempUserId');
-      const debugTempEmail = localStorage.getItem('tempEmail');
-      
-      console.log('🔍 Success page - Debug info:', {
-        tempUserType,
-        authToken: authToken ? 'EXISTS' : 'MISSING',
-        tempUserId,
-        tempEmail: debugTempEmail,
-        allLocalStorage: Object.keys(localStorage)
-      });
       
       // Check if we already have a valid auth token from registration
       if (authToken && tempUserType) {
-        console.log('✅ Success page - Using auth token path, navigating to:', tempUserType === 'vendor' ? 'vendor-dashboard' : 'customer-dashboard');
-        
         // Invalidate auth queries to force refetch with new token
         queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
         
-        // Navigate to appropriate dashboard using wouter FIRST
+        // Small delay to ensure cleanup is complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Navigate to appropriate dashboard using wouter
         if (tempUserType === 'vendor') {
           setLocation("/vendor-dashboard");
         } else if (tempUserType === 'admin') {
@@ -45,19 +36,8 @@ export default function Success() {
         } else {
           setLocation("/customer-dashboard");
         }
-        
-        // Clean up temp data (but keep tempUserId for terms dialog)
-        localStorage.removeItem('tempUserType');
-        // Keep tempUserId until terms dialog is shown in dashboard
-        localStorage.removeItem('tempEmail');
-        localStorage.removeItem('tempPassword');
-        
-        // Small delay to ensure cleanup is complete
-        await new Promise(resolve => setTimeout(resolve, 100));
         return;
       }
-      
-      console.log('⚠️ Success page - No auth token or tempUserType, trying fallback login...');
       
       // Fallback: try to login with temp credentials if no token
       const tempEmail = localStorage.getItem('tempEmail');
@@ -85,7 +65,13 @@ export default function Success() {
             localStorage.setItem('authToken', data.token);
           }
           
-          // Navigate to appropriate dashboard using wouter FIRST
+          // Clean up temp data
+          localStorage.removeItem('tempUserType');
+          localStorage.removeItem('tempUserId');
+          localStorage.removeItem('tempEmail');
+          localStorage.removeItem('tempPassword');
+          
+          // Navigate to appropriate dashboard using wouter
           if (tempUserType === 'vendor') {
             setLocation("/vendor-dashboard");
           } else if (tempUserType === 'admin') {
@@ -93,12 +79,6 @@ export default function Success() {
           } else {
             setLocation("/customer-dashboard");
           }
-          
-          // Login successful, clean up temp data (but keep tempUserId for terms dialog)
-          localStorage.removeItem('tempUserType');
-          // Keep tempUserId until terms dialog is shown in dashboard
-          localStorage.removeItem('tempEmail');
-          localStorage.removeItem('tempPassword');
           
           // Small delay to ensure token is stored
           await new Promise(resolve => setTimeout(resolve, 100));
