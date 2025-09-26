@@ -13,17 +13,18 @@ interface ActivityProps {
 }
 
 interface ActivityItem {
+  id: string;
   type: 'like' | 'comment' | 'repost' | 'follow' | 'post' | 'mention';
-  timestamp: number;
-  user_id: number;
-  first_name: string;
-  last_name: string;
-  profile_image_url?: string;
-  post_id?: number;
-  post_content?: string;
-  likes_count?: number;
-  comments_count?: number;
-  reposts_count?: number;
+  message: string;
+  user: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    profileImageUrl?: string;
+  };
+  createdAt: string;
+  isRead: boolean;
+  postId?: number;
 }
 
 export default function Activity({ onBack }: ActivityProps) {
@@ -48,7 +49,7 @@ export default function Activity({ onBack }: ActivityProps) {
   ];
 
   const getUserDisplayName = (activity: ActivityItem) => 
-    `${activity.first_name} ${activity.last_name}` || 'User';
+    `${activity.user.firstName} ${activity.user.lastName}` || 'User';
 
   const getActivityText = (activity: ActivityItem) => {
     switch (activity.type) {
@@ -90,12 +91,12 @@ export default function Activity({ onBack }: ActivityProps) {
 
   const handleActivityClick = (activity: ActivityItem) => {
     // For mentions, navigate to the post; for others, navigate to profile
-    if (activity.type === 'mention' && activity.post_id) {
+    if (activity.type === 'mention' && activity.postId) {
       // Navigate to dashboard and scroll to the specific post
-      setLocation(`/?post=${activity.post_id}`);
+      setLocation(`/?post=${activity.postId}`);
     } else {
       // Navigate to the user's profile
-      setLocation(`/profile/${activity.user_id}`);
+      setLocation(`/profile/${activity.user.id}`);
     }
   };
 
@@ -146,15 +147,15 @@ export default function Activity({ onBack }: ActivityProps) {
           ) : (
             activities.map((activity, index) => (
               <div 
-                key={`${activity.user_id}-${activity.post_id || 'follow'}-${index}`} 
+                key={`${activity.user.id}-${activity.postId || 'follow'}-${index}`} 
                 onClick={() => handleActivityClick(activity)}
                 className="flex items-center space-x-3 p-4 border-b border-gray-800 transition-all duration-200 hover:bg-gray-900/30 cursor-pointer"
               >
                 <div className="relative">
                   <Avatar className="w-12 h-12 ring-2 ring-gray-700">
-                    <AvatarImage src={activity.profile_image_url} />
+                    <AvatarImage src={activity.user.profileImageUrl} />
                     <AvatarFallback className="bg-gradient-to-br from-gray-600 to-gray-800 text-white text-sm font-medium">
-                      {activity.first_name?.[0]}{activity.last_name?.[0]}
+                      {activity.user.firstName?.[0]}{activity.user.lastName?.[0]}
                     </AvatarFallback>
                   </Avatar>
                   <div className="absolute -bottom-1 -right-1 bg-black rounded-full p-1.5 border-2 border-gray-800">
@@ -172,19 +173,8 @@ export default function Activity({ onBack }: ActivityProps) {
                         <span className="text-gray-300">{getActivityText(activity)}</span>
                       </p>
                       <p className="text-gray-500 text-xs mt-2 font-medium">
-                        {formatRelativeTime(activity.timestamp)}
+                        {formatRelativeTime(new Date(activity.createdAt).getTime())}
                       </p>
-                      
-                      {activity.post_content && activity.type !== 'follow' && (
-                        <div className="mt-3 p-2 bg-gray-800/30 rounded-lg border-l-2 border-gray-600">
-                          <p className="text-gray-300 text-xs leading-relaxed">
-                            {activity.post_content.length > 100 
-                              ? `${activity.post_content.substring(0, 100)}...` 
-                              : activity.post_content
-                            }
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

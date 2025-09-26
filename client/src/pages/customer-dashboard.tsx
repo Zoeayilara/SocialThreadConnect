@@ -60,6 +60,7 @@ interface Comment {
     firstName: string;
     lastName: string;
     profileImageUrl?: string;
+    isVerified?: number;
   };
   replies?: Comment[];
 }
@@ -530,6 +531,10 @@ export default function CustomerDashboard() {
   };
 
   const handleUserClick = (userId?: number) => {
+    // Clear scroll position when navigating to profile to prevent scroll restoration issues
+    sessionStorage.removeItem('dashboard-scroll-position');
+    sessionStorage.removeItem('dashboard-last-viewed-post');
+    
     if (userId) {
       setLocation(`/profile/${userId}`);
     } else {
@@ -933,7 +938,12 @@ export default function CustomerDashboard() {
                         </Avatar>
                         <div className="flex-1">
                           <div className="bg-gray-900 rounded-lg px-3 py-2">
-                            <p className="font-semibold text-sm text-white">{getUserDisplayName(comment.user)}</p>
+                            <div className="flex items-center space-x-1">
+                              <p className="font-semibold text-sm text-white">{getUserDisplayName(comment.user)}</p>
+                              {comment.user.isVerified === 1 && (
+                                <VerificationBadge className="w-3 h-3" />
+                              )}
+                            </div>
                             <p className="text-sm text-gray-300">{comment.content}</p>
                           </div>
                           <div className="flex items-center space-x-4 mt-1 ml-3">
@@ -998,7 +1008,12 @@ export default function CustomerDashboard() {
                                 </Avatar>
                                 <div className="flex-1">
                                   <div className="bg-gray-800 rounded-lg px-3 py-2">
-                                    <p className="font-semibold text-xs text-white">{getUserDisplayName(reply.user)}</p>
+                                    <div className="flex items-center space-x-1">
+                                      <p className="font-semibold text-xs text-white">{getUserDisplayName(reply.user)}</p>
+                                      {reply.user.isVerified === 1 && (
+                                        <VerificationBadge className="w-2.5 h-2.5" />
+                                      )}
+                                    </div>
                                     <p className="text-xs text-gray-300">{reply.content}</p>
                                   </div>
                                   <div className="flex items-center space-x-4 mt-1 ml-3">

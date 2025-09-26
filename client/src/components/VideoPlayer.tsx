@@ -132,14 +132,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {showFullscreenButton && (
         <div className={`absolute inset-0 transition-opacity duration-300 ${showControls || !isFullscreen ? 'opacity-100' : 'opacity-0'}`}>
           {/* Play/Pause Overlay with Skip Controls */}
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
             <div className="flex items-center space-x-4">
               {/* Skip Backward Button */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={skipBackward}
-                className={`bg-black/50 hover:bg-black/70 text-white rounded-full w-12 h-12 transition-all duration-200 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}
+                className="bg-black/50 hover:bg-black/70 text-white rounded-full w-12 h-12 transition-all duration-200"
               >
                 <Rewind className="w-6 h-6" />
               </Button>
@@ -149,7 +149,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={togglePlay}
-                className={`bg-black/50 hover:bg-black/70 text-white rounded-full w-16 h-16 transition-all duration-200 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}
+                className="bg-black/50 hover:bg-black/70 text-white rounded-full w-16 h-16 transition-all duration-200"
               >
                 {isPlaying ? (
                   <Pause className="w-8 h-8" />
@@ -163,7 +163,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={skipForward}
-                className={`bg-black/50 hover:bg-black/70 text-white rounded-full w-12 h-12 transition-all duration-200 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}
+                className="bg-black/50 hover:bg-black/70 text-white rounded-full w-12 h-12 transition-all duration-200"
               >
                 <FastForward className="w-6 h-6" />
               </Button>

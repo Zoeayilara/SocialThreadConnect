@@ -6,10 +6,11 @@ import { formatMessageTime } from "@/utils/messageUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { VideoPlayer } from "@/components/VideoPlayer";
+import { VerificationBadge } from '@/components/VerificationBadge';
+import { authenticatedFetch, getImageUrl } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { authenticatedFetch, getImageUrl } from "@/utils/api";
-import { VideoPlayer } from "@/components/VideoPlayer";
 import { VideoPreview } from "@/components/VideoPreview";
 import { ImageEditor } from "@/components/ImageEditor";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
@@ -425,8 +426,13 @@ export default function Messages({ directUserId }: MessagesProps) {
                   </Avatar>
                 </div>
                 <div>
-                  <div className="font-semibold text-white text-lg">
-                    {getUserDisplayName(selectedUser)}
+                  <div className="flex items-center space-x-2">
+                    <span className="font-semibold text-white text-lg">
+                      {getUserDisplayName(selectedUser)}
+                    </span>
+                    {selectedUser.isVerified === 1 && (
+                      <VerificationBadge className="w-4 h-4" />
+                    )}
                   </div>
                   <div className="text-sm text-gray-400">
                     <span>@{selectedUser.email.split('@')[0]}</span>
@@ -488,9 +494,14 @@ export default function Messages({ directUserId }: MessagesProps) {
                       {selectedUser.firstName?.[0] || selectedUser.lastName?.[0] || selectedUser.email[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    {getUserDisplayName(selectedUser)}
-                  </h3>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <h3 className="text-xl font-semibold text-white">
+                      {getUserDisplayName(selectedUser)}
+                    </h3>
+                    {selectedUser.isVerified === 1 && (
+                      <VerificationBadge className="w-5 h-5" />
+                    )}
+                  </div>
                   <p className="text-gray-400 text-sm mb-8">
                     Start a conversation with {getUserDisplayName(selectedUser)}
                   </p>
@@ -808,8 +819,13 @@ export default function Messages({ directUserId }: MessagesProps) {
                   </Avatar>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-white truncate group-hover:text-blue-300 transition-colors duration-200">
-                    {getUserDisplayName(user)}
+                  <div className="flex items-center space-x-2">
+                    <span className="font-semibold text-white truncate group-hover:text-blue-300 transition-colors duration-200">
+                      {getUserDisplayName(user)}
+                    </span>
+                    {user.isVerified === 1 && (
+                      <VerificationBadge className="w-3.5 h-3.5 flex-shrink-0" />
+                    )}
                   </div>
                   <div className="text-sm text-gray-400 truncate">
                     @{user.email.split('@')[0]}
