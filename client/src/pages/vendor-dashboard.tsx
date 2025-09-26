@@ -135,7 +135,7 @@ export default function VendorDashboard() {
     refetchInterval: false, // No automatic updates - only manual refresh
     refetchOnWindowFocus: false, // No interruptions when switching tabs
     refetchIntervalInBackground: false, // No background updates
-    staleTime: 0, // Always fresh data on manual refresh with Threads algorithm
+    staleTime: Infinity, // Never consider data stale - only refresh on manual action
   });
 
   // Fetch comments for a post with optimized refetching
@@ -357,10 +357,17 @@ export default function VendorDashboard() {
       if (!response.ok) throw new Error('Failed to update post');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      // Update the specific post in cache without reordering
+      queryClient.setQueryData(['/api/posts'], (oldPosts: any[] = []) => {
+        return oldPosts.map(post => 
+          post.id === variables.postId ? { ...post, content: variables.content } : post
+        );
+      });
+      
+      // Only invalidate profile-related queries
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
       setEditingPost(null);
       setEditContent("");
     },
@@ -375,8 +382,13 @@ export default function VendorDashboard() {
       if (!response.ok) throw new Error('Failed to delete post');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+    onSuccess: (_, postId) => {
+      // Remove the deleted post from cache without reordering others
+      queryClient.setQueryData(['/api/posts'], (oldPosts: any[] = []) => {
+        return oldPosts.filter(post => post.id !== postId);
+      });
+      
+      // Only invalidate profile-related queries
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
       toast({ title: "Post deleted successfully!" });
@@ -394,7 +406,6 @@ export default function VendorDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['saved-status'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       toast({ title: "Post saved successfully!" });
     },
@@ -411,7 +422,6 @@ export default function VendorDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['saved-status'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       toast({ title: "Post unsaved successfully!" });
     },

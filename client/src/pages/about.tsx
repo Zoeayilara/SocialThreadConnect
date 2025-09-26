@@ -44,9 +44,6 @@ export default function About({ onBack }: AboutProps) {
             <p>
               We also give a platform for startup Entrepreneurs to get their business and the services they render known to students in their community and outside their community.
             </p>
-            <p className="font-semibold text-orange-300">
-              We can't wait to show you all what we have been working on behind the scenes!
-            </p>
           </div>
         </div>
 

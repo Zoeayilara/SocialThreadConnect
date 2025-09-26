@@ -50,13 +50,12 @@ export default function CreatePost() {
       return response.json();
     },
     onSuccess: (newPost) => {
-      // Optimistically add the new post to the top of existing posts
+      // Add the new post to the top of existing posts and keep it there
       queryClient.setQueryData(['/api/posts'], (oldPosts: any[] = []) => {
         return [newPost, ...oldPosts];
       });
       
-      // Invalidate all related queries to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      // Only invalidate profile-related queries, not the main dashboard posts
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
       
