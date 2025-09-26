@@ -25,6 +25,15 @@ export default function Success() {
         // Invalidate auth queries to force refetch with new token
         queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
         
+        // Navigate to appropriate dashboard using wouter FIRST
+        if (tempUserType === 'vendor') {
+          setLocation("/vendor-dashboard");
+        } else if (tempUserType === 'admin') {
+          setLocation("/admin-dashboard");
+        } else {
+          setLocation("/customer-dashboard");
+        }
+        
         // Clean up temp data (but keep tempUserId for terms dialog)
         localStorage.removeItem('tempUserType');
         // Keep tempUserId until terms dialog is shown in dashboard
@@ -33,15 +42,6 @@ export default function Success() {
         
         // Small delay to ensure cleanup is complete
         await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Navigate to appropriate dashboard using wouter
-        if (tempUserType === 'vendor') {
-          setLocation("/vendor-dashboard");
-        } else if (tempUserType === 'admin') {
-          setLocation("/admin-dashboard");
-        } else {
-          setLocation("/customer-dashboard");
-        }
         return;
       }
       
@@ -71,6 +71,15 @@ export default function Success() {
             localStorage.setItem('authToken', data.token);
           }
           
+          // Navigate to appropriate dashboard using wouter FIRST
+          if (tempUserType === 'vendor') {
+            setLocation("/vendor-dashboard");
+          } else if (tempUserType === 'admin') {
+            setLocation("/admin-dashboard");
+          } else {
+            setLocation("/customer-dashboard");
+          }
+          
           // Login successful, clean up temp data (but keep tempUserId for terms dialog)
           localStorage.removeItem('tempUserType');
           // Keep tempUserId until terms dialog is shown in dashboard
@@ -79,15 +88,6 @@ export default function Success() {
           
           // Small delay to ensure token is stored
           await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // Navigate to appropriate dashboard using wouter
-          if (tempUserType === 'vendor') {
-            setLocation("/vendor-dashboard");
-          } else if (tempUserType === 'admin') {
-            setLocation("/admin-dashboard");
-          } else {
-            setLocation("/customer-dashboard");
-          }
           return;
         }
       }
