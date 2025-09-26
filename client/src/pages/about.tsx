@@ -34,14 +34,14 @@ export default function About({ onBack }: AboutProps) {
         {/* Announcement Section */}
         <div className="bg-gradient-to-r from-orange-500/20 to-red-600/20 rounded-xl p-6 border border-orange-500/30 mb-6 relative overflow-hidden">
           <div className="absolute top-4 right-4 text-4xl">📢</div>
-          <h3 className="text-2xl font-bold text-white mb-4 text-center">
+          <h3 className="text-xl font-medium text-white mb-4 text-center">
             ENTREEFOX IS HERE!!
           </h3>
-          <div className="space-y-4 text-gray-200 leading-relaxed">
-            <p>
-              <strong>Entreefox</strong> is a web app that is primarily for university students to connect with each other which means <strong>Entreefox</strong> gives a social media interface and a market place where student Entrepreneurs and business owners can interact, connect with each other and render services to their potential clients giving students a platform to interact and chat with not just students within their school community but with students from other schools.
+          <div className="space-y-4 text-gray-300 leading-relaxed">
+            <p className="font-normal">
+              <span className="font-medium">Entreefox</span> is a web app that is primarily for university students to connect with each other which means <span className="font-medium">Entreefox</span> gives a social media interface and a market place where student Entrepreneurs and business owners can interact, connect with each other and render services to their potential clients giving students a platform to interact and chat with not just students within their school community but with students from other schools.
             </p>
-            <p>
+            <p className="font-normal">
               We also give a platform for startup Entrepreneurs to get their business and the services they render known to students in their community and outside their community.
             </p>
           </div>

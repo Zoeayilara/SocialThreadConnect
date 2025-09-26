@@ -579,7 +579,7 @@ export default function Messages({ directUserId }: MessagesProps) {
                                       <div className="w-full max-w-sm max-h-64 overflow-hidden rounded-2xl shadow-lg group-hover/media:shadow-xl transition-all duration-200">
                                         <VideoPlayer 
                                           src={getImageUrl(fileUrl) || fileUrl} 
-                                          className="w-full h-auto max-h-64 object-cover"
+                                          className="w-full h-auto max-h-48 object-contain rounded-2xl"
                                           showFullscreenButton={true}
                                           controls={false}
                                           playsInline={true}

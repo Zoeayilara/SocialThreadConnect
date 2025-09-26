@@ -217,12 +217,14 @@ export default function CustomerDashboard() {
 
   // Check if user needs to see terms dialog (first time after registration)
   useEffect(() => {
-    if (!user?.id) return; // Wait for user to be loaded
+    // Get user ID from either authenticated user or temp registration data
+    const userId = user?.id || localStorage.getItem('tempUserId');
+    if (!userId) return; // Wait for user ID to be available
     
-    const hasSeenTerms = localStorage.getItem(`terms-accepted-${user.id}`);
+    const hasSeenTerms = localStorage.getItem(`terms-accepted-${userId}`);
     const isFromRegistration = sessionStorage.getItem('from-registration');
     
-    console.log('Terms check:', { hasSeenTerms, isFromRegistration, userId: user.id });
+    console.log('Terms check:', { hasSeenTerms, isFromRegistration, userId, userSource: user?.id ? 'auth' : 'temp' });
     
     // Show terms if user hasn't seen them yet (either from registration or first time)
     if (!hasSeenTerms) {
@@ -231,11 +233,13 @@ export default function CustomerDashboard() {
         sessionStorage.removeItem('from-registration');
       }
     }
-  }, [user?.id]);
+  }, [user?.id]); // Keep dependency on user?.id to re-run when auth completes
 
   const handleTermsAccept = () => {
-    if (user?.id) {
-      localStorage.setItem(`terms-accepted-${user.id}`, 'true');
+    // Use either authenticated user ID or temp user ID
+    const userId = user?.id || localStorage.getItem('tempUserId');
+    if (userId) {
+      localStorage.setItem(`terms-accepted-${userId}`, 'true');
     }
     setShowTermsDialog(false);
   };
@@ -1097,7 +1101,7 @@ export default function CustomerDashboard() {
             <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             <NotificationBadge count={unreadCount} />
           </Button>
-          <Button variant="ghost" size="icon" className="bg-blue-600 hover:bg-blue-700 rounded-full h-16 w-16 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105" onClick={() => setLocation('/create-post')}><span className="sr-only">Create</span><svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></svg></Button>
+          <Button variant="ghost" size="icon" className="bg-blue-600 hover:bg-blue-700 rounded-full h-16 w-16 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105" onClick={() => setLocation('/create-post')}><span className="sr-only">Create</span><svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></Button>
           <Button variant="ghost" size="icon" className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200" onClick={() => setLocation('/activity')}><span className="sr-only">Activity</span><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></Button>
           <Button variant="ghost" size="icon" className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200" onClick={() => handleUserClick()}><span className="sr-only">User</span><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M6 20a6 6 0 0 1 12 0"/></svg></Button>
         </div>
