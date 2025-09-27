@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowLeft, Search, Edit, MoreHorizontal, Trash2, Send, Paperclip, Smile } from "lucide-react";
+import { Send, Paperclip, Smile, MoreHorizontal, Trash2, ArrowLeft, Loader2, Search, Edit3 } from "lucide-react";
 import { formatMessageTime } from "@/utils/messageUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -289,8 +289,54 @@ export default function Messages({ directUserId }: MessagesProps) {
     }
   });
 
+  // File size validation
+  const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+  const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+
+  const validateFiles = (files: File[]) => {
+    for (const file of files) {
+      if (file.type.startsWith('video/') && file.size > MAX_VIDEO_SIZE) {
+        toast({
+          title: "Video too large", 
+          description: `Max video size is 50MB. Your file is ${(file.size / 1024 / 1024).toFixed(1)}MB`,
+          variant: "destructive"
+        });
+        return false;
+      }
+      if (file.type.startsWith('image/') && file.size > MAX_IMAGE_SIZE) {
+        toast({
+          title: "Image too large", 
+          description: `Max image size is 10MB. Your file is ${(file.size / 1024 / 1024).toFixed(1)}MB`,
+          variant: "destructive"
+        });
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleSendMessage = () => {
+    // Prevent duplicate sends
+    if (sendMessageMutation.isPending) {
+      console.log('Upload already in progress, ignoring duplicate send');
+      return;
+    }
+    
     if (!selectedUser || (!messageText.trim() && selectedFiles.length === 0)) return;
+    
+    // Validate file sizes before sending
+    if (selectedFiles.length > 0 && !validateFiles(selectedFiles)) {
+      return;
+    }
+    
+    // Show upload notification for video files
+    if (selectedFiles.some(f => f.type.startsWith('video/'))) {
+      toast({
+        title: "Uploading video...", 
+        description: "Please wait while your video is being uploaded."
+      });
+    }
+    
     sendMessageMutation.mutate({ 
       recipientId: selectedUser.id, 
       content: messageText.trim() || undefined,
@@ -330,18 +376,31 @@ export default function Messages({ directUserId }: MessagesProps) {
       const validFiles: File[] = [];
       
       for (const file of files) {
-        // Check file type and size
+        // Check file type
         const isImage = file.type.startsWith('image/');
         const isVideo = file.type.startsWith('video/');
-        const maxSize = 100 * 1024 * 1024; // 100MB
         
         if (!isImage && !isVideo) {
           toast({ title: `${file.name} is not a valid image or video file`, variant: "destructive" });
           continue;
         }
         
-        if (file.size > maxSize) {
-          toast({ title: `${file.name} is too large (max 100MB)`, variant: "destructive" });
+        // Check file size with specific limits
+        if (isVideo && file.size > MAX_VIDEO_SIZE) {
+          toast({
+            title: `${file.name} is too large`, 
+            description: `Max video size is 50MB. Your file is ${(file.size / 1024 / 1024).toFixed(1)}MB`,
+            variant: "destructive"
+          });
+          continue;
+        }
+        
+        if (isImage && file.size > MAX_IMAGE_SIZE) {
+          toast({
+            title: `${file.name} is too large`, 
+            description: `Max image size is 10MB. Your file is ${(file.size / 1024 / 1024).toFixed(1)}MB`,
+            variant: "destructive"
+          });
           continue;
         }
         
@@ -450,7 +509,7 @@ export default function Messages({ directUserId }: MessagesProps) {
               onClick={() => setShowSearch(true)} 
               className="text-gray-400 hover:text-white p-2 hover:bg-gray-800/50 rounded-full transition-all duration-200 hover:scale-105"
             >
-              <Edit className="w-5 h-5" />
+              <Edit3 className="w-5 h-5" />
             </Button>
           )}
           {selectedUser && (
@@ -557,9 +616,14 @@ export default function Messages({ directUserId }: MessagesProps) {
                                   {selectedUser.firstName?.[0] || selectedUser.lastName?.[0] || selectedUser.email[0].toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="text-xs text-gray-400 font-medium">
-                                {getUserDisplayName(selectedUser)}
-                              </span>
+                              <div className="flex items-center space-x-1">
+                                <span className="text-xs text-gray-400 font-medium">
+                                  {getUserDisplayName(selectedUser)}
+                                </span>
+                                {selectedUser.isVerified === 1 && (
+                                  <VerificationBadge className="w-3 h-3" />
+                                )}
+                              </div>
                             </div>
                           )}
                           {message.content && (
@@ -685,6 +749,23 @@ export default function Messages({ directUserId }: MessagesProps) {
                   </div>
                 )}
                 
+                {/* Upload Progress Indicator */}
+                {sendMessageMutation.isPending && selectedFiles.some(f => f.type.startsWith('video/')) && (
+                  <div className="mb-4 animate-in fade-in slide-in-from-bottom duration-200">
+                    <div className="bg-gray-800/80 backdrop-blur-sm rounded-xl p-3 border border-gray-700/50">
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-300 mb-2">Uploading video...</p>
+                          <div className="w-full bg-gray-700 rounded-full h-2">
+                            <div className="bg-blue-500 h-2 rounded-full animate-pulse" style={{width: '60%'}} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {isTyping && (
                   <div className="mb-2 animate-in fade-in slide-in-from-bottom duration-200">
                     <div className="flex items-center space-x-2 text-gray-400 text-sm">
@@ -723,7 +804,7 @@ export default function Messages({ directUserId }: MessagesProps) {
                       placeholder="Type a message..."
                       value={messageText}
                       onChange={(e) => setMessageText(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                      onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && !sendMessageMutation.isPending && handleSendMessage()}
                       className="bg-transparent border-none text-white placeholder-gray-400 focus:ring-0 focus:border-none resize-none min-h-[40px] max-h-[120px] py-2 px-3"
                     />
                   </div>
@@ -772,10 +853,14 @@ export default function Messages({ directUserId }: MessagesProps) {
                   
                   <Button
                     onClick={handleSendMessage}
-                    disabled={!messageText.trim() && selectedFiles.length === 0}
+                    disabled={(!messageText.trim() && selectedFiles.length === 0) || sendMessageMutation.isPending}
                     className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all duration-200 hover:scale-105 disabled:hover:scale-100 shadow-lg hover:shadow-blue-500/25"
                   >
-                    <Send className="w-5 h-5" />
+                    {sendMessageMutation.isPending ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Send className="w-5 h-5" />
+                    )}
                   </Button>
                 </div>
               </div>
