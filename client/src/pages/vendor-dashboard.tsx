@@ -221,47 +221,21 @@ export default function VendorDashboard() {
     }
   }, [posts]);
 
-  // Check if user needs to see terms dialog (first time after registration)
+  // Check if user needs to see terms dialog (only for new registrations)
   useEffect(() => {
-    // Check for user ID from either authenticated user or temp registration
-    const tempUserId = localStorage.getItem('tempUserId');
-    const userId = user?.id || tempUserId;
-    if (!userId) return; // Wait for user ID to be available
-    
-    const hasSeenTerms = localStorage.getItem(`terms-accepted-${userId}`);
     const isFromRegistration = sessionStorage.getItem('from-registration');
     
-    console.log('Terms check:', { hasSeenTerms, isFromRegistration, userId, source: user?.id ? 'auth' : 'temp', tempUserId });
+    console.log('Terms check:', { isFromRegistration, userId: user?.id });
     
-    // Show terms if user hasn't seen them yet (either from registration or first time)
-    if (!hasSeenTerms) {
-      console.log('✅ Showing terms dialog for user:', userId);
+    // Always show terms dialog if coming from registration
+    if (isFromRegistration) {
+      console.log('✅ Showing terms dialog for new registration');
       setShowTermsDialog(true);
-      if (isFromRegistration) {
-        sessionStorage.removeItem('from-registration');
-      }
+      sessionStorage.removeItem('from-registration');
     } else {
-      console.log('❌ Terms already accepted for user:', userId);
+      console.log('❌ Not from registration, no terms dialog needed');
     }
-  }, [user?.id]); // Re-run when user loads or component mounts
-  
-  // Also check for terms when component first mounts (for registration flow)
-  useEffect(() => {
-    const tempUserId = localStorage.getItem('tempUserId');
-    const isFromRegistration = sessionStorage.getItem('from-registration');
-    
-    // If we have tempUserId and from-registration flag, check terms immediately
-    if (tempUserId && isFromRegistration) {
-      const hasSeenTerms = localStorage.getItem(`terms-accepted-${tempUserId}`);
-      console.log('Registration flow terms check:', { hasSeenTerms, tempUserId, isFromRegistration });
-      
-      if (!hasSeenTerms) {
-        console.log('✅ Showing terms dialog for registration user:', tempUserId);
-        setShowTermsDialog(true);
-        sessionStorage.removeItem('from-registration');
-      }
-    }
-  }, []); // Run once on mount
+  }, [user?.id]); // Re-run when user loads
 
   const handleTermsAccept = () => {
     const userId = user?.id || localStorage.getItem('tempUserId');
