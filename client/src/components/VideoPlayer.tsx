@@ -26,6 +26,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [controlsTimeout, setControlsTimeout] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -34,6 +35,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const cleanup = registerVideo(video);
     return cleanup;
   }, [registerVideo]);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobileDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      setIsMobile(isMobileDevice);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -87,34 +100,49 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 10);
   };
 
-  const handleMouseMove = () => {
+  const handleShowControls = () => {
     setShowControls(true);
     if (controlsTimeout) {
       window.clearTimeout(controlsTimeout);
     }
+    
+    // Longer timeout for mobile devices
+    const timeoutDuration = isMobile ? 5000 : 3000;
     const timeout = window.setTimeout(() => {
-      if (isPlaying && isFullscreen) {
+      if (isPlaying && (isFullscreen || isMobile)) {
         setShowControls(false);
       }
-    }, 3000);
+    }, timeoutDuration);
     setControlsTimeout(timeout);
   };
 
-  const handleVideoClick = (e: React.MouseEvent) => {
+  const handleVideoClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
-    togglePlay();
+    
+    if (isMobile) {
+      // On mobile: first tap shows controls, second tap toggles play
+      if (!showControls) {
+        handleShowControls();
+      } else {
+        togglePlay();
+      }
+    } else {
+      // On desktop: click toggles play
+      togglePlay();
+    }
   };
 
   return (
     <div 
       ref={containerRef}
       className={`relative group ${isFullscreen ? 'bg-black' : ''} ${className}`}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => {
+      onMouseMove={!isMobile ? handleShowControls : undefined}
+      onTouchStart={isMobile ? handleShowControls : undefined}
+      onMouseLeave={!isMobile ? () => {
         if (isFullscreen && isPlaying) {
           setShowControls(false);
         }
-      }}
+      } : undefined}
     >
       <video
         ref={videoRef}
@@ -130,18 +158,24 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       />
       
       {showFullscreenButton && (
-        <div className={`absolute inset-0 transition-opacity duration-300 ${showControls || !isFullscreen ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`absolute inset-0 transition-opacity duration-300 ${showControls || !isFullscreen || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
           {/* Play/Pause Overlay with Skip Controls */}
-          <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+          <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
+            isPlaying ? 
+              (isMobile ? (showControls ? 'opacity-100' : 'opacity-0') : 'opacity-0 group-hover:opacity-100') : 
+              'opacity-100'
+          }`}>
             <div className="flex items-center space-x-4">
               {/* Skip Backward Button */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={skipBackward}
-                className="bg-black/50 hover:bg-black/70 text-white rounded-full w-12 h-12 transition-all duration-200"
+                className={`bg-black/50 hover:bg-black/70 text-white rounded-full transition-all duration-200 ${
+                  isMobile ? 'w-14 h-14' : 'w-12 h-12'
+                }`}
               >
-                <Rewind className="w-6 h-6" />
+                <Rewind className={isMobile ? 'w-7 h-7' : 'w-6 h-6'} />
               </Button>
 
               {/* Play/Pause Button */}
@@ -149,12 +183,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={togglePlay}
-                className="bg-black/50 hover:bg-black/70 text-white rounded-full w-16 h-16 transition-all duration-200"
+                className={`bg-black/50 hover:bg-black/70 text-white rounded-full transition-all duration-200 ${
+                  isMobile ? 'w-20 h-20' : 'w-16 h-16'
+                }`}
               >
                 {isPlaying ? (
-                  <Pause className="w-8 h-8" />
+                  <Pause className={isMobile ? 'w-10 h-10' : 'w-8 h-8'} />
                 ) : (
-                  <Play className="w-8 h-8 ml-1" />
+                  <Play className={`${isMobile ? 'w-10 h-10 ml-1' : 'w-8 h-8 ml-1'}`} />
                 )}
               </Button>
 
@@ -163,9 +199,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={skipForward}
-                className="bg-black/50 hover:bg-black/70 text-white rounded-full w-12 h-12 transition-all duration-200"
+                className={`bg-black/50 hover:bg-black/70 text-white rounded-full transition-all duration-200 ${
+                  isMobile ? 'w-14 h-14' : 'w-12 h-12'
+                }`}
               >
-                <FastForward className="w-6 h-6" />
+                <FastForward className={isMobile ? 'w-7 h-7' : 'w-6 h-6'} />
               </Button>
             </div>
           </div>

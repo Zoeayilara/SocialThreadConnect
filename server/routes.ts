@@ -2094,23 +2094,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.userId;
       
-      // Delete user's posts first (due to foreign key constraints)
-      sqlite.prepare('DELETE FROM posts WHERE user_id = ?').run(userId);
+      console.log('🗑️ Starting account deletion for user:', userId);
       
-      // Delete user's comments
-      sqlite.prepare('DELETE FROM comments WHERE user_id = ?').run(userId);
+      // Delete all user-related data in correct order (due to foreign key constraints)
       
-      // Delete user's likes
-      sqlite.prepare('DELETE FROM likes WHERE user_id = ?').run(userId);
+      // 1. Delete user's messages (both sent and received)
+      sqlite.prepare('DELETE FROM messages WHERE senderId = ? OR recipientId = ?').run(userId, userId);
+      console.log('✅ Deleted messages');
       
-      // Delete user's saved posts
+      // 2. Delete user's notifications
+      sqlite.prepare('DELETE FROM notifications WHERE userId = ?').run(userId);
+      console.log('✅ Deleted notifications');
+      
+      // 3. Delete reports made by this user
+      sqlite.prepare('DELETE FROM reports WHERE reporter_id = ?').run(userId);
+      console.log('✅ Deleted reports made by user');
+      
+      // 4. Delete account reports about this user
+      sqlite.prepare('DELETE FROM account_reports WHERE reported_user_id = ? OR reporter_id = ?').run(userId, userId);
+      console.log('✅ Deleted account reports');
+      
+      // 5. Delete user's follow relationships (both following and followers)
+      sqlite.prepare('DELETE FROM follows WHERE follower_id = ? OR following_id = ?').run(userId, userId);
+      console.log('✅ Deleted follow relationships');
+      
+      // 6. Delete user's saved posts
       sqlite.prepare('DELETE FROM saved_posts WHERE user_id = ?').run(userId);
+      console.log('✅ Deleted saved posts');
       
-      // Delete user's reposts
+      // 7. Delete user's reposts
       sqlite.prepare('DELETE FROM reposts WHERE user_id = ?').run(userId);
+      console.log('✅ Deleted reposts');
       
-      // Finally delete the user
+      // 8. Delete user's likes
+      sqlite.prepare('DELETE FROM likes WHERE user_id = ?').run(userId);
+      console.log('✅ Deleted likes');
+      
+      // 9. Delete user's comments
+      sqlite.prepare('DELETE FROM comments WHERE user_id = ?').run(userId);
+      console.log('✅ Deleted comments');
+      
+      // 10. Delete user's posts (this will also cascade delete related likes/comments if properly configured)
+      sqlite.prepare('DELETE FROM posts WHERE user_id = ?').run(userId);
+      console.log('✅ Deleted posts');
+      
+      // 11. Delete any OTPs for this user's email
+      const user = sqlite.prepare('SELECT email FROM users WHERE id = ?').get(userId) as any;
+      if (user?.email) {
+        sqlite.prepare('DELETE FROM otps WHERE email = ?').run(user.email);
+        console.log('✅ Deleted OTPs');
+      }
+      
+      // 12. Finally delete the user
       sqlite.prepare('DELETE FROM users WHERE id = ?').run(userId);
+      console.log('✅ Deleted user account');
       
       // Destroy session
       req.session.destroy((err: any) => {
