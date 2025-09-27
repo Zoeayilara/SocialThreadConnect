@@ -39,6 +39,8 @@ export default function Success() {
         // Keep tempUserId until terms dialog is shown in dashboard
         localStorage.removeItem('tempEmail');
         localStorage.removeItem('tempPassword');
+        // Remove skip flag to allow auth queries in dashboard
+        localStorage.removeItem('skipAuthQuery');
         
         // Small delay to ensure cleanup is complete
         await new Promise(resolve => setTimeout(resolve, 100));

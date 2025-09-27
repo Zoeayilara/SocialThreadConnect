@@ -63,12 +63,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ['auth', 'user'],
     queryFn: async () => {
       console.log('🔍 useAuth - Starting auth query');
+      
+      // Check if we have a token before making the request
+      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+      if (!token) {
+        console.log('❌ useAuth - No token available, skipping auth query');
+        return null;
+      }
+      
       const response = await authenticatedFetch('/api/auth/user');
       if (!response.ok) {
         if (response.status === 401) {
           console.log('❌ useAuth - 401 Unauthorized, removing token');
-          // Remove invalid token
-          removeAuthToken();
+          // Only remove token if we're not in registration flow
+          const isRegistrationFlow = localStorage.getItem('tempUserId') || localStorage.getItem('registrationComplete');
+          if (!isRegistrationFlow) {
+            removeAuthToken();
+          }
           setIsAuthenticating(false);
           return null;
         }
@@ -79,13 +90,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticating(false);
       return userData;
     },
-    enabled: !hasLoggedOut, // Always enabled unless user has logged out
+    enabled: !hasLoggedOut && !localStorage.getItem('skipAuthQuery'), // Skip during registration flow
     retry: false, // Don't retry to prevent loading loops
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchInterval: false,
     refetchOnMount: true,
+    // Add a small delay to prevent race conditions during registration
+    initialDataUpdatedAt: 0,
   });
 
   // Show loading only during initial authentication check, but not after logout
