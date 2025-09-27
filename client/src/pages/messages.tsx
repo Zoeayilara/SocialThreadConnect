@@ -93,10 +93,27 @@ export default function Messages({ directUserId }: MessagesProps) {
     refetchOnWindowFocus: true
   });
 
+  // Fetch fresh user data to ensure verification status is up to date
+  const fetchFreshUserData = async (userId: number) => {
+    try {
+      const response = await authenticatedFetch(`/api/users/${userId}`);
+      if (response.ok) {
+        const freshUserData = await response.json();
+        return freshUserData;
+      }
+    } catch (error) {
+      console.error('Failed to fetch fresh user data:', error);
+    }
+    return null;
+  };
+
   // Handle direct user selection from URL
   useEffect(() => {
     if (directUserId && directUser) {
-      setSelectedUser(directUser);
+      // Fetch fresh user data to ensure verification status is current
+      fetchFreshUserData(directUser.id).then(freshData => {
+        setSelectedUser(freshData || directUser);
+      });
       setShowSearch(false);
     }
   }, [directUserId, directUser]);
@@ -125,6 +142,24 @@ export default function Messages({ directUserId }: MessagesProps) {
       console.error('Failed to save to localStorage:', error);
     }
   }, [selectedUser]);
+
+  // Periodically refresh selected user data to keep verification status current
+  useEffect(() => {
+    if (!selectedUser?.id) return;
+
+    const refreshUserData = async () => {
+      const freshUserData = await fetchFreshUserData(selectedUser.id);
+      if (freshUserData && freshUserData.isVerified !== selectedUser.isVerified) {
+        console.log('🔄 Updating user verification status:', freshUserData.isVerified);
+        setSelectedUser(freshUserData);
+      }
+    };
+
+    // Refresh user data every 30 seconds
+    const interval = setInterval(refreshUserData, 30000);
+    
+    return () => clearInterval(interval);
+  }, [selectedUser?.id, selectedUser?.isVerified]);
 
   // Get user's conversations
   const { data: conversations = [], isLoading: conversationsLoading, error: conversationsError } = useQuery({
@@ -888,8 +923,10 @@ export default function Messages({ directUserId }: MessagesProps) {
             {(showSearch ? searchResults : conversations)?.map((user: any, index: number) => (
               <div
                 key={user.id}
-                onClick={() => {
-                  setSelectedUser(user);
+                onClick={async () => {
+                  // Fetch fresh user data to ensure verification status is current
+                  const freshUserData = await fetchFreshUserData(user.id);
+                  setSelectedUser(freshUserData || user);
                   setShowSearch(false);
                 }}
                 className="group flex items-center space-x-4 p-4 hover:bg-gray-800/30 rounded-2xl cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg animate-in fade-in slide-in-from-left duration-300"

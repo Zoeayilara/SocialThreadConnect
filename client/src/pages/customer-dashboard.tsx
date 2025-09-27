@@ -647,7 +647,12 @@ export default function CustomerDashboard() {
                           setShowSearch(false);
                         }}
                       >
-                        <p className="font-semibold text-white">{getUserDisplayName(searchUser)}</p>
+                        <div className="flex items-center space-x-1">
+                          <p className="font-semibold text-white">{getUserDisplayName(searchUser)}</p>
+                          {searchUser.isVerified === 1 && (
+                            <VerificationBadge className="w-3.5 h-3.5" />
+                          )}
+                        </div>
                         <p className="text-sm text-gray-400">@{searchUser.university || searchUser.email.split('@')[0]}</p>
                       </div>
                       {searchUser.id !== user?.id && (

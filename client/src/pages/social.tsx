@@ -18,6 +18,7 @@ import { formatRelativeTime } from "@/utils/dateUtils";
 import { authenticatedFetch } from "@/utils/api";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { AnimatedLikeButton } from "@/components/AnimatedLikeButton";
+import { VerificationBadge } from '@/components/VerificationBadge';
 
 interface Post {
   id: number;
@@ -48,6 +49,7 @@ interface Comment {
     firstName: string;
     lastName: string;
     profileImageUrl?: string;
+    isVerified?: number;
   };
 }
 
@@ -682,9 +684,14 @@ export default function Social() {
                       </Avatar>
                       <div className="flex-1">
                         <div className="bg-gray-100 rounded-lg px-3 py-2">
-                          <p className="font-semibold text-sm">
-                            {getUserDisplayName(comment.user)}
-                          </p>
+                          <div className="flex items-center space-x-1">
+                            <p className="font-semibold text-sm">
+                              {getUserDisplayName(comment.user)}
+                            </p>
+                            {comment.user.isVerified === 1 && (
+                              <VerificationBadge className="w-3 h-3" />
+                            )}
+                          </div>
                           <p className="text-sm">{comment.content}</p>
                         </div>
                         <p className="text-xs text-gray-500 mt-1 ml-3">

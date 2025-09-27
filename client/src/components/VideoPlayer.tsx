@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useVideoAutoPause } from '../hooks/useVideoAutoPause';
-import { Maximize, Minimize, Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { Maximize, Minimize, Play, Pause, Volume2, VolumeX, MoreHorizontal } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface VideoPlayerProps {
@@ -210,8 +210,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
           {/* Control Bar */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-            {/* Progress Bar */}
+            {/* Progress Bar with Time */}
             <div className="mb-3">
+              {/* Time Display above progress bar */}
+              <div className="flex justify-start mb-1">
+                <span className="text-white text-xs font-mono">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
+              </div>
+              
+              {/* Progress Bar */}
               <div 
                 className="w-full h-1 bg-white/30 rounded-full cursor-pointer group/progress"
                 onClick={handleProgressClick}
@@ -224,38 +232,43 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             </div>
             
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                {/* Time Display */}
-                <span className="text-white text-sm font-mono min-w-[80px]">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </span>
+              {/* Left side - Volume */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleMute}
+                className="text-white hover:bg-white/20 w-8 h-8"
+              >
+                {isMuted ? (
+                  <VolumeX className="w-4 h-4" />
+                ) : (
+                  <Volume2 className="w-4 h-4" />
+                )}
+              </Button>
+
+              {/* Right side - Fullscreen and More */}
+              <div className="flex items-center space-x-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleFullscreen}
+                  className="text-white hover:bg-white/20 w-8 h-8"
+                >
+                  {isFullscreen ? (
+                    <Minimize className="w-4 h-4" />
+                  ) : (
+                    <Maximize className="w-4 h-4" />
+                  )}
+                </Button>
                 
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={toggleMute}
                   className="text-white hover:bg-white/20 w-8 h-8"
                 >
-                  {isMuted ? (
-                    <VolumeX className="w-4 h-4" />
-                  ) : (
-                    <Volume2 className="w-4 h-4" />
-                  )}
+                  <MoreHorizontal className="w-4 h-4" />
                 </Button>
               </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleFullscreen}
-                className="text-white hover:bg-white/20 w-8 h-8"
-              >
-                {isFullscreen ? (
-                  <Minimize className="w-4 h-4" />
-                ) : (
-                  <Maximize className="w-4 h-4" />
-                )}
-              </Button>
             </div>
           </div>
         </div>

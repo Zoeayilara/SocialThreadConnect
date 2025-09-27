@@ -1212,7 +1212,12 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                       </Avatar>
                                       <div className="flex-1">
                                         <div className="bg-gray-900 rounded-lg px-3 py-2">
-                                          <p className="font-semibold text-sm text-white">{getUserDisplayName(comment.user)}</p>
+                                          <div className="flex items-center space-x-1">
+                                            <p className="font-semibold text-sm text-white">{getUserDisplayName(comment.user)}</p>
+                                            {comment.user.isVerified === 1 && (
+                                              <VerificationBadge className="w-3 h-3" />
+                                            )}
+                                          </div>
                                           <p className="text-sm text-gray-300">{comment.content}</p>
                                         </div>
                                         <div className="flex items-center space-x-4 mt-1 ml-3">
@@ -1491,7 +1496,12 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                   </Avatar>
                                   <div className="flex-1">
                                     <div className="bg-gray-900 rounded-lg px-3 py-2">
-                                      <p className="font-semibold text-sm text-white">{getUserDisplayName(comment.user)}</p>
+                                      <div className="flex items-center space-x-1">
+                                        <p className="font-semibold text-sm text-white">{getUserDisplayName(comment.user)}</p>
+                                        {comment.user.isVerified === 1 && (
+                                          <VerificationBadge className="w-3 h-3" />
+                                        )}
+                                      </div>
                                       <p className="text-sm text-gray-300">{comment.content}</p>
                                     </div>
                                     <div className="flex items-center space-x-4 mt-1 ml-3">
