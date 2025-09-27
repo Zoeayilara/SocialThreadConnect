@@ -217,12 +217,14 @@ export default function CustomerDashboard() {
 
   // Check if user needs to see terms dialog (first time after registration)
   useEffect(() => {
-    if (!user?.id) return; // Wait for user to be loaded
+    // Check for user ID from either authenticated user or temp registration
+    const userId = user?.id || localStorage.getItem('tempUserId');
+    if (!userId) return; // Wait for user ID to be available
     
-    const hasSeenTerms = localStorage.getItem(`terms-accepted-${user.id}`);
+    const hasSeenTerms = localStorage.getItem(`terms-accepted-${userId}`);
     const isFromRegistration = sessionStorage.getItem('from-registration');
     
-    console.log('Terms check:', { hasSeenTerms, isFromRegistration, userId: user.id });
+    console.log('Terms check:', { hasSeenTerms, isFromRegistration, userId, source: user?.id ? 'auth' : 'temp' });
     
     // Show terms if user hasn't seen them yet (either from registration or first time)
     if (!hasSeenTerms) {
@@ -231,12 +233,19 @@ export default function CustomerDashboard() {
         sessionStorage.removeItem('from-registration');
       }
     }
-  }, [user?.id]);
+  }, [user?.id]); // Keep dependency on user?.id to re-run when auth loads
 
   const handleTermsAccept = () => {
-    if (user?.id) {
-      localStorage.setItem(`terms-accepted-${user.id}`, 'true');
+    const userId = user?.id || localStorage.getItem('tempUserId');
+    if (userId) {
+      localStorage.setItem(`terms-accepted-${userId}`, 'true');
     }
+    
+    // Clean up tempUserId after terms are accepted (registration complete)
+    if (!user?.id && localStorage.getItem('tempUserId')) {
+      localStorage.removeItem('tempUserId');
+    }
+    
     setShowTermsDialog(false);
   };
 
