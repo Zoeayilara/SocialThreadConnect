@@ -1083,18 +1083,11 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                             <CarouselItem key={idx} className="pr-2">
                                               <div className="relative w-full max-h-96 overflow-hidden rounded-lg bg-gray-900">
                                                 {url.match(/\.(mp4|mov|webm)$/i) ? (
-                                                  <div 
-                                                    className="cursor-pointer"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      openImageModal(url);
-                                                    }}
-                                                  >
-                                                    <VideoPlayer
-                                                      src={url}
-                                                      className="w-full h-auto max-h-96 object-contain"
-                                                    />
-                                                  </div>
+                                                  <VideoPlayer
+                                                    src={url}
+                                                    className="w-full h-auto max-h-96 object-contain"
+                                                    showFullscreenButton={true}
+                                                  />
                                                 ) : (
                                                   <img
                                                     src={url}
@@ -1123,6 +1116,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                           <VideoPlayer
                                             src={urls[0]}
                                             className="w-full h-auto max-h-96 object-contain"
+                                            showFullscreenButton={true}
                                           />
                                         ) : (
                                           <img
@@ -1144,6 +1138,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                         <VideoPlayer
                                           src={val}
                                           className="w-full h-auto max-h-96 object-contain"
+                                          showFullscreenButton={true}
                                         />
                                       ) : (
                                         <img
@@ -1398,7 +1393,11 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                         <CarouselItem key={idx} className="pr-2">
                                           <div className="relative w-full max-h-[500px] overflow-hidden rounded-2xl bg-black">
                                             {url.match(/\.(mp4|mov|webm)$/i) ? (
-                                              <VideoPlayer src={url} className="w-full h-auto max-h-[500px] object-contain" />
+                                              <VideoPlayer 
+                                                src={url} 
+                                                className="w-full h-auto max-h-[500px] object-contain"
+                                                showFullscreenButton={true}
+                                              />
                                             ) : (
                                               <img 
                                                 src={url} 
@@ -1425,7 +1424,11 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                             return (
                               <div className="relative w-full max-h-[500px] mb-4 overflow-hidden rounded-2xl bg-black">
                                 {val.match(/\.(mp4|mov|webm)$/i) ? (
-                                  <VideoPlayer src={val} className="w-full h-auto max-h-[500px] object-contain" />
+                                  <VideoPlayer 
+                                    src={val} 
+                                    className="w-full h-auto max-h-[500px] object-contain"
+                                    showFullscreenButton={true}
+                                  />
                                 ) : (
                                   <img 
                                     src={val} 
