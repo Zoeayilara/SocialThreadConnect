@@ -27,6 +27,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showControls, setShowControls] = useState(true);
   const [controlsTimeout, setControlsTimeout] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -123,6 +126,29 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   };
 
+  // Format time helper function
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return '0:00';
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Handle progress bar click
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!videoRef.current) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const width = rect.width;
+    const percentage = clickX / width;
+    const newTime = percentage * duration;
+    
+    videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+    setProgress(percentage * 100);
+  };
+
   return (
     <div 
       ref={containerRef}
@@ -146,6 +172,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onVolumeChange={(e) => setIsMuted((e.target as HTMLVideoElement).muted)}
+        onLoadedMetadata={(e) => {
+          const video = e.target as HTMLVideoElement;
+          setDuration(video.duration);
+        }}
+        onTimeUpdate={(e) => {
+          const video = e.target as HTMLVideoElement;
+          setCurrentTime(video.currentTime);
+          setProgress((video.currentTime / video.duration) * 100);
+        }}
       />
       
       {showFullscreenButton && (
@@ -175,20 +210,25 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
           {/* Control Bar */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+            {/* Progress Bar */}
+            <div className="mb-3">
+              <div 
+                className="w-full h-1 bg-white/30 rounded-full cursor-pointer group/progress"
+                onClick={handleProgressClick}
+              >
+                <div 
+                  className="h-full bg-white rounded-full transition-all duration-150 group-hover/progress:bg-blue-400"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+            
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={togglePlay}
-                  className="text-white hover:bg-white/20 w-8 h-8"
-                >
-                  {isPlaying ? (
-                    <Pause className="w-4 h-4" />
-                  ) : (
-                    <Play className="w-4 h-4 ml-0.5" />
-                  )}
-                </Button>
+                {/* Time Display */}
+                <span className="text-white text-sm font-mono min-w-[80px]">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
                 
                 <Button
                   variant="ghost"
