@@ -2,7 +2,9 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // Get JWT token from localStorage
 const getAuthToken = () => {
-  return typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  console.log('🔍 getAuthToken called, token found:', token ? 'YES' : 'NO');
+  return token;
 };
 
 // Make authenticated API calls with JWT token

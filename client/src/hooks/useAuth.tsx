@@ -62,9 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: user, error, isLoading: userQueryLoading } = useQuery({
     queryKey: ['auth', 'user'],
     queryFn: async () => {
+      console.log('🔍 useAuth - Starting auth query');
       const response = await authenticatedFetch('/api/auth/user');
       if (!response.ok) {
         if (response.status === 401) {
+          console.log('❌ useAuth - 401 Unauthorized, removing token');
           // Remove invalid token
           removeAuthToken();
           setIsAuthenticating(false);
@@ -73,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Failed to fetch user');
       }
       const userData = await response.json();
+      console.log('✅ useAuth - User data loaded:', userData?.email);
       setIsAuthenticating(false);
       return userData;
     },
