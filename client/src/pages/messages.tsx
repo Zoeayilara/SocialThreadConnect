@@ -574,12 +574,12 @@ export default function Messages({ directUserId }: MessagesProps) {
                                 console.log('💬 Message media - Final URL:', finalUrl);
                                 console.log('💬 Message media - Is video:', isVideo);
                                 return (
-                                  <div key={index} className="relative group/media max-w-sm">
+                                  <div key={index} className="relative group/media w-48">
                                     {isVideo ? (
-                                      <div className="w-full max-w-sm max-h-80 overflow-hidden rounded-2xl shadow-lg group-hover/media:shadow-xl transition-all duration-200">
+                                      <div className="w-48 h-80 overflow-hidden rounded-2xl shadow-lg group-hover/media:shadow-xl transition-all duration-200 bg-black">
                                         <VideoPlayer 
                                           src={getImageUrl(fileUrl) || fileUrl} 
-                                          className="w-full h-auto max-h-80 min-h-64 object-cover rounded-2xl"
+                                          className="w-full h-full object-cover rounded-2xl"
                                           showFullscreenButton={true}
                                           controls={false}
                                           playsInline={true}
