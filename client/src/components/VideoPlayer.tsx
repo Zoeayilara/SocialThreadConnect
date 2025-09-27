@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useVideoAutoPause } from '../hooks/useVideoAutoPause';
-import { Maximize, Minimize, Play, Pause, Volume2, VolumeX, MoreHorizontal } from 'lucide-react';
+import { Maximize, Minimize, Play, Pause, Volume2, VolumeX, MoreHorizontal, Download } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface VideoPlayerProps {
@@ -30,6 +30,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -50,6 +53,23 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    };
+
+    if (showMoreMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMoreMenu]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -149,10 +169,29 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setProgress(percentage * 100);
   };
 
+  // Handle playback speed change
+  const handlePlaybackSpeedChange = (speed: number) => {
+    if (!videoRef.current) return;
+    videoRef.current.playbackRate = speed;
+    setPlaybackRate(speed);
+    setShowMoreMenu(false);
+  };
+
+  // Handle video download
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = src;
+    link.download = 'video.mp4';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setShowMoreMenu(false);
+  };
+
   return (
     <div 
       ref={containerRef}
-      className={`relative group ${isFullscreen ? 'bg-black' : ''} ${className}`}
+      className={`relative group ${isFullscreen ? 'bg-black' : ''} ${className} overflow-hidden`}
       onMouseMove={!isMobile ? handleShowControls : undefined}
       onTouchStart={isMobile ? handleShowControls : undefined}
       onMouseLeave={!isMobile ? () => {
@@ -160,6 +199,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           setShowControls(false);
         }
       } : undefined}
+      style={{ zIndex: 1 }}
     >
       <video
         ref={videoRef}
@@ -181,6 +221,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           setCurrentTime(video.currentTime);
           setProgress((video.currentTime / video.duration) * 100);
         }}
+        style={{ pointerEvents: 'auto' }}
       />
       
       {showFullscreenButton && (
@@ -210,44 +251,29 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
           {/* Control Bar */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-            {/* Progress Bar with Time */}
-            <div className="mb-3">
-              {/* Time Display above progress bar */}
-              <div className="flex justify-start mb-1">
-                <span className="text-white text-xs font-mono">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </span>
-              </div>
-              
-              {/* Progress Bar */}
-              <div 
-                className="w-full h-1 bg-white/30 rounded-full cursor-pointer group/progress"
-                onClick={handleProgressClick}
-              >
-                <div 
-                  className="h-full bg-white rounded-full transition-all duration-150 group-hover/progress:bg-blue-400"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
+            {/* Time Display */}
+            <div className="flex justify-start mb-2">
+              <span className="text-white text-xs font-mono">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
             </div>
             
-            <div className="flex items-center justify-between">
-              {/* Left side - Volume */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleMute}
-                className="text-white hover:bg-white/20 w-8 h-8"
-              >
-                {isMuted ? (
-                  <VolumeX className="w-4 h-4" />
-                ) : (
-                  <Volume2 className="w-4 h-4" />
-                )}
-              </Button>
-
-              {/* Right side - Fullscreen and More */}
+            {/* Control Buttons */}
+            <div className="flex items-center justify-end mb-3">
               <div className="flex items-center space-x-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleMute}
+                  className="text-white hover:bg-white/20 w-8 h-8"
+                >
+                  {isMuted ? (
+                    <VolumeX className="w-4 h-4" />
+                  ) : (
+                    <Volume2 className="w-4 h-4" />
+                  )}
+                </Button>
+                
                 <Button
                   variant="ghost"
                   size="icon"
@@ -261,13 +287,61 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   )}
                 </Button>
                 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20 w-8 h-8"
-                >
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
+                {/* More options dropdown */}
+                <div className="relative" ref={moreMenuRef}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowMoreMenu(!showMoreMenu)}
+                    className="text-white hover:bg-white/20 w-8 h-8"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                  
+                  {showMoreMenu && (
+                    <div className="absolute bottom-full right-0 mb-2 bg-black/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-700 min-w-[160px] z-50">
+                      <div className="p-2 space-y-1">
+                        {/* Playback Speed */}
+                        <div className="text-white text-xs font-medium px-2 py-1">Playback Speed</div>
+                        {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
+                          <button
+                            key={speed}
+                            onClick={() => handlePlaybackSpeedChange(speed)}
+                            className={`w-full text-left px-2 py-1 text-xs rounded hover:bg-white/20 transition-colors ${
+                              playbackRate === speed ? 'text-blue-400' : 'text-white'
+                            }`}
+                          >
+                            {speed === 1 ? 'Normal' : `${speed}x`}
+                          </button>
+                        ))}
+                        
+                        <div className="border-t border-gray-700 my-1"></div>
+                        
+                        {/* Download */}
+                        <button
+                          onClick={handleDownload}
+                          className="w-full text-left px-2 py-1 text-xs text-white rounded hover:bg-white/20 transition-colors flex items-center space-x-2"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>Download</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Progress Bar at the bottom */}
+            <div>
+              <div 
+                className="w-full h-1 bg-white/30 rounded-full cursor-pointer group/progress"
+                onClick={handleProgressClick}
+              >
+                <div 
+                  className="h-full bg-white rounded-full transition-all duration-150 group-hover/progress:bg-blue-400"
+                  style={{ width: `${progress}%` }}
+                />
               </div>
             </div>
           </div>
