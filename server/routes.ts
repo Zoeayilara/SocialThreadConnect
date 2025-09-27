@@ -2,7 +2,6 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, loginUser, generateUserToken } from "./auth";
-import { extractTokenFromHeader, verifyToken } from "./jwt";
 import { emailService } from "./emailService";
 import multer from 'multer';
 import path from 'path';
@@ -741,43 +740,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Profile picture upload route - MUST be before body parser middleware
-  app.post('/api/upload-profile-picture', profileUpload.single('profilePicture'), async (req: any, res) => {
+  app.post('/api/upload-profile-picture', isAuthenticated, profileUpload.single('profilePicture'), async (req: any, res) => {
     try {
-      // Manual authentication check that allows temp users
-      let userId: number | null = null;
-      
-      // First try authenticated user
-      const token = extractTokenFromHeader(req.headers.authorization);
-      if (token) {
-        try {
-          const payload = verifyToken(token);
-          if (payload && payload.userId) {
-            userId = payload.userId;
-            console.log('Using authenticated user ID:', userId);
-          }
-        } catch (error) {
-          console.log('JWT verification failed, checking session...');
-        }
-      }
-      
-      // Fallback to session
-      if (!userId && req.session?.userId) {
-        userId = req.session.userId;
-        console.log('Using session user ID:', userId);
-      }
-      
-      // Finally, check for temp user during registration
-      if (!userId && req.body.tempUserId) {
-        userId = parseInt(req.body.tempUserId);
-        console.log('Using temp user ID for registration upload:', userId);
-      }
+      const userId = req.userId as number;
       
       console.log('Upload request received, user ID:', userId);
       console.log('File received:', req.file ? req.file.originalname : 'No file');
-      
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required for upload" });
-      }
       
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -954,7 +922,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          userType: user.userType
+          userType: user.userType,
+          university: user.university,
+          phone: user.phone,
+          profileImageUrl: user.profileImageUrl,
+          bio: user.bio,
+          link: user.link,
+          isVerified: user.isVerified,
+          isPrivate: user.isPrivate
         }
       });
     } catch (error) {

@@ -65,9 +65,9 @@ export default function Success() {
             localStorage.setItem('authToken', data.token);
           }
           
-          // Clean up temp data
+          // Clean up temp data (but keep tempUserId for terms dialog)
           localStorage.removeItem('tempUserType');
-          localStorage.removeItem('tempUserId');
+          // Keep tempUserId until terms dialog is shown in dashboard
           localStorage.removeItem('tempEmail');
           localStorage.removeItem('tempPassword');
           
