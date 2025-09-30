@@ -679,9 +679,6 @@ export default function Messages({ directUserId }: MessagesProps) {
                                         <VideoPlayer 
                                           src={getImageUrl(fileUrl) || fileUrl} 
                                           className="w-full h-full object-cover rounded-2xl"
-                                          showFullscreenButton={true}
-                                          controls={false}
-                                          playsInline={true}
                                         />
                                       </div>
                                     ) : (
