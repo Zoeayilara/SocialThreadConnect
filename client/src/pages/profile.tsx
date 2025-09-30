@@ -1086,7 +1086,6 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                                   <VideoPlayer
                                                     src={url}
                                                     className="w-full h-auto max-h-96 object-contain"
-                                                    showFullscreenButton={true}
                                                   />
                                                 ) : (
                                                   <img
@@ -1116,7 +1115,6 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                           <VideoPlayer
                                             src={urls[0]}
                                             className="w-full h-auto max-h-96 object-contain"
-                                            showFullscreenButton={true}
                                           />
                                         ) : (
                                           <img
@@ -1138,7 +1136,6 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                         <VideoPlayer
                                           src={val}
                                           className="w-full h-auto max-h-96 object-contain"
-                                          showFullscreenButton={true}
                                         />
                                       ) : (
                                         <img
@@ -1396,7 +1393,6 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                               <VideoPlayer 
                                                 src={url} 
                                                 className="w-full h-auto max-h-[500px] object-contain"
-                                                showFullscreenButton={true}
                                               />
                                             ) : (
                                               <img 
@@ -1427,7 +1423,6 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                   <VideoPlayer 
                                     src={val} 
                                     className="w-full h-auto max-h-[500px] object-contain"
-                                    showFullscreenButton={true}
                                   />
                                 ) : (
                                   <img 

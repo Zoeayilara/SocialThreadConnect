@@ -2180,6 +2180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           u.first_name as firstName,
           u.last_name as lastName,
           u.email,
+          u.isVerified,
           CASE 
             WHEN u.profile_image_url LIKE 'http://localhost:5000%' THEN 
               REPLACE(u.profile_image_url, 'http://localhost:5000', '${getBaseUrl()}')

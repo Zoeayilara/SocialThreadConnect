@@ -846,10 +846,7 @@ export default function VendorDashboard() {
                                   {url.match(/\.(mp4|mov|webm)$/i) ? (
                                     <VideoPlayer 
                                       src={url} 
-                                      className="w-full h-auto max-h-[500px]" 
-                                      showFullscreenButton={true}
-                                      controls={false}
-                                      playsInline={true}
+                                      className="w-full h-auto max-h-[500px]"
                                     />
                                   ) : (
                                     <img 
@@ -879,10 +876,7 @@ export default function VendorDashboard() {
                         {only.match(/\.(mp4|mov|webm)$/i) ? (
                           <VideoPlayer 
                             src={only} 
-                            className="w-full h-auto max-h-[500px]" 
-                            showFullscreenButton={true}
-                            controls={false}
-                            playsInline={true}
+                            className="w-full h-auto max-h-[500px]"
                           />
                         ) : (
                           <img 
@@ -902,10 +896,7 @@ export default function VendorDashboard() {
                     {val.match(/\.(mp4|mov|webm)$/i) ? (
                       <VideoPlayer 
                         src={val} 
-                        className="w-full h-auto max-h-[500px]" 
-                        showFullscreenButton={true}
-                        controls={false}
-                        playsInline={true}
+                        className="w-full h-auto max-h-[500px]"
                       />
                     ) : (
                       <img 
