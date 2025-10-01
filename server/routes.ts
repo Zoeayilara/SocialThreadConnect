@@ -2247,6 +2247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName: conv.firstName,
           lastName: conv.lastName,
           email: conv.email,
+          isVerified: conv.isVerified,
           profileImageUrl: conv.profileImageUrl,
           lastMessage: lastMessageText,
           timeAgo
