@@ -250,16 +250,16 @@ export default function Messages({ directUserId }: MessagesProps) {
         
         // Add scroll listener to mark as read only after user actively scrolls
         let hasUserScrolled = false;
-        let scrollTimeout: NodeJS.Timeout;
+        let scrollTimeout: number;
         
         const handleScroll = () => {
           // Clear any existing timeout to prevent rapid firing
           if (scrollTimeout) {
-            clearTimeout(scrollTimeout);
+            window.clearTimeout(scrollTimeout);
           }
           
           // Debounce scroll events to prevent glitches
-          scrollTimeout = setTimeout(() => {
+          scrollTimeout = window.setTimeout(() => {
             hasUserScrolled = true; // User has actively scrolled
             const { scrollTop, scrollHeight, clientHeight } = container;
             const isAtBottom = scrollTop + clientHeight >= scrollHeight - 20; // 20px threshold
@@ -276,7 +276,7 @@ export default function Messages({ directUserId }: MessagesProps) {
         return () => {
           container.removeEventListener('scroll', handleScroll);
           if (scrollTimeout) {
-            clearTimeout(scrollTimeout);
+            window.clearTimeout(scrollTimeout);
           }
         };
       }
