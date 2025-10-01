@@ -1622,6 +1622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: u.email,
             university: u.university,
             profileImageUrl: u.profileImageUrl,
+            isVerified: u.isVerified,
             isFollowing
           };
         })

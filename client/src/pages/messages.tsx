@@ -169,11 +169,10 @@ export default function Messages({ directUserId }: MessagesProps) {
       if (!response.ok) throw new Error('Failed to fetch conversations');
       return response.json();
     },
-    enabled: !showSearch,
     staleTime: 0,
     gcTime: 0,
     refetchOnWindowFocus: true,
-    refetchInterval: 5000, // Poll every 5 seconds for new conversations
+    refetchInterval: 3000, // Poll every 3 seconds for new conversations
     refetchIntervalInBackground: true
   });
 
@@ -241,29 +240,44 @@ export default function Messages({ directUserId }: MessagesProps) {
     if (selectedUser && messages.length > 0) {
       const container = document.getElementById('messages-container');
       if (container) {
-        // Jump to bottom instantly without animation
-        container.scrollTop = container.scrollHeight;
+        // Smooth scroll to bottom with a small delay to prevent glitches
+        setTimeout(() => {
+          container.scrollTo({
+            top: container.scrollHeight,
+            behavior: 'smooth'
+          });
+        }, 100);
         
         // Add scroll listener to mark as read only after user actively scrolls
         let hasUserScrolled = false;
+        let scrollTimeout: NodeJS.Timeout;
         
         const handleScroll = () => {
-          hasUserScrolled = true; // User has actively scrolled
-          const { scrollTop, scrollHeight, clientHeight } = container;
-          const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px threshold
-          
-          // Only mark as read if user has actively scrolled AND is at bottom
-          if (isAtBottom && messages.length > 0 && hasUserScrolled) {
-            handleMarkAsRead();
+          // Clear any existing timeout to prevent rapid firing
+          if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
           }
+          
+          // Debounce scroll events to prevent glitches
+          scrollTimeout = setTimeout(() => {
+            hasUserScrolled = true; // User has actively scrolled
+            const { scrollTop, scrollHeight, clientHeight } = container;
+            const isAtBottom = scrollTop + clientHeight >= scrollHeight - 20; // 20px threshold
+            
+            // Only mark as read if user has actively scrolled AND is at bottom
+            if (isAtBottom && messages.length > 0 && hasUserScrolled) {
+              handleMarkAsRead();
+            }
+          }, 150); // 150ms debounce
         };
         
-        container.addEventListener('scroll', handleScroll);
-        
-        // Don't automatically mark as read - wait for user interaction
+        container.addEventListener('scroll', handleScroll, { passive: true });
         
         return () => {
           container.removeEventListener('scroll', handleScroll);
+          if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+          }
         };
       }
     }
