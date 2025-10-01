@@ -70,7 +70,7 @@ export default function Social() {
     try {
       await logoutMutation.mutateAsync();
     } catch (error) {
-      console.error('Logout failed:', error);
+      // Logout failed
     }
   };
 

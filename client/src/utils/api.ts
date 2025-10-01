@@ -8,29 +8,28 @@ const getAuthToken = () => {
 // Make authenticated API calls with JWT token
 export const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
   const token = getAuthToken();
-  console.log('🔍 Frontend authenticatedFetch - Token:', token ? 'EXISTS' : 'MISSING');
-  console.log('🔍 Frontend authenticatedFetch - URL:', url);
   
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
   
-  // Only set Content-Type for non-FormData requests
-  // FormData automatically sets the correct Content-Type with boundary
-  if (!(options.body instanceof FormData)) {
+  // Always include credentials for session-based auth
+  const credentials: RequestCredentials = 'include';
+  
+  // Remove Content-Type if FormData is being sent (browser will set it with boundary)
+  if (options.body instanceof FormData) {
+    delete headers['Content-Type'];
+  } else if (!headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
   
   // Add Authorization header if token exists
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    console.log('🔍 Frontend authenticatedFetch - Authorization header set');
-  } else {
-    console.log('❌ Frontend authenticatedFetch - No token, no Authorization header');
   }
   
   const response = await fetch(`${API_URL}${url}`, {
-    credentials: 'include',
+    credentials,
     ...options,
     headers,
   });

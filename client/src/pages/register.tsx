@@ -69,15 +69,7 @@ export default function Register() {
         
         // Store JWT token if provided
         if (result.token) {
-          console.log('🔑 Frontend - Storing JWT token from registration');
-          console.log('🔑 Frontend - Token value:', result.token.substring(0, 20) + '...');
           localStorage.setItem('authToken', result.token);
-          const storedToken = localStorage.getItem('authToken');
-          console.log('🔑 Frontend - Token stored, verifying:', storedToken ? 'SUCCESS' : 'FAILED');
-          console.log('🔑 Frontend - Stored token matches:', storedToken === result.token ? 'YES' : 'NO');
-        } else {
-          console.log('❌ Frontend - No token received from registration');
-          console.log('❌ Frontend - Registration result:', result);
         }
         
         // Store temporary data for use in subsequent pages
@@ -103,7 +95,6 @@ export default function Register() {
           setLocation("/upload-picture");
         }, 100);
       } catch (error) {
-        console.error('Error in registration success handler:', error);
         toast({
           title: "Registration completed but with issues",
           description: "Please try logging in if you encounter problems.",
@@ -112,8 +103,6 @@ export default function Register() {
       }
     },
     onError: (error) => {
-      console.error('Registration error:', error);
-      
       // Clear any partial registration data
       localStorage.removeItem('tempUserType');
       localStorage.removeItem('tempUserId');

@@ -27,7 +27,6 @@ export default function UploadPicture() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      console.log('Starting upload for file:', file.name);
       const formData = new FormData();
       formData.append('profilePicture', file);
       
@@ -36,8 +35,6 @@ export default function UploadPicture() {
       if (tempUserId) {
         formData.append('tempUserId', tempUserId);
       }
-
-      console.log('Making request to /api/upload-profile-picture');
       
       // Add retry logic for authentication issues
       let retryCount = 0;
@@ -49,18 +46,14 @@ export default function UploadPicture() {
             method: 'POST',
             body: formData,
           });
-
-          console.log('Response status:', response.status);
           
           if (response.ok) {
             const result = await response.json();
-            console.log('Upload successful:', result);
             return result;
           }
           
           // Handle 401 specifically
           if (response.status === 401 && retryCount < maxRetries) {
-            console.log(`Auth failed, retrying... (${retryCount + 1}/${maxRetries})`);
             retryCount++;
             // Wait a bit before retry to allow session to establish
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -68,12 +61,10 @@ export default function UploadPicture() {
           }
           
           const error = await response.json().catch(() => ({ message: 'Upload failed' }));
-          console.error('Upload failed with error:', error);
           throw new Error(error.message || 'Upload failed');
           
         } catch (fetchError) {
           if (retryCount < maxRetries) {
-            console.log(`Network error, retrying... (${retryCount + 1}/${maxRetries})`);
             retryCount++;
             await new Promise(resolve => setTimeout(resolve, 1000));
             continue;
@@ -90,7 +81,6 @@ export default function UploadPicture() {
       setLocation("/success");
     },
     onError: (error) => {
-      console.error('Upload error:', error);
       toast({
         title: "Upload Failed", 
         description: error instanceof Error ? error.message : "Please try again or skip for now.",

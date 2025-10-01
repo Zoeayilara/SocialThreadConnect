@@ -225,15 +225,10 @@ export default function VendorDashboard() {
   useEffect(() => {
     const isFromRegistration = sessionStorage.getItem('from-registration');
     
-    console.log('Terms check:', { isFromRegistration, userId: user?.id });
-    
     // Always show terms dialog if coming from registration
     if (isFromRegistration) {
-      console.log('✅ Showing terms dialog for new registration');
       setShowTermsDialog(true);
       sessionStorage.removeItem('from-registration');
-    } else {
-      console.log('❌ Not from registration, no terms dialog needed');
     }
   }, [user?.id]); // Re-run when user loads
 

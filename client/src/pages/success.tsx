@@ -102,7 +102,6 @@ export default function Success() {
       setLocation("/login");
       
     } catch (error) {
-      console.error('Navigation failed:', error);
       // Clean up and redirect to login on error
       localStorage.removeItem('tempUserType');
       localStorage.removeItem('tempUserId');

@@ -20,6 +20,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+// Polling and timeout constants
+const CONVERSATIONS_POLL_INTERVAL = 3000; // 3 seconds
+const MESSAGES_POLL_INTERVAL = 3000; // 3 seconds
+const USER_DATA_REFRESH_INTERVAL = 30000; // 30 seconds
+const SCROLL_DEBOUNCE_DELAY = 150; // 150ms
+const INITIAL_SCROLL_DELAY = 100; // 100ms
+const SCROLL_BOTTOM_THRESHOLD = 20; // 20px from bottom
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,7 +96,7 @@ export default function Messages({ directUserId }: MessagesProps) {
     },
     enabled: !!selectedUser,
     staleTime: 0,
-    refetchInterval: 3000, // Poll every 3 seconds for new messages
+    refetchInterval: MESSAGES_POLL_INTERVAL,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true
   });
@@ -102,7 +110,7 @@ export default function Messages({ directUserId }: MessagesProps) {
         return freshUserData;
       }
     } catch (error) {
-      console.error('Failed to fetch fresh user data:', error);
+      // Failed to fetch fresh user data
     }
     return null;
   };
@@ -121,7 +129,6 @@ export default function Messages({ directUserId }: MessagesProps) {
   // Mark messages as read when user scrolls to bottom or sends a message
   const handleMarkAsRead = () => {
     if (selectedUser?.id) {
-      console.log('🔴 Marking messages as read for user:', selectedUser.id);
       markAsRead(selectedUser.id);
     }
   };
@@ -139,7 +146,7 @@ export default function Messages({ directUserId }: MessagesProps) {
         localStorage.removeItem('messagesSelectedUser');
       }
     } catch (error) {
-      console.error('Failed to save to localStorage:', error);
+      // Failed to save to localStorage
     }
   }, [selectedUser]);
 
@@ -150,19 +157,18 @@ export default function Messages({ directUserId }: MessagesProps) {
     const refreshUserData = async () => {
       const freshUserData = await fetchFreshUserData(selectedUser.id);
       if (freshUserData && freshUserData.isVerified !== selectedUser.isVerified) {
-        console.log('🔄 Updating user verification status:', freshUserData.isVerified);
         setSelectedUser(freshUserData);
       }
     };
 
-    // Refresh user data every 30 seconds
-    const interval = setInterval(refreshUserData, 30000);
+    // Refresh user data periodically
+    const interval = setInterval(refreshUserData, USER_DATA_REFRESH_INTERVAL);
     
     return () => clearInterval(interval);
   }, [selectedUser?.id, selectedUser?.isVerified]);
 
   // Get user's conversations
-  const { data: conversations = [], isLoading: conversationsLoading, error: conversationsError } = useQuery({
+  const { data: conversations = [] } = useQuery({
     queryKey: ['conversations'],
     queryFn: async () => {
       const response = await authenticatedFetch('/api/conversations');
@@ -172,14 +178,10 @@ export default function Messages({ directUserId }: MessagesProps) {
     staleTime: 0,
     gcTime: 0,
     refetchOnWindowFocus: true,
-    refetchInterval: 3000, // Poll every 3 seconds for new conversations
+    refetchInterval: CONVERSATIONS_POLL_INTERVAL,
     refetchIntervalInBackground: true
   });
 
-  // Debug logging
-  console.log('Conversations data:', conversations);
-  console.log('Conversations loading:', conversationsLoading);
-  console.log('Conversations error:', conversationsError);
   
 
   // Search for users
@@ -241,41 +243,49 @@ export default function Messages({ directUserId }: MessagesProps) {
       const container = document.getElementById('messages-container');
       if (container) {
         // Smooth scroll to bottom with a small delay to prevent glitches
-        setTimeout(() => {
+        const scrollTimer = window.setTimeout(() => {
           container.scrollTo({
             top: container.scrollHeight,
             behavior: 'smooth'
           });
-        }, 100);
+        }, INITIAL_SCROLL_DELAY);
         
         // Add scroll listener to mark as read only after user actively scrolls
         let hasUserScrolled = false;
-        let scrollTimeout: number;
+        let scrollTimeout: number | undefined;
         
         const handleScroll = () => {
           // Clear any existing timeout to prevent rapid firing
-          if (scrollTimeout) {
+          if (scrollTimeout !== undefined) {
             window.clearTimeout(scrollTimeout);
+            scrollTimeout = undefined;
           }
           
           // Debounce scroll events to prevent glitches
           scrollTimeout = window.setTimeout(() => {
             hasUserScrolled = true; // User has actively scrolled
             const { scrollTop, scrollHeight, clientHeight } = container;
-            const isAtBottom = scrollTop + clientHeight >= scrollHeight - 20; // 20px threshold
+            const isAtBottom = scrollTop + clientHeight >= scrollHeight - SCROLL_BOTTOM_THRESHOLD;
             
             // Only mark as read if user has actively scrolled AND is at bottom
             if (isAtBottom && messages.length > 0 && hasUserScrolled) {
               handleMarkAsRead();
             }
-          }, 150); // 150ms debounce
+            scrollTimeout = undefined;
+          }, SCROLL_DEBOUNCE_DELAY);
         };
         
         container.addEventListener('scroll', handleScroll, { passive: true });
         
         return () => {
+          // Clean up scroll timer
+          if (scrollTimer !== undefined) {
+            window.clearTimeout(scrollTimer);
+          }
+          // Clean up scroll listener
           container.removeEventListener('scroll', handleScroll);
-          if (scrollTimeout) {
+          // Clean up debounce timeout
+          if (scrollTimeout !== undefined) {
             window.clearTimeout(scrollTimeout);
           }
         };
@@ -681,11 +691,7 @@ export default function Messages({ directUserId }: MessagesProps) {
                           {messageFiles.length > 0 && (
                             <div className="mt-3 space-y-3">
                               {messageFiles.map((fileUrl: string, index: number) => {
-                                const isVideo = fileUrl.match(/\.(mp4|webm|ogg)$/i);
-                                const finalUrl = getImageUrl(fileUrl);
-                                console.log('💬 Message media - Original URL:', fileUrl);
-                                console.log('💬 Message media - Final URL:', finalUrl);
-                                console.log('💬 Message media - Is video:', isVideo);
+                                const isVideo = fileUrl.match(/\.(mp4|mov|webm)$/i);
                                 return (
                                   <div key={index} className="relative group/media w-48">
                                     {isVideo ? (

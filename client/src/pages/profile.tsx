@@ -183,7 +183,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
               return { ...post, comments };
             }
           } catch (error) {
-            console.error('Failed to fetch comments for post', post.id, error);
+            // Failed to fetch comments
           }
           return { ...post, comments: [] };
         })
@@ -256,9 +256,6 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   };
 
   const getUserHandle = (u: any) => {
-    console.log('🔍 Profile user data:', u);
-    console.log('🔍 University field:', u?.university);
-    console.log('🔍 Email field:', u?.email);
     return u?.university || u?.email?.split('@')[0] || '';
   };
 
@@ -515,8 +512,6 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Profile picture upload mutation
   const uploadProfilePicMutation = useMutation({
     mutationFn: async (file: File) => {
-      console.log('Uploading profile picture:', { name: file.name, type: file.type, size: file.size });
-      
       const formData = new FormData();
       formData.append('profilePicture', file);
       
@@ -527,7 +522,6 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       
       if (!response.ok) {
         const error = await response.text();
-        console.error('Profile picture upload failed:', error);
         throw new Error(`Failed to upload profile picture: ${error}`);
       }
       return response.json();
@@ -559,7 +553,6 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       });
     },
     onError: (error) => {
-      console.error('Profile picture upload error:', error);
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload profile picture. Please try again.",
@@ -619,7 +612,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
         setNewComment("");
       }
     } catch (error) {
-      console.error('Error creating comment:', error);
+      // Error creating comment
     }
   };
 
