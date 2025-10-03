@@ -67,6 +67,7 @@ export default function Messages({ directUserId }: MessagesProps) {
   const [imageToEdit, setImageToEdit] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasScrolledToBottom = useRef<number | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -242,13 +243,27 @@ export default function Messages({ directUserId }: MessagesProps) {
     if (selectedUser && messages.length > 0) {
       const container = document.getElementById('messages-container');
       if (container) {
-        // Smooth scroll to bottom with a small delay to prevent glitches
-        const scrollTimer = window.setTimeout(() => {
-          container.scrollTo({
-            top: container.scrollHeight,
-            behavior: 'smooth'
-          });
-        }, INITIAL_SCROLL_DELAY);
+        // Only auto-scroll if this is a new conversation (selectedUser.id changed)
+        const isNewConversation = selectedUser.id !== hasScrolledToBottom.current;
+        
+        if (isNewConversation) {
+          hasScrolledToBottom.current = selectedUser.id;
+          
+          // Smooth scroll to bottom with a small delay to prevent glitches
+          const scrollTimer = window.setTimeout(() => {
+            container.scrollTo({
+              top: container.scrollHeight,
+              behavior: 'smooth'
+            });
+          }, INITIAL_SCROLL_DELAY);
+          
+          // Clean up scroll timer on unmount
+          return () => {
+            if (scrollTimer !== undefined) {
+              window.clearTimeout(scrollTimer);
+            }
+          };
+        }
         
         // Add scroll listener to mark as read only after user actively scrolls
         let hasUserScrolled = false;
@@ -278,10 +293,6 @@ export default function Messages({ directUserId }: MessagesProps) {
         container.addEventListener('scroll', handleScroll, { passive: true });
         
         return () => {
-          // Clean up scroll timer
-          if (scrollTimer !== undefined) {
-            window.clearTimeout(scrollTimer);
-          }
           // Clean up scroll listener
           container.removeEventListener('scroll', handleScroll);
           // Clean up debounce timeout
@@ -291,7 +302,7 @@ export default function Messages({ directUserId }: MessagesProps) {
         };
       }
     }
-  }, [selectedUser?.id, messages.length, handleMarkAsRead]); // Only when selectedUser changes (opening chat)
+  }, [selectedUser?.id, messages.length, handleMarkAsRead]);
   
 
   // Typing indicator effect and mark as read when user starts typing
