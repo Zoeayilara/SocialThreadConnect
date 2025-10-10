@@ -2491,6 +2491,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   }, reportsRouter);
 
+  // ==================== PRODUCTS/MARKETPLACE ENDPOINTS ====================
+
+  // Get all products (marketplace)
+  app.get('/api/products', async (req, res) => {
+    try {
+      const products = sqlite.prepare(`
+        SELECT 
+          p.*,
+          u.first_name as vendorFirstName,
+          u.last_name as vendorLastName,
+          u.email as vendorEmail,
+          u.profile_image_url as vendorProfileImage,
+          u.is_verified as vendorIsVerified,
+          CASE 
+            WHEN p.image_url LIKE 'http://localhost:5000%' THEN 
+              REPLACE(p.image_url, 'http://localhost:5000', '${getBaseUrl()}')
+            ELSE p.image_url 
+          END as imageUrl
+        FROM products p
+        JOIN users u ON p.vendor_id = u.id
+        ORDER BY p.created_at DESC
+      `).all();
+
+      res.json(products);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      res.status(500).json({ message: 'Failed to fetch products' });
+    }
+  });
+
+  // Get products by vendor ID
+  app.get('/api/products/vendor/:vendorId', async (req, res) => {
+    try {
+      const vendorId = parseInt(req.params.vendorId);
+      
+      const products = sqlite.prepare(`
+        SELECT 
+          *,
+          CASE 
+            WHEN image_url LIKE 'http://localhost:5000%' THEN 
+              REPLACE(image_url, 'http://localhost:5000', '${getBaseUrl()}')
+            ELSE image_url 
+          END as imageUrl
+        FROM products
+        WHERE vendor_id = ?
+        ORDER BY created_at DESC
+      `).all(vendorId);
+
+      res.json(products);
+    } catch (error) {
+      console.error('Error fetching vendor products:', error);
+      res.status(500).json({ message: 'Failed to fetch vendor products' });
+    }
+  });
+
+  // Create product (vendors only)
+  app.post('/api/products', isAuthenticated, upload.single('productImage'), async (req: any, res) => {
+    try {
+      const userId = req.userId as number;
+      
+      // Check if user is a vendor
+      const user = sqlite.prepare('SELECT user_type FROM users WHERE id = ?').get(userId) as any;
+      if (user.user_type !== 'vendor') {
+        return res.status(403).json({ message: 'Only vendors can create products' });
+      }
+
+      const { name, description, price, sizes, stock, category } = req.body;
+      
+      let imageUrl: string | null = null;
+      if (req.file) {
+        imageUrl = `${getBaseUrl()}/uploads/${req.file.filename}`;
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      
+      const result = sqlite.prepare(`
+        INSERT INTO products (vendor_id, name, description, price, image_url, sizes, stock, category, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(userId, name, description, price, imageUrl, sizes, stock || 0, category, now, now);
+
+      const product = sqlite.prepare('SELECT * FROM products WHERE id = ?').get(result.lastInsertRowid);
+      
+      res.json(product);
+    } catch (error) {
+      console.error('Error creating product:', error);
+      res.status(500).json({ message: 'Failed to create product' });
+    }
+  });
+
+  // Update product (owner only)
+  app.put('/api/products/:id', isAuthenticated, upload.single('productImage'), async (req: any, res) => {
+    try {
+      const userId = req.userId as number;
+      const productId = parseInt(req.params.id);
+      
+      // Check if product exists and user is owner
+      const product = sqlite.prepare('SELECT vendor_id FROM products WHERE id = ?').get(productId) as any;
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+      if (product.vendor_id !== userId) {
+        return res.status(403).json({ message: 'Not authorized to update this product' });
+      }
+
+      const { name, description, price, sizes, stock, category } = req.body;
+      
+      let imageUrl = req.body.imageUrl; // Keep existing if no new image
+      if (req.file) {
+        imageUrl = `${getBaseUrl()}/uploads/${req.file.filename}`;
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      
+      sqlite.prepare(`
+        UPDATE products 
+        SET name = ?, description = ?, price = ?, image_url = ?, sizes = ?, stock = ?, category = ?, updated_at = ?
+        WHERE id = ?
+      `).run(name, description, price, imageUrl, sizes, stock, category, now, productId);
+
+      const updatedProduct = sqlite.prepare('SELECT * FROM products WHERE id = ?').get(productId);
+      
+      res.json(updatedProduct);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      res.status(500).json({ message: 'Failed to update product' });
+    }
+  });
+
+  // Delete product (owner only)
+  app.delete('/api/products/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId as number;
+      const productId = parseInt(req.params.id);
+      
+      // Check if product exists and user is owner
+      const product = sqlite.prepare('SELECT vendor_id FROM products WHERE id = ?').get(productId) as any;
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+      if (product.vendor_id !== userId) {
+        return res.status(403).json({ message: 'Not authorized to delete this product' });
+      }
+
+      sqlite.prepare('DELETE FROM products WHERE id = ?').run(productId);
+      
+      res.json({ message: 'Product deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      res.status(500).json({ message: 'Failed to delete product' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

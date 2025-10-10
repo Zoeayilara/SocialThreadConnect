@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, MessageCircle, Share, MoreHorizontal, Send, Edit, Trash2, Flag, Camera, X, ArrowLeft, Plus, Edit3, Repeat2 } from "lucide-react";
+import { Heart, MessageCircle, Share, MoreHorizontal, Send, Edit, Trash2, Flag, Camera, X, ArrowLeft, Plus, Edit3, Repeat2, ShoppingBag } from "lucide-react";
 import { FoxLogo } from "@/components/FoxLogo";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { authenticatedFetch, getImageUrl } from "@/utils/api";
@@ -699,21 +699,33 @@ export default function Profile({ onBack, userId }: ProfileProps) {
             </div>
           </div>
           {isOwnProfile ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                  <MoreHorizontal className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700">
-                <DropdownMenuItem 
-                  onClick={() => setLocation('/settings')}
-                  className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
+            <div className="flex items-center space-x-2">
+              {profileUser?.userType === 'vendor' && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setLocation('/vendor-products')}
+                  className="text-gray-400 hover:text-white"
                 >
-                  Settings
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <ShoppingBag className="w-5 h-5" />
+                </Button>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700">
+                  <DropdownMenuItem 
+                    onClick={() => setLocation('/settings')}
+                    className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
+                  >
+                    Settings
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

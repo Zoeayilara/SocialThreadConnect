@@ -31,6 +31,9 @@ import Activity from './pages/activity';
 import Profile from './pages/profile';
 import Messages from './pages/messages';
 import CreatePost from './pages/create-post';
+import Marketplace from './pages/marketplace';
+import VendorProducts from './pages/vendor-products';
+import AddProduct from './pages/add-product';
 
 function AppContent() {
   const { user, isLoggingOut, isAuthenticating, isLoading } = useAuth();
@@ -104,6 +107,9 @@ function AppContent() {
           <Route path="/help" component={() => <Help onBack={() => window.history.back()} />} />
           <Route path="/about" component={() => <About onBack={() => window.history.back()} />} />
           <Route path="/profile/:userId" component={({ params }: any) => <Profile onBack={() => window.history.back()} userId={parseInt(params.userId)} />} />
+          <Route path="/marketplace" component={Marketplace} />
+          <Route path="/vendor-products" component={VendorProducts} />
+          <Route path="/add-product" component={AddProduct} />
         </>
       )}
       <Route component={NotFound} />

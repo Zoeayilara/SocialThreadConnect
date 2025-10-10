@@ -107,6 +107,21 @@ export const otps = sqliteTable("otps", {
   createdAt: integer("created_at"),
 });
 
+// Products table for marketplace
+export const products = sqliteTable("products", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  vendorId: integer("vendor_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  price: text("price").notNull(), // Store as text to handle decimal values
+  imageUrl: text("image_url"),
+  sizes: text("sizes"), // Store as JSON string: ["S", "M", "L", "XL"]
+  stock: integer("stock").default(0),
+  category: text("category"),
+  createdAt: integer("created_at"),
+  updatedAt: integer("updated_at"),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   posts: many(posts),
@@ -116,6 +131,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   savedPosts: many(savedPosts),
   followers: many(follows, { relationName: "followers" }),
   following: many(follows, { relationName: "following" }),
+  products: many(products),
+}));
+
+export const productsRelations = relations(products, ({ one }) => ({
+  vendor: one(users, {
+    fields: [products.vendorId],
+    references: [users.id],
+  }),
 }));
 
 export const postsRelations = relations(posts, ({ one, many }) => ({
@@ -213,6 +236,12 @@ export const insertOtpSchema = createInsertSchema(otps).omit({
   createdAt: true,
 });
 
+export const insertProductSchema = createInsertSchema(products).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -227,3 +256,5 @@ export type Follow = typeof follows.$inferSelect;
 export type SavedPost = typeof savedPosts.$inferSelect;
 export type Otp = typeof otps.$inferSelect;
 export type InsertOtp = z.infer<typeof insertOtpSchema>;
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = z.infer<typeof insertProductSchema>;

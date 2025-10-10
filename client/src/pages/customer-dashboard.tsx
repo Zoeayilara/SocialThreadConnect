@@ -11,7 +11,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
-import { Heart, MessageCircle, MoreHorizontal, Send, Search, Shield, Repeat2, MessageSquare, Edit3, Trash2, Flag, X } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Send, Search, Shield, Repeat2, MessageSquare, Edit3, Trash2, Flag, X, ShoppingBag } from "lucide-react";
 import { NotificationBadge } from "@/components/NotificationBadge";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { FoxLogo } from "@/components/FoxLogo";
@@ -597,6 +597,9 @@ export default function CustomerDashboard() {
             )}
             <Button variant="ghost" size="sm" onClick={() => setShowSearch(!showSearch)} className="text-gray-400 hover:text-white">
               <Search className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setLocation('/marketplace')} className="text-gray-400 hover:text-white">
+              <ShoppingBag className="w-5 h-5" />
             </Button>
             <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleUserClick()}>
               <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
