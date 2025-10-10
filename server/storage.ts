@@ -91,8 +91,11 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUserById(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    if (user && user.profileImageUrl && user.profileImageUrl.includes('localhost:5000')) {
-      user.profileImageUrl = user.profileImageUrl.replace('http://localhost:5000', this.getBaseUrl());
+    if (user && user.profileImageUrl) {
+      const baseUrl = this.getBaseUrl();
+      user.profileImageUrl = user.profileImageUrl
+        .replace('http://localhost:5000', baseUrl)
+        .replace('https://web-production-aff5b.up.railway.app', baseUrl);
     }
     return user;
   }
@@ -118,8 +121,11 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
-    if (user && user.profileImageUrl && user.profileImageUrl.includes('localhost:5000')) {
-      user.profileImageUrl = user.profileImageUrl.replace('http://localhost:5000', this.getBaseUrl());
+    if (user && user.profileImageUrl) {
+      const baseUrl = this.getBaseUrl();
+      user.profileImageUrl = user.profileImageUrl
+        .replace('http://localhost:5000', baseUrl)
+        .replace('https://web-production-aff5b.up.railway.app', baseUrl);
     }
     return user;
   }
@@ -162,17 +168,22 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(posts.userId, users.id))
       .orderBy(desc(posts.createdAt));
 
+    // Helper function to fix URLs
+    const fixUrl = (url: string | null | undefined): string | null | undefined => {
+      if (!url) return url;
+      const baseUrl = this.getBaseUrl();
+      return url
+        .replace('http://localhost:5000', baseUrl)
+        .replace('https://web-production-aff5b.up.railway.app', baseUrl);
+    };
+
     // Map to proper format with URL replacement
     const allPosts = postsWithUsers.map(p => ({
       id: p.posts.id,
       userId: p.posts.userId,
       content: p.posts.content,
-      imageUrl: p.posts.imageUrl?.includes?.('localhost:5000') 
-        ? p.posts.imageUrl.replace('http://localhost:5000', this.getBaseUrl()) 
-        : p.posts.imageUrl,
-      mediaUrl: p.posts.mediaUrl?.includes?.('localhost:5000') 
-        ? p.posts.mediaUrl.replace('http://localhost:5000', this.getBaseUrl()) 
-        : p.posts.mediaUrl,
+      imageUrl: fixUrl(p.posts.imageUrl),
+      mediaUrl: fixUrl(p.posts.mediaUrl),
       mediaType: p.posts.mediaType,
       likesCount: p.posts.likesCount || 0,
       commentsCount: p.posts.commentsCount || 0,
@@ -181,9 +192,7 @@ export class DatabaseStorage implements IStorage {
       updatedAt: p.posts.updatedAt,
       user: {
         ...p.users!,
-        profileImageUrl: p.users!.profileImageUrl?.includes('localhost:5000')
-          ? p.users!.profileImageUrl.replace('http://localhost:5000', this.getBaseUrl())
-          : p.users!.profileImageUrl
+        profileImageUrl: fixUrl(p.users!.profileImageUrl)
       },
     }));
 
@@ -709,6 +718,8 @@ export class DatabaseStorage implements IStorage {
         CASE 
           WHEN u.profile_image_url LIKE 'http://localhost:5000%' THEN 
             REPLACE(u.profile_image_url, 'http://localhost:5000', '${getBaseUrl()}')
+          WHEN u.profile_image_url LIKE '%railway.app%' THEN 
+            REPLACE(u.profile_image_url, 'https://web-production-aff5b.up.railway.app', '${getBaseUrl()}')
           ELSE u.profile_image_url 
         END as profileImageUrl,
         n.postId
