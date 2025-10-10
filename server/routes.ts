@@ -295,6 +295,25 @@ async function runMigrations() {
         )
       `);
       console.log('✅ Ensured reports table');
+      
+      // products table for marketplace
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS products (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          vendor_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT,
+          price REAL NOT NULL,
+          image_url TEXT,
+          sizes TEXT,
+          stock INTEGER DEFAULT 0,
+          category TEXT,
+          created_at INTEGER,
+          updated_at INTEGER,
+          FOREIGN KEY (vendor_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('✅ Ensured products table');
     } catch (e: any) {
       console.error('❌ Error ensuring base tables:', e.message);
     }

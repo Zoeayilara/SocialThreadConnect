@@ -150,6 +150,11 @@ export default function Profile({ onBack, userId }: ProfileProps) {
     staleTime: 0,
   });
 
+  // Scroll to top when profile page loads
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [userId]);
+
   // Initialize edit profile data when profile user changes
   React.useEffect(() => {
     if (profileUser) {
