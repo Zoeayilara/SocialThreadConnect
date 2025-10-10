@@ -811,10 +811,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Generate filename and save file
       const fileName = `profile-${userId}-${Date.now()}.${req.file.originalname.split('.').pop()}`;
-      const filePath = path.join(__dirname, '../uploads', fileName);
+      const uploadsDir = process.env.NODE_ENV === 'production' 
+        ? '/data/uploads' 
+        : path.join(__dirname, '../uploads');
+      const filePath = path.join(uploadsDir, fileName);
       
       // Ensure uploads directory exists
-      const uploadsDir = path.join(__dirname, '../uploads');
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
@@ -839,10 +841,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve static files
   app.use(express.static(path.join(__dirname, 'public')));
   
-  // Debug: Log the uploads directory path
-  const uploadsPath = path.join(__dirname, '../uploads');
+  // Use persistent volume for uploads on Fly.io
+  const uploadsPath = process.env.NODE_ENV === 'production' 
+    ? '/data/uploads' 
+    : path.join(__dirname, '../uploads');
+  
   console.log('Uploads directory path:', uploadsPath);
   console.log('Uploads directory exists:', fs.existsSync(uploadsPath));
+  
+  // Ensure uploads directory exists
+  if (!fs.existsSync(uploadsPath)) {
+    fs.mkdirSync(uploadsPath, { recursive: true });
+    console.log('Created uploads directory:', uploadsPath);
+  }
   
   app.use('/uploads', express.static(uploadsPath));
   
@@ -861,7 +872,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug route to test uploads access
   app.get('/test-uploads/:filename', (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(__dirname, '../uploads', filename);
+    const uploadsDir = process.env.NODE_ENV === 'production' 
+      ? '/data/uploads' 
+      : path.join(__dirname, '../uploads');
+    const filePath = path.join(uploadsDir, filename);
     console.log('Testing file access:', filePath);
     console.log('File exists:', fs.existsSync(filePath));
     if (fs.existsSync(filePath)) {
@@ -1307,7 +1321,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })));
         
         // Ensure uploads directory exists
-        const uploadsDir = path.join(__dirname, '../uploads');
+        const uploadsDir = process.env.NODE_ENV === 'production' 
+          ? '/data/uploads' 
+          : path.join(__dirname, '../uploads');
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
           console.log('Created uploads directory:', uploadsDir);
@@ -1316,7 +1332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const baseUrl = getBaseUrl();
         for (const file of req.files) {
           const fileName = `post-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${file.originalname.split('.').pop()}`;
-          const filePath = path.join(__dirname, '../uploads', fileName);
+          const filePath = path.join(uploadsDir, fileName);
           
           fs.writeFileSync(filePath, file.buffer);
           mediaUrls.push(`${baseUrl}/uploads/${fileName}`);
@@ -2384,10 +2400,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Save media file
         const fileExtension = path.extname(mediaFile.originalname);
         const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
-        const filePath = path.join(__dirname, '../uploads', fileName);
+        const uploadsDir = process.env.NODE_ENV === 'production' 
+          ? '/data/uploads' 
+          : path.join(__dirname, '../uploads');
+        const filePath = path.join(uploadsDir, fileName);
         
         // Ensure uploads directory exists
-        const uploadsDir = path.dirname(filePath);
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
         }
