@@ -7,7 +7,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "https://web-production-aff5b.up.railway.app/api/:splat"
+  to = "https://socialthreadconnect.fly.dev/api/:splat"
   status = 200
   force = true
 
@@ -17,10 +17,10 @@
   status = 200
 
 [context.production.environment]
-  VITE_API_URL = "https://web-production-aff5b.up.railway.app"
+  VITE_API_URL = "https://socialthreadconnect.fly.dev"
 
 [context.deploy-preview.environment]
-  VITE_API_URL = "https://web-production-aff5b.up.railway.app"
+  VITE_API_URL = "https://socialthreadconnect.fly.dev"
 
 [context.branch-deploy.environment]
-  VITE_API_URL = "https://web-production-aff5b.up.railway.app"
+  VITE_API_URL = "https://socialthreadconnect.fly.dev"
