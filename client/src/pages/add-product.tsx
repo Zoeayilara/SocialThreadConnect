@@ -87,7 +87,7 @@ export default function AddProduct() {
     if (!formData.name || !formData.description || !formData.price) {
       toast({ 
         title: "Missing required fields", 
-        description: "Please fill in all required fields",
+        description: "Please fill in all the required fields",
         variant: "destructive" 
       });
       return;
