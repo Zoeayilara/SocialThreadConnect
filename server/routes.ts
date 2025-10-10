@@ -1075,7 +1075,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
-      const imageUrl = `/uploads/${req.file.filename}`;
+      const imageUrl = `${getBaseUrl()}/uploads/${req.file.filename}`;
       res.json({ imageUrl });
     } catch (error) {
       console.error("Post image upload error:", error);
@@ -1090,7 +1090,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!files.length) {
         return res.status(400).json({ message: "No files uploaded" });
       }
-      const items = files.map(f => ({ url: `/uploads/${f.filename}`, mime: f.mimetype }));
+      const baseUrl = getBaseUrl();
+      const items = files.map(f => ({ url: `${baseUrl}/uploads/${f.filename}`, mime: f.mimetype }));
       // Also return a JSON string that can be stored in imageUrl
       const asJsonString = JSON.stringify(items.map(i => i.url));
       res.json({ items, imageUrl: asJsonString });
@@ -1312,12 +1313,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('Created uploads directory:', uploadsDir);
         }
         
+        const baseUrl = getBaseUrl();
         for (const file of req.files) {
           const fileName = `post-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${file.originalname.split('.').pop()}`;
           const filePath = path.join(__dirname, '../uploads', fileName);
           
           fs.writeFileSync(filePath, file.buffer);
-          mediaUrls.push(`/uploads/${fileName}`);
+          mediaUrls.push(`${baseUrl}/uploads/${fileName}`);
           mediaTypes.push(file.mimetype.startsWith('image/') ? 'image' : 'video');
         }
         

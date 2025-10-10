@@ -91,7 +91,7 @@ export default function VendorProducts() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setLocation(`/profile/${user?.id}`)}
+                onClick={() => window.history.back()}
                 className="text-gray-400 hover:text-white hover:bg-gray-800"
               >
                 <ArrowLeft className="w-5 h-5" />
