@@ -583,41 +583,75 @@ async function runMigrations() {
         // Update profile image URLs - check if column exists
         const profileImageCol = usersColumns.find(c => c.name === 'profile_image_url' || c.name === 'profileImageUrl');
         if (profileImageCol) {
-          profileUpdates = sqlite.prepare(`
+          // Update localhost URLs
+          const localhostUpdates = sqlite.prepare(`
             UPDATE users 
             SET ${profileImageCol.name} = REPLACE(${profileImageCol.name}, 'http://localhost:5000', ?)
             WHERE ${profileImageCol.name} LIKE '%localhost:5000%'
           `).run(productionUrl);
+          
+          // Update Railway URLs
+          const railwayUpdates = sqlite.prepare(`
+            UPDATE users 
+            SET ${profileImageCol.name} = REPLACE(${profileImageCol.name}, 'https://web-production-aff5b.up.railway.app', ?)
+            WHERE ${profileImageCol.name} LIKE '%railway.app%'
+          `).run(productionUrl);
+          
+          profileUpdates = { changes: localhostUpdates.changes + railwayUpdates.changes };
         }
         
         // Update post image URLs - check if column exists
         const postImageCol = postsColumns.find(c => c.name === 'image_url' || c.name === 'imageUrl');
         if (postImageCol) {
-          postImageUpdates = sqlite.prepare(`
+          const localhostUpdates = sqlite.prepare(`
             UPDATE posts 
             SET ${postImageCol.name} = REPLACE(${postImageCol.name}, 'http://localhost:5000', ?)
             WHERE ${postImageCol.name} LIKE '%localhost:5000%'
           `).run(productionUrl);
+          
+          const railwayUpdates = sqlite.prepare(`
+            UPDATE posts 
+            SET ${postImageCol.name} = REPLACE(${postImageCol.name}, 'https://web-production-aff5b.up.railway.app', ?)
+            WHERE ${postImageCol.name} LIKE '%railway.app%'
+          `).run(productionUrl);
+          
+          postImageUpdates = { changes: localhostUpdates.changes + railwayUpdates.changes };
         }
         
         // Update post media URLs - check if column exists
         const postMediaCol = postsColumns.find(c => c.name === 'media_url' || c.name === 'mediaUrl');
         if (postMediaCol) {
-          postMediaUpdates = sqlite.prepare(`
+          const localhostUpdates = sqlite.prepare(`
             UPDATE posts 
             SET ${postMediaCol.name} = REPLACE(${postMediaCol.name}, 'http://localhost:5000', ?)
             WHERE ${postMediaCol.name} LIKE '%localhost:5000%'
           `).run(productionUrl);
+          
+          const railwayUpdates = sqlite.prepare(`
+            UPDATE posts 
+            SET ${postMediaCol.name} = REPLACE(${postMediaCol.name}, 'https://web-production-aff5b.up.railway.app', ?)
+            WHERE ${postMediaCol.name} LIKE '%railway.app%'
+          `).run(productionUrl);
+          
+          postMediaUpdates = { changes: localhostUpdates.changes + railwayUpdates.changes };
         }
         
         // Update message image URLs - check if column exists
         const messageImageCol = messagesColumns.find(c => c.name === 'image_url' || c.name === 'imageUrl');
         if (messageImageCol) {
-          messageUpdates = sqlite.prepare(`
+          const localhostUpdates = sqlite.prepare(`
             UPDATE messages 
             SET ${messageImageCol.name} = REPLACE(${messageImageCol.name}, 'http://localhost:5000', ?)
             WHERE ${messageImageCol.name} LIKE '%localhost:5000%'
           `).run(productionUrl);
+          
+          const railwayUpdates = sqlite.prepare(`
+            UPDATE messages 
+            SET ${messageImageCol.name} = REPLACE(${messageImageCol.name}, 'https://web-production-aff5b.up.railway.app', ?)
+            WHERE ${messageImageCol.name} LIKE '%railway.app%'
+          `).run(productionUrl);
+          
+          messageUpdates = { changes: localhostUpdates.changes + railwayUpdates.changes };
         }
         
         console.log(`✅ URL Migration completed:
