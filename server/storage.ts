@@ -28,7 +28,7 @@ function getBaseUrl(): string {
   
   // Check if running on Railway
   if (process.env.RAILWAY_ENVIRONMENT) {
-    return 'https://web-production-aff5b.up.railway.app';
+    return 'https://socialthreadconnect.fly.dev';
   }
   
   return 'http://localhost:5000';
@@ -104,12 +104,12 @@ export class DatabaseStorage implements IStorage {
     
     // For Railway deployment, detect by checking for Railway environment variables
     if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID) {
-      return 'https://web-production-aff5b.up.railway.app';
+      return 'https://socialthreadconnect.fly.dev';
     }
     
     // For production environments (non-Railway)
     if (process.env.NODE_ENV === 'production') {
-      return 'https://web-production-aff5b.up.railway.app';
+      return 'https://socialthreadconnect.fly.dev';
     }
     
     // Fallback to localhost for development
