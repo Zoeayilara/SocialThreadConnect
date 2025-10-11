@@ -2634,7 +2634,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let imageUrl: string | null = null;
       if (req.file) {
-        imageUrl = `${getBaseUrl()}/uploads/${req.file.filename}`;
+        const fileName = `product-${userId}-${Date.now()}.${req.file.originalname.split('.').pop()}`;
+        const uploadsDir = process.env.NODE_ENV === 'production' 
+          ? '/data/uploads' 
+          : path.join(__dirname, '../uploads');
+        const filePath = path.join(uploadsDir, fileName);
+        
+        // Ensure uploads directory exists
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(filePath, req.file.buffer);
+        imageUrl = `${getBaseUrl()}/uploads/${fileName}`;
       }
 
       const now = Math.floor(Date.now() / 1000);
@@ -2672,7 +2684,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let imageUrl = req.body.imageUrl; // Keep existing if no new image
       if (req.file) {
-        imageUrl = `${getBaseUrl()}/uploads/${req.file.filename}`;
+        const fileName = `product-${userId}-${Date.now()}.${req.file.originalname.split('.').pop()}`;
+        const uploadsDir = process.env.NODE_ENV === 'production' 
+          ? '/data/uploads' 
+          : path.join(__dirname, '../uploads');
+        const filePath = path.join(uploadsDir, fileName);
+        
+        // Ensure uploads directory exists
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(filePath, req.file.buffer);
+        imageUrl = `${getBaseUrl()}/uploads/${fileName}`;
       }
 
       const now = Math.floor(Date.now() / 1000);

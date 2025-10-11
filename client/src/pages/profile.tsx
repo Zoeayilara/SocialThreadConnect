@@ -732,22 +732,34 @@ export default function Profile({ onBack, userId }: ProfileProps) {
               </DropdownMenu>
             </div>
           ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                  <MoreHorizontal className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700">
-                <DropdownMenuItem 
-                  onClick={() => setReportAccountDialogOpen(true)}
-                  className="text-red-400 hover:text-red-300 hover:bg-gray-800 cursor-pointer"
+            <div className="flex items-center space-x-2">
+              {profileUser?.userType === 'vendor' && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setLocation(`/vendor-products/${userId}`)}
+                  className="text-gray-400 hover:text-white"
                 >
-                  <Flag className="w-4 h-4 mr-2" />
-                  Report Account
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <ShoppingBag className="w-5 h-5" />
+                </Button>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700">
+                  <DropdownMenuItem 
+                    onClick={() => setReportAccountDialogOpen(true)}
+                    className="text-red-400 hover:text-red-300 hover:bg-gray-800 cursor-pointer"
+                  >
+                    <Flag className="w-4 h-4 mr-2" />
+                    Report Account
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
       </div>

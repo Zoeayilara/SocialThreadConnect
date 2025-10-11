@@ -150,7 +150,7 @@ export default function EditProduct() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => window.history.back()}
+              onClick={() => setLocation('/vendor-products')}
               className="text-gray-400 hover:text-white"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -315,7 +315,7 @@ export default function EditProduct() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => window.history.back()}
+              onClick={() => setLocation('/vendor-products')}
               className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
             >
               Cancel

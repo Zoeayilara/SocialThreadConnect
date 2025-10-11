@@ -17,25 +17,29 @@ import {
 import { authenticatedFetch, getImageUrl } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { useLocation, useRoute } from "wouter";
 
 export default function VendorProducts() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
+  const [, params] = useRoute('/vendor-products/:vendorId');
+  const vendorId = params?.vendorId ? parseInt(params.vendorId) : user?.id;
+  const isOwnProducts = vendorId === user?.id;
+  
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<number | null>(null);
 
   // Fetch vendor's products
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['vendorProducts', user?.id],
+    queryKey: ['vendorProducts', vendorId],
     queryFn: async () => {
-      const response = await authenticatedFetch(`/api/products/vendor/${user?.id}`);
+      const response = await authenticatedFetch(`/api/products/vendor/${vendorId}`);
       if (!response.ok) throw new Error('Failed to fetch products');
       return response.json();
     },
-    enabled: !!user?.id,
+    enabled: !!vendorId,
   });
 
   // Delete product mutation
@@ -100,17 +104,19 @@ export default function VendorProducts() {
                 <ShoppingBag className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">My Products</h1>
+                <h1 className="text-2xl font-bold">{isOwnProducts ? 'My Products' : 'Products'}</h1>
                 <p className="text-sm text-gray-400">{products.length} products</p>
               </div>
             </div>
-            <Button
-              onClick={() => setLocation('/add-product')}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Product
-            </Button>
+            {isOwnProducts && (
+              <Button
+                onClick={() => setLocation('/add-product')}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Product
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -162,24 +168,26 @@ export default function VendorProducts() {
                       </div>
                     )}
                     
-                    {/* Action Buttons */}
-                    <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="bg-blue-500 hover:bg-blue-600 text-white"
-                        onClick={() => setLocation(`/edit-product/${product.id}`)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(product.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    {/* Action Buttons - Only show for own products */}
+                    {isOwnProducts && (
+                      <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="bg-blue-500 hover:bg-blue-600 text-white"
+                          onClick={() => setLocation(`/edit-product/${product.id}`)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(product.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Product Info */}

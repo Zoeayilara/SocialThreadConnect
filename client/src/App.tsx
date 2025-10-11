@@ -110,6 +110,7 @@ function AppContent() {
           <Route path="/profile/:userId" component={({ params }: any) => <Profile onBack={() => window.history.back()} userId={parseInt(params.userId)} />} />
           <Route path="/marketplace" component={Marketplace} />
           <Route path="/vendor-products" component={VendorProducts} />
+          <Route path="/vendor-products/:vendorId" component={VendorProducts} />
           <Route path="/add-product" component={AddProduct} />
           <Route path="/edit-product/:id" component={EditProduct} />
         </>
