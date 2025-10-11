@@ -1370,8 +1370,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const post = await storage.createPost({
         userId,
         content: (content || "").trim(),
-        imageUrl: mediaUrls.length > 0 ? JSON.stringify(mediaUrls.map(url => `${getBaseUrl()}${url}`)) : null,
-        mediaUrl: mediaUrls.length > 0 ? JSON.stringify(mediaUrls.map(url => `${getBaseUrl()}${url}`)) : null,
+        imageUrl: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+        mediaUrl: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
         mediaType: mediaTypes.length > 0 ? JSON.stringify(mediaTypes) : null,
       });
 
