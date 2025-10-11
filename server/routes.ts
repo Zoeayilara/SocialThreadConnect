@@ -1089,7 +1089,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
-      const imageUrl = `${getBaseUrl()}/uploads/${req.file.filename}`;
+      
+      const fileName = `post-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${req.file.originalname.split('.').pop()}`;
+      const uploadsDir = process.env.NODE_ENV === 'production' 
+        ? '/data/uploads' 
+        : path.join(__dirname, '../uploads');
+      const filePath = path.join(uploadsDir, fileName);
+      
+      // Ensure uploads directory exists
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(filePath, req.file.buffer);
+      const imageUrl = `${getBaseUrl()}/uploads/${fileName}`;
       res.json({ imageUrl });
     } catch (error) {
       console.error("Post image upload error:", error);
