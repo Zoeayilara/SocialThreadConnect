@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { VerificationBadge } from "@/components/VerificationBadge";
 import { authenticatedFetch, getImageUrl } from "@/utils/api";
 import { useToast } from "@/hooks/use-toast";
@@ -148,15 +155,49 @@ export default function Marketplace() {
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <CardContent className="p-0">
-                  {/* Product Image */}
+                  {/* Product Image(s) */}
                   <div className="relative aspect-square bg-gray-800 overflow-hidden">
-                    {product.imageUrl ? (
-                      <img
-                        src={getImageUrl(product.imageUrl)}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    ) : (
+                    {product.imageUrl ? (() => {
+                      try {
+                        const imageUrls = JSON.parse(product.imageUrl);
+                        if (Array.isArray(imageUrls) && imageUrls.length > 1) {
+                          return (
+                            <Carousel className="w-full h-full">
+                              <CarouselContent>
+                                {imageUrls.map((url: string, idx: number) => (
+                                  <CarouselItem key={idx}>
+                                    <img
+                                      src={getImageUrl(url)}
+                                      alt={`${product.name} ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </CarouselItem>
+                                ))}
+                              </CarouselContent>
+                              <CarouselPrevious className="left-2" />
+                              <CarouselNext className="right-2" />
+                            </Carousel>
+                          );
+                        } else if (Array.isArray(imageUrls) && imageUrls.length === 1) {
+                          return (
+                            <img
+                              src={getImageUrl(imageUrls[0])}
+                              alt={product.name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                          );
+                        }
+                      } catch {
+                        // Single image URL (not JSON)
+                        return (
+                          <img
+                            src={getImageUrl(product.imageUrl)}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        );
+                      }
+                    })() : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Package className="w-16 h-16 text-gray-600" />
                       </div>

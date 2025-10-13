@@ -2633,7 +2633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create product (vendors only)
-  app.post('/api/products', isAuthenticated, upload.single('productImage'), async (req: any, res) => {
+  app.post('/api/products', isAuthenticated, upload.array('productImages', 5), async (req: any, res) => {
     try {
       const userId = req.userId as number;
       
@@ -2645,22 +2645,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { name, description, price, sizes, stock, category } = req.body;
       
-      let imageUrl: string | null = null;
-      if (req.file) {
-        const fileName = `product-${userId}-${Date.now()}.${req.file.originalname.split('.').pop()}`;
+      let imageUrls: string[] = [];
+      if (req.files && req.files.length > 0) {
         const uploadsDir = process.env.NODE_ENV === 'production' 
           ? '/data/uploads' 
           : path.join(__dirname, '../uploads');
-        const filePath = path.join(uploadsDir, fileName);
         
         // Ensure uploads directory exists
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
         }
         
-        fs.writeFileSync(filePath, req.file.buffer);
-        imageUrl = `${getBaseUrl()}/uploads/${fileName}`;
+        for (const file of req.files) {
+          const fileName = `product-${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${file.originalname.split('.').pop()}`;
+          const filePath = path.join(uploadsDir, fileName);
+          fs.writeFileSync(filePath, file.buffer);
+          imageUrls.push(`${getBaseUrl()}/uploads/${fileName}`);
+        }
       }
+      
+      const imageUrl = imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
 
       const now = Math.floor(Date.now() / 1000);
       
@@ -2679,13 +2683,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update product (owner only)
-  app.put('/api/products/:id', isAuthenticated, upload.single('productImage'), async (req: any, res) => {
+  app.put('/api/products/:id', isAuthenticated, upload.array('productImages', 5), async (req: any, res) => {
     try {
       const userId = req.userId as number;
       const productId = parseInt(req.params.id);
       
       // Check if product exists and user is owner
-      const product = sqlite.prepare('SELECT vendor_id FROM products WHERE id = ?').get(productId) as any;
+      const product = sqlite.prepare('SELECT vendor_id, image_url FROM products WHERE id = ?').get(productId) as any;
       if (!product) {
         return res.status(404).json({ message: 'Product not found' });
       }
@@ -2695,21 +2699,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { name, description, price, sizes, stock, category } = req.body;
       
-      let imageUrl = req.body.imageUrl; // Keep existing if no new image
-      if (req.file) {
-        const fileName = `product-${userId}-${Date.now()}.${req.file.originalname.split('.').pop()}`;
+      let imageUrl = req.body.imageUrl || product.image_url; // Keep existing if no new images
+      if (req.files && req.files.length > 0) {
         const uploadsDir = process.env.NODE_ENV === 'production' 
           ? '/data/uploads' 
           : path.join(__dirname, '../uploads');
-        const filePath = path.join(uploadsDir, fileName);
         
         // Ensure uploads directory exists
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
         }
         
-        fs.writeFileSync(filePath, req.file.buffer);
-        imageUrl = `${getBaseUrl()}/uploads/${fileName}`;
+        const imageUrls: string[] = [];
+        for (const file of req.files) {
+          const fileName = `product-${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${file.originalname.split('.').pop()}`;
+          const filePath = path.join(uploadsDir, fileName);
+          fs.writeFileSync(filePath, file.buffer);
+          imageUrls.push(`${getBaseUrl()}/uploads/${fileName}`);
+        }
+        imageUrl = JSON.stringify(imageUrls);
       }
 
       const now = Math.floor(Date.now() / 1000);

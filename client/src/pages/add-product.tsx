@@ -28,8 +28,8 @@ export default function AddProduct() {
     category: "",
   });
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const createProductMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -56,20 +56,26 @@ export default function AddProduct() {
   });
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      // Limit to 5 images
+      const newFiles = files.slice(0, 5 - imageFiles.length);
+      setImageFiles(prev => [...prev, ...newFiles]);
+      
+      // Generate previews
+      newFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreviews(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
+  const removeImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -101,9 +107,10 @@ export default function AddProduct() {
     data.append('category', formData.category);
     data.append('sizes', JSON.stringify(selectedSizes));
     
-    if (imageFile) {
-      data.append('productImage', imageFile);
-    }
+    // Append all images
+    imageFiles.forEach((file) => {
+      data.append('productImages', file);
+    });
 
     createProductMutation.mutate(data);
   };
@@ -136,34 +143,48 @@ export default function AddProduct() {
           {/* Image Upload */}
           <Card className="bg-gray-900 border-gray-800">
             <CardContent className="p-6">
-              <Label className="text-white mb-3 block">Product Image</Label>
-              {imagePreview ? (
-                <div className="relative aspect-video bg-gray-800 rounded-lg overflow-hidden">
-                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={removeImage}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+              <Label className="text-white mb-3 block">Product Images (up to 5)</Label>
+              
+              {/* Image Previews Grid */}
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden">
+                      <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => removeImage(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                      {index === 0 && (
+                        <Badge className="absolute bottom-2 left-2 bg-blue-500">Main</Badge>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ) : (
+              )}
+
+              {/* Upload Button */}
+              {imagePreviews.length < 5 && (
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   className="aspect-video bg-gray-800 rounded-lg border-2 border-dashed border-gray-700 hover:border-blue-500 transition-colors cursor-pointer flex flex-col items-center justify-center"
                 >
                   <Upload className="w-12 h-12 text-gray-600 mb-3" />
-                  <p className="text-gray-400 text-sm">Click to upload product image</p>
-                  <p className="text-gray-600 text-xs mt-1">PNG, JPG up to 10MB</p>
+                  <p className="text-gray-400 text-sm">Click to upload product images</p>
+                  <p className="text-gray-600 text-xs mt-1">PNG, JPG up to 10MB each ({imagePreviews.length}/5)</p>
                 </div>
               )}
+              
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
+                multiple
                 onChange={handleImageSelect}
                 className="hidden"
               />

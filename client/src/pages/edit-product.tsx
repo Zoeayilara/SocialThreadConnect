@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Upload, X, Package } from "lucide-react";
+import { ArrowLeft, X, Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,9 +29,9 @@ export default function EditProduct() {
     category: 'Clothing',
   });
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
 
   // Fetch product data
   const { data: product, isLoading } = useQuery({
@@ -55,7 +55,16 @@ export default function EditProduct() {
         category: product.category || 'Clothing',
       });
       setSelectedSizes(product.sizes ? JSON.parse(product.sizes) : []);
-      setExistingImageUrl(product.imageUrl || null);
+      
+      // Parse existing images
+      if (product.imageUrl) {
+        try {
+          const urls = JSON.parse(product.imageUrl);
+          setExistingImageUrls(Array.isArray(urls) ? urls : [product.imageUrl]);
+        } catch {
+          setExistingImageUrls([product.imageUrl]);
+        }
+      }
     }
   }, [product]);
 
@@ -81,20 +90,31 @@ export default function EditProduct() {
   });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    const totalImages = existingImageUrls.length + imagePreviews.length;
+    const availableSlots = 5 - totalImages;
+    
+    if (files.length > 0 && availableSlots > 0) {
+      const newFiles = files.slice(0, availableSlots);
+      setImageFiles(prev => [...prev, ...newFiles]);
+      
+      newFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreviews(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
+  const removeNewImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+  
+  const removeExistingImage = (index: number) => {
+    setExistingImageUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const toggleSize = (size: string) => {
@@ -123,8 +143,14 @@ export default function EditProduct() {
     data.append('category', formData.category);
     data.append('sizes', JSON.stringify(selectedSizes));
     
-    if (imageFile) {
-      data.append('productImage', imageFile);
+    // If there are new images, append them
+    if (imageFiles.length > 0) {
+      imageFiles.forEach((file) => {
+        data.append('productImages', file);
+      });
+    } else if (existingImageUrls.length > 0) {
+      // Keep existing images if no new ones uploaded
+      data.append('imageUrl', JSON.stringify(existingImageUrls));
     }
 
     updateProductMutation.mutate(data);
@@ -168,44 +194,82 @@ export default function EditProduct() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card className="bg-gray-900 border-gray-800">
             <CardContent className="p-6 space-y-6">
-              {/* Product Image */}
+              {/* Product Images */}
               <div>
-                <Label className="text-white mb-2 block">Product Image</Label>
-                <div className="flex items-start space-x-4">
-                  {imagePreview || existingImageUrl ? (
-                    <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-gray-800">
-                      <img
-                        src={imagePreview || getImageUrl(existingImageUrl!)}
-                        alt="Product preview"
-                        className="w-full h-full object-cover"
-                      />
-                      {imagePreview && (
-                        <button
-                          type="button"
-                          onClick={removeImage}
-                          className="absolute top-2 right-2 p-1 bg-red-500 rounded-full hover:bg-red-600"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
+                <Label className="text-white mb-3 block">Product Images (up to 5)</Label>
+                
+                {/* Existing Images */}
+                {existingImageUrls.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-400 mb-2">Current Images:</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {existingImageUrls.map((url, index) => (
+                        <div key={index} className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden">
+                          <img
+                            src={getImageUrl(url)}
+                            alt={`Existing ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2"
+                            onClick={() => removeExistingImage(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                          {index === 0 && (
+                            <Badge className="absolute bottom-2 left-2 bg-blue-500">Main</Badge>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  ) : (
-                    <div className="w-32 h-32 rounded-lg bg-gray-800 flex items-center justify-center">
-                      <Upload className="w-8 h-8 text-gray-600" />
+                  </div>
+                )}
+
+                {/* New Images Preview */}
+                {imagePreviews.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-400 mb-2">New Images:</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden">
+                          <img
+                            src={preview}
+                            alt={`New ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2"
+                            onClick={() => removeNewImage(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                  <div className="flex-1">
+                  </div>
+                )}
+
+                {/* Upload Button */}
+                {(existingImageUrls.length + imagePreviews.length) < 5 && (
+                  <div>
                     <Input
                       type="file"
                       accept="image/*"
+                      multiple
                       onChange={handleImageChange}
                       className="bg-gray-800 border-gray-700 text-white"
                     />
                     <p className="text-xs text-gray-400 mt-2">
-                      Upload a new image or keep the existing one
+                      Upload new images ({existingImageUrls.length + imagePreviews.length}/5)
                     </p>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Product Name */}

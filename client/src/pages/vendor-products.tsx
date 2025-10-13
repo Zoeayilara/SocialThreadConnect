@@ -5,6 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -149,15 +156,49 @@ export default function VendorProducts() {
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <CardContent className="p-0">
-                  {/* Product Image */}
+                  {/* Product Image(s) */}
                   <div className="relative aspect-square bg-gray-800 overflow-hidden">
-                    {product.imageUrl ? (
-                      <img
-                        src={getImageUrl(product.imageUrl)}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    ) : (
+                    {product.imageUrl ? (() => {
+                      try {
+                        const imageUrls = JSON.parse(product.imageUrl);
+                        if (Array.isArray(imageUrls) && imageUrls.length > 1) {
+                          return (
+                            <Carousel className="w-full h-full">
+                              <CarouselContent>
+                                {imageUrls.map((url: string, idx: number) => (
+                                  <CarouselItem key={idx}>
+                                    <img
+                                      src={getImageUrl(url)}
+                                      alt={`${product.name} ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </CarouselItem>
+                                ))}
+                              </CarouselContent>
+                              <CarouselPrevious className="left-2" />
+                              <CarouselNext className="right-2" />
+                            </Carousel>
+                          );
+                        } else if (Array.isArray(imageUrls) && imageUrls.length === 1) {
+                          return (
+                            <img
+                              src={getImageUrl(imageUrls[0])}
+                              alt={product.name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                          );
+                        }
+                      } catch {
+                        // Single image URL (not JSON)
+                        return (
+                          <img
+                            src={getImageUrl(product.imageUrl)}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        );
+                      }
+                    })() : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Package className="w-16 h-16 text-gray-600" />
                       </div>
@@ -211,7 +252,7 @@ export default function VendorProducts() {
 
                     {/* Sizes */}
                     {product.sizes && (
-                      <div className="flex items-center space-x-1">
+                      <div className="flex items-center space-x-1 mb-3">
                         <span className="text-xs text-gray-500">Sizes:</span>
                         {JSON.parse(product.sizes).slice(0, 4).map((size: string) => (
                           <Badge key={size} variant="outline" className="border-gray-700 text-gray-400 text-xs">
@@ -219,6 +260,21 @@ export default function VendorProducts() {
                           </Badge>
                         ))}
                       </div>
+                    )}
+
+                    {/* Buy Button - Only show for other users viewing vendor products */}
+                    {!isOwnProducts && (
+                      <Button
+                        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                        disabled={product.stock === 0}
+                        onClick={() => {
+                          // TODO: Implement buy/add to cart functionality
+                          toast({ title: "Coming soon!", description: "Purchase functionality will be available soon." });
+                        }}
+                      >
+                        <ShoppingBag className="w-4 h-4 mr-2" />
+                        {product.stock === 0 ? 'Out of Stock' : 'Buy Now'}
+                      </Button>
                     )}
                   </div>
                 </CardContent>
