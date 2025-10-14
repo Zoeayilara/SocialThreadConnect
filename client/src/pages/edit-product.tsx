@@ -82,6 +82,8 @@ export default function EditProduct() {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product', productId] });
       toast({ title: "Product updated successfully!" });
+      // Use replace to prevent going back to edit page
+      window.history.replaceState(null, '', '/vendor-products');
       setLocation('/vendor-products');
     },
     onError: () => {
@@ -89,7 +91,7 @@ export default function EditProduct() {
     },
   });
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const totalImages = existingImageUrls.length + imagePreviews.length;
     const availableSlots = 5 - totalImages;
@@ -98,13 +100,17 @@ export default function EditProduct() {
       const newFiles = files.slice(0, availableSlots);
       setImageFiles(prev => [...prev, ...newFiles]);
       
-      newFiles.forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreviews(prev => [...prev, reader.result as string]);
-        };
-        reader.readAsDataURL(file);
-      });
+      // Generate previews in order
+      const previews: string[] = [];
+      for (const file of newFiles) {
+        const preview = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+        previews.push(preview);
+      }
+      setImagePreviews(prev => [...prev, ...previews]);
     }
   };
 

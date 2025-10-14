@@ -55,21 +55,24 @@ export default function AddProduct() {
     },
   });
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
       // Limit to 5 images
       const newFiles = files.slice(0, 5 - imageFiles.length);
       setImageFiles(prev => [...prev, ...newFiles]);
       
-      // Generate previews
-      newFiles.forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreviews(prev => [...prev, reader.result as string]);
-        };
-        reader.readAsDataURL(file);
-      });
+      // Generate previews in order
+      const previews: string[] = [];
+      for (const file of newFiles) {
+        const preview = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+        previews.push(preview);
+      }
+      setImagePreviews(prev => [...prev, ...previews]);
     }
   };
 
