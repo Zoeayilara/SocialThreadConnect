@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Package, Plus, Edit, Trash2, ShoppingBag, ArrowLeft } from "lucide-react";
+import { Package, Plus, Edit, Trash2, ShoppingBag, ArrowLeft, Briefcase } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -116,13 +116,23 @@ export default function VendorProducts() {
               </div>
             </div>
             {isOwnProducts && (
-              <Button
-                onClick={() => setLocation('/add-product')}
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Product
-              </Button>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => setLocation('/vendor-services')}
+                  variant="outline"
+                  className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                >
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  My Services
+                </Button>
+                <Button
+                  onClick={() => setLocation('/add-product')}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Product
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -137,15 +147,25 @@ export default function VendorProducts() {
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">No Products Yet</h2>
             <p className="text-gray-400 mb-6 max-w-md">
-              Start building your product catalog by adding your first product
+              Start building your product catalog or showcase your services
             </p>
-            <Button
-              onClick={() => setLocation('/add-product')}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Your First Product
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={() => setLocation('/add-product')}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Product
+              </Button>
+              <Button
+                onClick={() => setLocation('/add-service')}
+                variant="outline"
+                className="border-purple-500 text-purple-400 hover:bg-purple-500/10"
+              >
+                <Briefcase className="w-4 h-4 mr-2" />
+                Render a Service
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

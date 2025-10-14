@@ -44,6 +44,7 @@ export default function AddProduct() {
       queryClient.invalidateQueries({ queryKey: ['vendorProducts'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       toast({ title: "Product created successfully!" });
+      window.history.replaceState(null, '', '/vendor-products');
       setLocation('/vendor-products');
     },
     onError: (error: any) => {
@@ -127,7 +128,7 @@ export default function AddProduct() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setLocation('/vendor-products')}
+              onClick={() => window.history.back()}
               className="text-gray-400 hover:text-white"
             >
               <ArrowLeft className="w-5 h-5" />
