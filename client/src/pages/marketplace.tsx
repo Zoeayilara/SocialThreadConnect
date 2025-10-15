@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingBag, Package, Search, Filter, ArrowLeft } from "lucide-react";
+import { ShoppingBag, Package, Search, Filter, ArrowLeft, Briefcase } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,11 +21,12 @@ import { useLocation } from "wouter";
 export default function Marketplace() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'products' | 'services'>('products');
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   // Fetch all products
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['products'],
     queryFn: async () => {
       const response = await authenticatedFetch('/api/products');
@@ -33,6 +34,18 @@ export default function Marketplace() {
       return response.json();
     },
   });
+
+  // Fetch all services
+  const { data: services = [], isLoading: servicesLoading } = useQuery({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const response = await authenticatedFetch('/api/services');
+      if (!response.ok) throw new Error('Failed to fetch services');
+      return response.json();
+    },
+  });
+
+  const isLoading = productsLoading || servicesLoading;
 
   // Filter products based on search and category
   const filteredProducts = products.filter((product: any) => {
@@ -42,8 +55,18 @@ export default function Marketplace() {
     return matchesSearch && matchesCategory;
   });
 
-  // Get unique categories
-  const categories = [...new Set(products.map((p: any) => p.category).filter(Boolean))];
+  // Filter services based on search and category
+  const filteredServices = services.filter((service: any) => {
+    const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         service.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = !selectedCategory || service.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Get unique categories based on active tab
+  const categories = activeTab === 'products'
+    ? [...new Set(products.map((p: any) => p.category).filter(Boolean))]
+    : [...new Set(services.map((s: any) => s.category).filter(Boolean))];
 
   const handleBuyNow = (product: any) => {
     toast({
@@ -87,9 +110,43 @@ export default function Marketplace() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold">Marketplace</h1>
-                <p className="text-sm text-gray-400">{filteredProducts.length} products available</p>
+                <p className="text-sm text-gray-400">
+                  {activeTab === 'products' 
+                    ? `${filteredProducts.length} products available` 
+                    : `${filteredServices.length} services available`}
+                </p>
               </div>
             </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex space-x-2 mb-4">
+            <Button
+              variant={activeTab === 'products' ? "default" : "outline"}
+              onClick={() => {
+                setActiveTab('products');
+                setSelectedCategory(null);
+              }}
+              className={activeTab === 'products' 
+                ? "bg-blue-500 hover:bg-blue-600" 
+                : "border-gray-700 text-gray-300 hover:bg-gray-800"}
+            >
+              <ShoppingBag className="w-4 h-4 mr-2" />
+              Products
+            </Button>
+            <Button
+              variant={activeTab === 'services' ? "default" : "outline"}
+              onClick={() => {
+                setActiveTab('services');
+                setSelectedCategory(null);
+              }}
+              className={activeTab === 'services' 
+                ? "bg-purple-500 hover:bg-purple-600" 
+                : "border-gray-700 text-gray-300 hover:bg-gray-800"}
+            >
+              <Briefcase className="w-4 h-4 mr-2" />
+              Services
+            </Button>
           </div>
 
           {/* Search Bar */}
@@ -97,7 +154,7 @@ export default function Marketplace() {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
               type="text"
-              placeholder="Search products..."
+              placeholder={activeTab === 'products' ? "Search products..." : "Search services..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-12 bg-gray-900 border-gray-700 text-white placeholder-gray-400 focus:border-blue-500"
@@ -132,21 +189,22 @@ export default function Marketplace() {
         </div>
       </div>
 
-      {/* Products Grid */}
+      {/* Content Grid */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {filteredProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
-              <Package className="w-12 h-12 text-gray-600" />
+        {activeTab === 'products' ? (
+          filteredProducts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
+                <Package className="w-12 h-12 text-gray-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">No Products Found</h2>
+              <p className="text-gray-400 mb-6 max-w-md">
+                {searchTerm || selectedCategory 
+                  ? "Try adjusting your search or filters" 
+                  : "No products available yet. Check back soon!"}
+              </p>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">No Products Found</h2>
-            <p className="text-gray-400 mb-6 max-w-md">
-              {searchTerm || selectedCategory 
-                ? "Try adjusting your search or filters" 
-                : "No products available yet. Check back soon!"}
-            </p>
-          </div>
-        ) : (
+          ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product: any, index: number) => (
               <Card 
@@ -278,6 +336,98 @@ export default function Marketplace() {
               </Card>
             ))}
           </div>
+          )
+        ) : (
+          // Services view
+          filteredServices.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
+                <Briefcase className="w-12 h-12 text-gray-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">No Services Found</h2>
+              <p className="text-gray-400 mb-6 max-w-md">
+                {searchTerm || selectedCategory 
+                  ? "Try adjusting your search or filters" 
+                  : "No services available yet. Check back soon!"}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredServices.map((service: any, index: number) => (
+                <Card 
+                  key={service.id} 
+                  className="bg-gray-900 border-gray-800 overflow-hidden hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10 group animate-in fade-in slide-in-from-bottom duration-300"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <CardContent className="p-0">
+                    {/* Service Logo */}
+                    <div className="relative aspect-video bg-gray-800 overflow-hidden">
+                      {service.logo_url ? (
+                        <img
+                          src={getImageUrl(service.logo_url)}
+                          alt={service.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Briefcase className="w-16 h-16 text-gray-600" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Service Info */}
+                    <div className="p-4 space-y-3">
+                      <div>
+                        <h3 className="font-semibold text-white text-lg mb-1 line-clamp-1 group-hover:text-purple-400 transition-colors">
+                          {service.name}
+                        </h3>
+                        {service.category && (
+                          <Badge variant="outline" className="border-purple-500 text-purple-400 text-xs">
+                            {service.category}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <p className="text-gray-400 text-sm line-clamp-3">
+                        {service.description}
+                      </p>
+
+                      {/* Vendor Info */}
+                      <div 
+                        className="flex items-center space-x-2 cursor-pointer hover:bg-gray-800/50 p-2 -mx-2 rounded-lg transition-colors"
+                        onClick={() => handleVendorClick(service.vendor_id)}
+                      >
+                        <Avatar className="w-6 h-6">
+                          <AvatarImage src={getImageUrl(service.vendorProfileImage)} />
+                          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-600 text-white text-xs">
+                            {service.vendorFirstName?.[0] || service.vendorEmail[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex items-center space-x-1">
+                          <span className="text-sm text-gray-400">
+                            {service.vendorFirstName && service.vendorLastName
+                              ? `${service.vendorFirstName} ${service.vendorLastName}`
+                              : service.vendorEmail.split('@')[0]}
+                          </span>
+                          {service.vendorIsVerified === 1 && (
+                            <VerificationBadge className="w-3 h-3" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Contact Button */}
+                      <Button
+                        onClick={() => setLocation(`/vendor-services/${service.vendor_id}`)}
+                        className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold transition-all duration-200"
+                      >
+                        View Details
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
         )}
       </div>
     </div>
