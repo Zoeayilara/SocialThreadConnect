@@ -314,6 +314,28 @@ async function runMigrations() {
         )
       `);
       console.log('✅ Ensured products table');
+
+      // services table for service providers
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS services (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          vendor_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT,
+          category TEXT,
+          logo_url TEXT,
+          contact_phone TEXT,
+          contact_email TEXT,
+          contact_whatsapp TEXT,
+          pricing_info TEXT,
+          availability TEXT,
+          location TEXT,
+          created_at INTEGER,
+          updated_at INTEGER,
+          FOREIGN KEY (vendor_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('✅ Ensured services table');
     } catch (e: any) {
       console.error('❌ Error ensuring base tables:', e.message);
     }
@@ -2470,6 +2492,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Edit individual message
+  app.put('/api/messages/:messageId', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUserId = req.userId as number;
+      const messageId = parseInt(req.params.messageId);
+      const { content } = req.body;
+
+      if (!content || !content.trim()) {
+        return res.status(400).json({ message: 'Content is required' });
+      }
+
+      // Check if message exists and belongs to current user
+      const message = sqlite.prepare(`
+        SELECT * FROM messages WHERE id = ? AND senderId = ?
+      `).get(messageId, currentUserId) as any;
+
+      if (!message) {
+        return res.status(404).json({ message: 'Message not found or unauthorized' });
+      }
+
+      // Only allow editing text messages (not messages with images)
+      if (message.imageUrl) {
+        return res.status(400).json({ message: 'Cannot edit messages with media' });
+      }
+
+      // Update the message
+      const updateResult = sqlite.prepare(`
+        UPDATE messages SET content = ? WHERE id = ?
+      `).run(content.trim(), messageId);
+
+      if (updateResult.changes === 0) {
+        return res.status(404).json({ message: 'Message not found' });
+      }
+
+      // Get updated message
+      const updatedMessage = sqlite.prepare(`
+        SELECT * FROM messages WHERE id = ?
+      `).get(messageId);
+
+      res.json(updatedMessage);
+    } catch (error) {
+      console.error('Error editing message:', error);
+      res.status(500).json({ message: 'Failed to edit message' });
+    }
+  });
+
   // Delete individual message
   app.delete('/api/messages/:messageId', isAuthenticated, async (req: any, res) => {
     try {
@@ -2758,6 +2826,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting product:', error);
       res.status(500).json({ message: 'Failed to delete product' });
+    }
+  });
+
+  // ==================== SERVICES ENDPOINTS ====================
+
+  // Get all services
+  app.get('/api/services', async (req, res) => {
+    try {
+      const services = sqlite.prepare(`
+        SELECT 
+          s.*,
+          u.first_name as vendorFirstName,
+          u.last_name as vendorLastName,
+          u.email as vendorEmail,
+          u.profile_image_url as vendorProfileImage,
+          u.is_verified as vendorIsVerified
+        FROM services s
+        JOIN users u ON s.vendor_id = u.id
+        ORDER BY s.created_at DESC
+      `).all();
+
+      res.json(services);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      res.status(500).json({ message: 'Failed to fetch services' });
+    }
+  });
+
+  // Get vendor's services
+  app.get('/api/services/vendor/:vendorId', async (req, res) => {
+    try {
+      const vendorId = parseInt(req.params.vendorId);
+      
+      const services = sqlite.prepare(`
+        SELECT * FROM services
+        WHERE vendor_id = ?
+        ORDER BY created_at DESC
+      `).all(vendorId);
+
+      res.json(services);
+    } catch (error) {
+      console.error('Error fetching vendor services:', error);
+      res.status(500).json({ message: 'Failed to fetch vendor services' });
+    }
+  });
+
+  // Create service (vendors only)
+  app.post('/api/services', isAuthenticated, upload.single('serviceLogo'), async (req: any, res) => {
+    try {
+      const userId = req.userId as number;
+      
+      // Check if user is a vendor
+      const user = sqlite.prepare('SELECT user_type FROM users WHERE id = ?').get(userId) as any;
+      if (user.user_type !== 'vendor') {
+        return res.status(403).json({ message: 'Only vendors can create services' });
+      }
+
+      const { name, description, category, contactPhone, contactEmail, contactWhatsapp, pricingInfo, availability, location } = req.body;
+      
+      let logoUrl: string | null = null;
+      if (req.file) {
+        const fileName = `service-${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${req.file.originalname.split('.').pop()}`;
+        const uploadsDir = process.env.NODE_ENV === 'production' 
+          ? '/data/uploads' 
+          : path.join(__dirname, '../uploads');
+        const filePath = path.join(uploadsDir, fileName);
+        
+        // Ensure uploads directory exists
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(filePath, req.file.buffer);
+        logoUrl = `${getBaseUrl()}/uploads/${fileName}`;
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      
+      const result = sqlite.prepare(`
+        INSERT INTO services (vendor_id, name, description, category, logo_url, contact_phone, contact_email, contact_whatsapp, pricing_info, availability, location, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(userId, name, description, category, logoUrl, contactPhone, contactEmail, contactWhatsapp, pricingInfo, availability, location, now, now);
+
+      const service = sqlite.prepare('SELECT * FROM services WHERE id = ?').get(result.lastInsertRowid);
+      
+      res.json(service);
+    } catch (error) {
+      console.error('Error creating service:', error);
+      res.status(500).json({ message: 'Failed to create service' });
+    }
+  });
+
+  // Update service (owner only)
+  app.put('/api/services/:id', isAuthenticated, upload.single('serviceLogo'), async (req: any, res) => {
+    try {
+      const userId = req.userId as number;
+      const serviceId = parseInt(req.params.id);
+      
+      // Check if service exists and user is owner
+      const service = sqlite.prepare('SELECT vendor_id, logo_url FROM services WHERE id = ?').get(serviceId) as any;
+      if (!service) {
+        return res.status(404).json({ message: 'Service not found' });
+      }
+      if (service.vendor_id !== userId) {
+        return res.status(403).json({ message: 'Not authorized to update this service' });
+      }
+
+      const { name, description, category, contactPhone, contactEmail, contactWhatsapp, pricingInfo, availability, location } = req.body;
+      
+      let logoUrl = req.body.logoUrl || service.logo_url;
+      if (req.file) {
+        const fileName = `service-${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${req.file.originalname.split('.').pop()}`;
+        const uploadsDir = process.env.NODE_ENV === 'production' 
+          ? '/data/uploads' 
+          : path.join(__dirname, '../uploads');
+        const filePath = path.join(uploadsDir, fileName);
+        
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(filePath, req.file.buffer);
+        logoUrl = `${getBaseUrl()}/uploads/${fileName}`;
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      
+      sqlite.prepare(`
+        UPDATE services 
+        SET name = ?, description = ?, category = ?, logo_url = ?, contact_phone = ?, contact_email = ?, contact_whatsapp = ?, pricing_info = ?, availability = ?, location = ?, updated_at = ?
+        WHERE id = ?
+      `).run(name, description, category, logoUrl, contactPhone, contactEmail, contactWhatsapp, pricingInfo, availability, location, now, serviceId);
+
+      const updatedService = sqlite.prepare('SELECT * FROM services WHERE id = ?').get(serviceId);
+      
+      res.json(updatedService);
+    } catch (error) {
+      console.error('Error updating service:', error);
+      res.status(500).json({ message: 'Failed to update service' });
+    }
+  });
+
+  // Delete service (owner only)
+  app.delete('/api/services/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId as number;
+      const serviceId = parseInt(req.params.id);
+      
+      // Check if service exists and user is owner
+      const service = sqlite.prepare('SELECT vendor_id FROM services WHERE id = ?').get(serviceId) as any;
+      if (!service) {
+        return res.status(404).json({ message: 'Service not found' });
+      }
+      if (service.vendor_id !== userId) {
+        return res.status(403).json({ message: 'Not authorized to delete this service' });
+      }
+
+      sqlite.prepare('DELETE FROM services WHERE id = ?').run(serviceId);
+      
+      res.json({ message: 'Service deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      res.status(500).json({ message: 'Failed to delete service' });
     }
   });
 

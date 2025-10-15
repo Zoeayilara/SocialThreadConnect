@@ -35,6 +35,8 @@ import Marketplace from './pages/marketplace';
 import VendorProducts from './pages/vendor-products';
 import AddProduct from './pages/add-product';
 import EditProduct from './pages/edit-product';
+import VendorServices from './pages/vendor-services';
+import AddService from './pages/add-service';
 
 function AppContent() {
   const { user, isLoggingOut, isAuthenticating, isLoading } = useAuth();
@@ -113,6 +115,9 @@ function AppContent() {
           <Route path="/vendor-products/:vendorId" component={VendorProducts} />
           <Route path="/add-product" component={AddProduct} />
           <Route path="/edit-product/:id" component={EditProduct} />
+          <Route path="/vendor-services" component={VendorServices} />
+          <Route path="/vendor-services/:vendorId" component={VendorServices} />
+          <Route path="/add-service" component={AddService} />
         </>
       )}
       <Route component={NotFound} />

@@ -65,6 +65,8 @@ export default function Messages({ directUserId }: MessagesProps) {
   const [isTyping, setIsTyping] = useState(false);
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [imageToEdit, setImageToEdit] = useState<File | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editingMessageText, setEditingMessageText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasScrolledToBottom = useRef<number | null>(null);
@@ -339,6 +341,28 @@ export default function Messages({ directUserId }: MessagesProps) {
     }
   });
 
+  // Edit message mutation
+  const editMessageMutation = useMutation({
+    mutationFn: async ({ messageId, content }: { messageId: number; content: string }) => {
+      const response = await authenticatedFetch(`/api/messages/${messageId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+      if (!response.ok) throw new Error('Failed to edit message');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', selectedUser?.id] });
+      toast({ title: "Message updated successfully" });
+      setEditingMessageId(null);
+      setEditingMessageText("");
+    },
+    onError: () => {
+      toast({ title: "Failed to update message", variant: "destructive" });
+    }
+  });
+
   // Delete conversation mutation
   const deleteConversationMutation = useMutation({
     mutationFn: async (otherUserId: number) => {
@@ -416,6 +440,25 @@ export default function Messages({ directUserId }: MessagesProps) {
 
   const handleDeleteMessage = (messageId: number) => {
     deleteMessageMutation.mutate(messageId);
+  };
+
+  const handleEditMessage = (messageId: number, currentContent: string) => {
+    setEditingMessageId(messageId);
+    setEditingMessageText(currentContent);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingMessageId || !editingMessageText.trim()) return;
+    
+    editMessageMutation.mutate({
+      messageId: editingMessageId,
+      content: editingMessageText.trim()
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingMessageText("");
   };
 
   const handleEmojiSelect = (emoji: string) => {
@@ -667,6 +710,15 @@ export default function Messages({ directUserId }: MessagesProps) {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="bg-gray-900/95 backdrop-blur-xl border-gray-700/50 shadow-xl">
+                                  {message.content && messageFiles.length === 0 && (
+                                    <DropdownMenuItem 
+                                      onClick={() => handleEditMessage(message.id, message.content)}
+                                      className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 cursor-pointer transition-colors duration-200"
+                                    >
+                                      <Edit3 className="w-4 h-4 mr-2" />
+                                      Edit Message
+                                    </DropdownMenuItem>
+                                  )}
                                   <DropdownMenuItem 
                                     onClick={() => handleDeleteMessage(message.id)}
                                     className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer transition-colors duration-200"
@@ -697,7 +749,43 @@ export default function Messages({ directUserId }: MessagesProps) {
                             </div>
                           )}
                           {message.content && (
-                            <p className="text-sm leading-relaxed">{message.content}</p>
+                            editingMessageId === message.id ? (
+                              <div className="space-y-2">
+                                <Input
+                                  value={editingMessageText}
+                                  onChange={(e) => setEditingMessageText(e.target.value)}
+                                  className="bg-gray-800 border-gray-700 text-white"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                      e.preventDefault();
+                                      handleSaveEdit();
+                                    } else if (e.key === 'Escape') {
+                                      handleCancelEdit();
+                                    }
+                                  }}
+                                />
+                                <div className="flex items-center space-x-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={handleSaveEdit}
+                                    className="bg-blue-500 hover:bg-blue-600"
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={handleCancelEdit}
+                                    className="text-gray-400 hover:text-white"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm leading-relaxed">{message.content}</p>
+                            )
                           )}
                           {messageFiles.length > 0 && (
                             <div className="mt-3 space-y-3">
