@@ -50,13 +50,12 @@ export default function EditService() {
   const [existingLogo, setExistingLogo] = useState<string | null>(null);
 
   // Fetch service data
-  const { data: service, isLoading } = useQuery({
+  const { data: service, isLoading, isError } = useQuery({
     queryKey: ['service', serviceId],
     queryFn: async () => {
-      const response = await authenticatedFetch(`/api/services/vendor/${serviceId}`);
+      const response = await authenticatedFetch(`/api/services/${serviceId}`);
       if (!response.ok) throw new Error('Failed to fetch service');
-      const services = await response.json();
-      return services.find((s: any) => s.id === parseInt(serviceId!));
+      return response.json();
     },
     enabled: !!serviceId,
   });
@@ -178,6 +177,24 @@ export default function EditService() {
         <div className="text-center">
           <Briefcase className="w-16 h-16 text-purple-500 animate-pulse mx-auto mb-4" />
           <p className="text-gray-400">Loading service...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !service) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <Briefcase className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Service Not Found</h2>
+          <p className="text-gray-400 mb-6">Unable to load service details</p>
+          <Button
+            onClick={() => window.history.back()}
+            className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+          >
+            Go Back
+          </Button>
         </div>
       </div>
     );

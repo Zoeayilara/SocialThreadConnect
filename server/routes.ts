@@ -2854,6 +2854,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single service by ID
+  app.get('/api/services/:id', async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      
+      const service = sqlite.prepare(`
+        SELECT * FROM services
+        WHERE id = ?
+      `).get(serviceId);
+
+      if (!service) {
+        return res.status(404).json({ message: 'Service not found' });
+      }
+
+      res.json(service);
+    } catch (error) {
+      console.error('Error fetching service:', error);
+      res.status(500).json({ message: 'Failed to fetch service' });
+    }
+  });
+
   // Get vendor's services
   app.get('/api/services/vendor/:vendorId', async (req, res) => {
     try {
