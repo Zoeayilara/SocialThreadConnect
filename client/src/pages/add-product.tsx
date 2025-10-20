@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Upload, X, Package, DollarSign, Tag, Boxes } from "lucide-react";
+import { ArrowLeft, Upload, X, Package, Boxes, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -230,7 +230,7 @@ export default function AddProduct() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="price" className="text-white mb-2 flex items-center">
-                    <DollarSign className="w-4 h-4 mr-2" />
+                    <span className="text-green-500 font-bold mr-2">₦</span>
                     Price *
                   </Label>
                   <Input
