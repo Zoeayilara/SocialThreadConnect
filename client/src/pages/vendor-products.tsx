@@ -147,25 +147,15 @@ export default function VendorProducts() {
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">No Products Yet</h2>
             <p className="text-gray-400 mb-6 max-w-md">
-              Start building your product catalog or showcase your services
+              Start building your product catalog by adding your first product
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={() => setLocation('/add-product')}
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Product
-              </Button>
-              <Button
-                onClick={() => setLocation('/add-service')}
-                variant="outline"
-                className="border-purple-500 text-purple-400 hover:bg-purple-500/10"
-              >
-                <Briefcase className="w-4 h-4 mr-2" />
-                Render a Service
-              </Button>
-            </div>
+            <Button
+              onClick={() => setLocation('/add-product')}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Your First Product
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -263,7 +253,7 @@ export default function VendorProducts() {
                     {/* Price & Stock */}
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-2xl font-bold text-blue-400">
-                        ${product.price}
+                        ₦{product.price}
                       </span>
                       <Badge variant="outline" className={product.stock > 0 ? "border-green-500 text-green-500" : "border-red-500 text-red-500"}>
                         Stock: {product.stock}

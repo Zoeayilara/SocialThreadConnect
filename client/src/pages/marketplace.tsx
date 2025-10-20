@@ -279,7 +279,7 @@ export default function Marketplace() {
                     {/* Price */}
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-2xl font-bold text-blue-400">
-                        ${product.price}
+                        ₦{product.price}
                       </span>
                       {product.stock > 0 && product.stock < 10 && (
                         <Badge variant="outline" className="border-orange-500 text-orange-500">

@@ -302,7 +302,7 @@ export default function AddService() {
                   id="pricingInfo"
                   value={formData.pricingInfo}
                   onChange={(e) => setFormData({ ...formData, pricingInfo: e.target.value })}
-                  placeholder="e.g., Starting from $50, Hourly rate: $30"
+                  placeholder="e.g., Starting from ₦50,000, Hourly rate: ₦30,000"
                   className="bg-gray-800 border-gray-700 text-white"
                 />
               </div>
