@@ -147,15 +147,19 @@ export default function VendorProducts() {
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">No Products Yet</h2>
             <p className="text-gray-400 mb-6 max-w-md">
-              Start building your product catalog by adding your first product
+              {isOwnProducts 
+                ? "Start building your product catalog by adding your first product"
+                : "This vendor hasn't added any products yet"}
             </p>
-            <Button
-              onClick={() => setLocation('/add-product')}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Your First Product
-            </Button>
+            {isOwnProducts && (
+              <Button
+                onClick={() => setLocation('/add-product')}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Product
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
