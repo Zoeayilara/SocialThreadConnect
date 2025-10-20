@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Briefcase, Plus, Edit, Trash2, ArrowLeft, Phone, Mail, MessageCircle, MapPin, Clock, DollarSign, Package } from "lucide-react";
+import { Briefcase, Plus, Edit, Trash2, ArrowLeft, Phone, Mail, MessageCircle, MapPin, Clock, Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -286,7 +286,7 @@ export default function VendorServices() {
                     <div className="space-y-1 pt-2">
                       {service.pricing_info && (
                         <div className="flex items-center space-x-2 text-sm text-gray-400">
-                          <DollarSign className="w-4 h-4 text-green-500" />
+                          <div className="w-4 h-4 flex items-center justify-center text-green-500 font-bold text-sm">₦</div>
                           <span>{service.pricing_info}</span>
                         </div>
                       )}
