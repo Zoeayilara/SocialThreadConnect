@@ -2858,11 +2858,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/services/:id', async (req, res) => {
     try {
       const serviceId = parseInt(req.params.id);
+      console.log('Fetching service with ID:', serviceId);
+      
+      // Skip if the id is 'vendor' (route conflict)
+      if (req.params.id === 'vendor') {
+        return res.status(400).json({ message: 'Invalid service ID' });
+      }
       
       const service = sqlite.prepare(`
         SELECT * FROM services
         WHERE id = ?
       `).get(serviceId);
+
+      console.log('Service found:', service);
 
       if (!service) {
         return res.status(404).json({ message: 'Service not found' });

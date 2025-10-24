@@ -97,7 +97,7 @@ export default function VendorProducts() {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-black/95 backdrop-blur-sm border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-3">
               <Button
                 variant="ghost"
@@ -115,19 +115,19 @@ export default function VendorProducts() {
                 <p className="text-sm text-gray-400">{products.length} products</p>
               </div>
             </div>
-            {isOwnProducts && (
-              <div className="flex space-x-2">
+            {isOwnProducts && products.length > 0 && (
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <Button
                   onClick={() => setLocation('/vendor-services')}
                   variant="outline"
-                  className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                  className="border-gray-700 text-gray-300 hover:bg-gray-800 w-full sm:w-auto"
                 >
                   <Briefcase className="w-4 h-4 mr-2" />
                   My Services
                 </Button>
                 <Button
                   onClick={() => setLocation('/add-product')}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 w-full sm:w-auto"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Product
