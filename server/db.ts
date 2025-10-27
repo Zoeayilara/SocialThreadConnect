@@ -59,6 +59,18 @@ sqlite.exec(`
   )
 `);
 
+// Add theme column to users table if it doesn't exist
+try {
+  sqlite.exec(`ALTER TABLE users ADD COLUMN theme TEXT DEFAULT 'dark'`);
+  console.log('✅ Theme column added to users table');
+} catch (error: any) {
+  if (error.message.includes('duplicate column name')) {
+    console.log('✅ Theme column already exists');
+  } else {
+    console.error('Error adding theme column:', error);
+  }
+}
+
 export const db = drizzle(sqlite, { schema });
 
 // Create session store using SQLite for persistence
