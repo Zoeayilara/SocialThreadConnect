@@ -164,19 +164,19 @@ export default function EditProduct() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
         <div className="text-center">
           <Package className="w-16 h-16 text-blue-500 animate-pulse mx-auto mb-4" />
-          <p className="text-gray-400">Loading product...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading product...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-20">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white pb-20">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-black/95 backdrop-blur-sm border-b border-gray-800">
+      <div className="sticky top-0 z-10 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center space-x-4">
             <Button
@@ -312,7 +312,7 @@ export default function EditProduct() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="price" className="text-white mb-2 block">
-                    Price ($) *
+                    Price (₦) *
                   </Label>
                   <Input
                     id="price"

@@ -35,6 +35,7 @@ export const users = sqliteTable("users", {
   password: text("password"),
   userType: text("user_type").notNull(), // 'vendor', 'customer', or 'admin'
   isVerified: integer("is_verified").default(0), // 0 = false, 1 = true
+  theme: text("theme").default("dark"), // 'light' or 'dark'
   createdAt: integer("created_at"),
   updatedAt: integer("updated_at"),
 });

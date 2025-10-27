@@ -667,10 +667,10 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Show loading spinner while profile is loading
   if (isProfileLoading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading profile...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading profile...</p>
         </div>
       </div>
     );
@@ -679,20 +679,22 @@ export default function Profile({ onBack, userId }: ProfileProps) {
   // Show error message only if there's an actual error (not during loading)
   if (profileError || (!profileUser && profileUserId && !isProfileLoading)) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white flex items-center justify-center">
         <div className="text-center">
           <FoxLogo size={60} className="mx-auto mb-4 opacity-50" />
           <p className="text-red-400 mb-2">Profile not found</p>
-          <p className="text-gray-500 text-sm">This user may not exist or may have been removed.</p>
+          <Button onClick={() => window.history.back()} variant="outline" className="mt-4">
+            Go Back
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
       {/* Header */}
-      <div className="border-b sticky top-0 z-30 bg-black/95 backdrop-blur-sm border-gray-800">
+      <div className="border-b sticky top-0 z-30 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-gray-200 dark:border-gray-800">
         <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-400 hover:text-white p-2">

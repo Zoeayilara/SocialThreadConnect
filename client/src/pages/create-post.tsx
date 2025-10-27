@@ -189,9 +189,9 @@ export default function CreatePost() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-black/95 backdrop-blur-sm border-b border-gray-800/50">
+      <div className="sticky top-0 z-50 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800/50">
         <div className="flex items-center justify-between p-4 max-w-2xl mx-auto">
           <div className="flex items-center space-x-4">
             <Button 

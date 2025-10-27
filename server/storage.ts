@@ -632,7 +632,7 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async updateUserProfile(userId: number, profileData: { firstName?: string; lastName?: string; bio?: string; link?: string; isPrivate?: boolean; university?: string }): Promise<void> {
+  async updateUserProfile(userId: number, profileData: { firstName?: string; lastName?: string; bio?: string; link?: string; isPrivate?: boolean; university?: string; theme?: string }): Promise<void> {
     // Convert boolean to integer for SQLite compatibility
     const sqliteData = {
       ...profileData,

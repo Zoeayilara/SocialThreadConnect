@@ -1848,7 +1848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/users/profile', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.userId as number;
-      const { firstName, lastName, bio, link, university, isPrivate } = req.body;
+      const { firstName, lastName, bio, link, university, isPrivate, theme } = req.body;
       
       await storage.updateUserProfile(userId, {
         firstName,
@@ -1856,7 +1856,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bio,
         link,
         university,
-        isPrivate
+        isPrivate,
+        theme
       });
       
       res.json({ message: "Profile updated successfully" });

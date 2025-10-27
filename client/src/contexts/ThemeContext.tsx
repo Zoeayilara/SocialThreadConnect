@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { authenticatedFetch } from '@/utils/api';
 
 type Theme = 'light' | 'dark';
 
@@ -10,11 +12,17 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    return savedTheme || 'dark';
-  });
+  const { user } = useAuth();
+  const [theme, setTheme] = useState<Theme>('dark');
 
+  // Load theme from user profile when user changes
+  useEffect(() => {
+    if (user?.theme) {
+      setTheme(user.theme as Theme);
+    }
+  }, [user]);
+
+  // Apply theme to document
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'light') {
@@ -24,11 +32,26 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.remove('light');
       root.classList.add('dark');
     }
-    localStorage.setItem('theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  const toggleTheme = async () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    
+    // Save to backend
+    if (user) {
+      try {
+        await authenticatedFetch('/api/users/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ theme: newTheme }),
+        });
+      } catch (error) {
+        console.error('Failed to save theme preference:', error);
+        // Revert on error
+        setTheme(theme);
+      }
+    }
   };
 
   return (

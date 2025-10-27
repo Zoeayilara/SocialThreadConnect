@@ -575,13 +575,13 @@ export default function CustomerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
       {/* Header mimicking Threads */}
-      <div className="border-b sticky top-0 z-30 bg-black/95 backdrop-blur-sm border-gray-800">
+      <div className="border-b sticky top-0 z-30 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-gray-200 dark:border-gray-800">
         <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <FoxLogo size={28} />
-            <h1 className="text-lg font-bold text-white">SocialConnect</h1>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">SocialConnect</h1>
           </div>
           <div className="flex items-center space-x-3">
             {user?.userType === 'admin' && (
@@ -757,7 +757,7 @@ export default function CustomerDashboard() {
                     ) : (
                       <>
                         {post.content && (
-                          <p className="text-white mt-2 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+                          <p className="text-white mt-2 whitespace-pre-line break-words leading-relaxed">{post.content}</p>
                         )}
                       </>
                     )}

@@ -297,7 +297,7 @@ export default function Social() {
   // Remove loading spinner for posts - let content load naturally
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-3 flex items-center justify-between">
@@ -508,7 +508,7 @@ export default function Social() {
               ) : (
                 <>
                   {post.content && (
-                    <p className="text-lg mb-4 whitespace-pre-wrap">{post.content}</p>
+                    <p className="text-lg mb-4 whitespace-pre-line break-words leading-relaxed">{post.content}</p>
                   )}
                   {/* Media display with carousel support */}
                   {(post.mediaUrl || post.imageUrl) && (() => {
@@ -611,7 +611,7 @@ export default function Social() {
               )}
 
               {/* Actions */}
-              <div className="flex items-center justify-start gap-6 pt-3 border-t border-gray-800">
+              <div className="border-b sticky top-0 z-30 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-gray-200 dark:border-gray-800">
                 <AnimatedLikeButton
                   isLiked={post.isLiked || false}
                   likesCount={post.likesCount}

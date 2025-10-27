@@ -13,6 +13,7 @@ interface User {
   userType: string;
   profileImageUrl?: string | null;
   isVerified?: boolean;
+  theme?: string;
 }
 
 interface LoginData {

@@ -173,10 +173,10 @@ export default function EditService() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
         <div className="text-center">
           <Briefcase className="w-16 h-16 text-purple-500 animate-pulse mx-auto mb-4" />
-          <p className="text-gray-400">Loading service...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading service...</p>
         </div>
       </div>
     );
@@ -184,11 +184,11 @@ export default function EditService() {
 
   if (isError || !service) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
         <div className="text-center">
           <Briefcase className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Service Not Found</h2>
-          <p className="text-gray-400 mb-6">Unable to load service details</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Service Not Found</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">Unable to load service details</p>
           <Button
             onClick={() => window.history.back()}
             className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
@@ -201,9 +201,9 @@ export default function EditService() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-20">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white pb-20">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-black/95 backdrop-blur-sm border-b border-gray-800">
+      <div className="sticky top-0 z-10 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center space-x-4">
             <Button

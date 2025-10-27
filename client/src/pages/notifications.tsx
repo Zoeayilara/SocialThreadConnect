@@ -53,10 +53,10 @@ export default function Notifications({ onBack }: NotificationProps) {
 
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
       <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl">
         {/* Header */}
-        <div className="sticky top-0 bg-black/80 backdrop-blur-md border-b border-gray-800 p-4">
+        <div className="sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 p-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-400 hover:text-white p-2">
               <ArrowLeft className="w-5 h-5" />

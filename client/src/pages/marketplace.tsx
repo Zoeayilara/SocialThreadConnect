@@ -81,21 +81,21 @@ export default function Marketplace() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
         <div className="text-center">
           <Package className="w-16 h-16 text-blue-500 animate-pulse mx-auto mb-4" />
-          <p className="text-gray-400">Loading marketplace...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading marketplace...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-20">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white pb-20">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-black/95 backdrop-blur-sm border-b border-gray-800">
+      <div className="sticky top-0 z-10 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
             <div className="flex items-center space-x-3">
               <Button
                 variant="ghost"
@@ -120,7 +120,7 @@ export default function Marketplace() {
           </div>
 
           {/* Tabs */}
-          <div className="flex space-x-2 mb-4">
+          <div className="grid grid-cols-2 gap-2 mb-4">
             <Button
               variant={activeTab === 'products' ? "default" : "outline"}
               onClick={() => {
