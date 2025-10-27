@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { useEffect } from "react";
 import NotFound from './pages/not-found';
@@ -37,6 +38,7 @@ import AddProduct from './pages/add-product';
 import EditProduct from './pages/edit-product';
 import VendorServices from './pages/vendor-services';
 import AddService from './pages/add-service';
+import EditService from './pages/edit-service';
 
 function AppContent() {
   const { user, isLoggingOut, isAuthenticating, isLoading } = useAuth();
@@ -118,6 +120,7 @@ function AppContent() {
           <Route path="/vendor-services" component={VendorServices} />
           <Route path="/vendor-services/:vendorId" component={VendorServices} />
           <Route path="/add-service" component={AddService} />
+          <Route path="/edit-service/:id" component={EditService} />
         </>
       )}
       <Route component={NotFound} />
@@ -129,12 +132,14 @@ function AppContent() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <AppContent />
-          <Toaster />
-        </TooltipProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <AppContent />
+            <Toaster />
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
