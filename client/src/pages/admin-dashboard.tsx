@@ -150,19 +150,20 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
       {/* Header */}
-      <div className="border-b sticky top-0 z-30 bg-black/95 backdrop-blur-sm border-gray-800">
-        <div className="mx-auto w-full max-w-7xl px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <FoxLogo size={28} />
-            <h1 className="text-lg font-bold text-white">Admin Dashboard</h1>
-            <Badge variant="secondary" className="bg-red-600 text-white">
-              <Shield className="w-3 h-3 mr-1" />
-              Admin
-            </Badge>
-          </div>
-          <div className="flex items-center space-x-3">
+      <div className="border-b sticky top-0 z-30 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-gray-200 dark:border-gray-800">
+        <div className="mx-auto w-full max-w-7xl px-4 py-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-3">
+              <FoxLogo size={28} />
+              <h1 className="text-lg font-bold text-white">Admin Dashboard</h1>
+              <Badge variant="secondary" className="bg-red-600 text-white">
+                <Shield className="w-3 h-3 mr-1" />
+                Admin
+              </Badge>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button 
               variant="outline" 
               size="sm" 
@@ -199,6 +200,7 @@ export default function AdminDashboard() {
             >
               {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
             </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -274,15 +276,15 @@ export default function AdminDashboard() {
         {/* User Management Section */}
         <Card className="bg-gray-900 border-gray-700">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <CardTitle className="text-xl font-bold text-white">User Management</CardTitle>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
                 <Search className="w-4 h-4 text-gray-400" />
                 <Input
                   placeholder="Search users..."
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="w-64 bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
+                  className="w-full sm:w-64 bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -296,38 +298,38 @@ export default function AdminDashboard() {
               <>
                 <div className="space-y-4">
                   {usersData?.users?.map((adminUser: AdminUser) => (
-                    <div key={adminUser.id} className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700">
-                      <div className="flex items-center space-x-4">
-                        <Avatar className="w-12 h-12">
+                    <div key={adminUser.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+                      <div className="flex items-center space-x-4 w-full sm:w-auto">
+                        <Avatar className="w-12 h-12 flex-shrink-0">
                           <AvatarImage src={adminUser.profile_image_url ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${adminUser.profile_image_url}` : undefined} />
                           <AvatarFallback className="bg-gray-700 text-white">
                             {adminUser.first_name?.[0]}{adminUser.last_name?.[0]}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <h3 className="font-semibold text-white">{getUserDisplayName(adminUser)}</h3>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-semibold text-white truncate">{getUserDisplayName(adminUser)}</h3>
                             {adminUser.is_verified ? (
-                              <Badge variant="secondary" className="bg-blue-600 text-white">
+                              <Badge variant="secondary" className="bg-blue-600 text-white flex-shrink-0">
                                 <CheckCircle className="w-3 h-3 mr-1" />
                                 Verified
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="border-gray-600 text-gray-400">
+                              <Badge variant="outline" className="border-gray-600 text-gray-400 flex-shrink-0">
                                 Unverified
                               </Badge>
                             )}
-                            <Badge variant="outline" className="border-gray-600 text-gray-400 capitalize">
+                            <Badge variant="outline" className="border-gray-600 text-gray-400 capitalize flex-shrink-0">
                               {adminUser.user_type}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-400">{adminUser.email}</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-sm text-gray-400 truncate">{adminUser.email}</p>
+                          <p className="text-xs text-gray-500 truncate">
                             {adminUser.university} • Joined {formatDate(adminUser.created_at)}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 w-full sm:w-auto">
                         {adminUser.user_type !== 'admin' && (
                           <Button
                             onClick={() => handleVerifyUser(adminUser.id, !!adminUser.is_verified)}
@@ -362,13 +364,13 @@ export default function AdminDashboard() {
 
                 {/* Pagination */}
                 {usersData?.pagination && (
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-700">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-700">
                     <p className="text-sm text-gray-400">
                       Showing {((usersData.pagination.page - 1) * usersData.pagination.limit) + 1} to{' '}
                       {Math.min(usersData.pagination.page * usersData.pagination.limit, usersData.pagination.total)} of{' '}
                       {usersData.pagination.total} users
                     </p>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <Button
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
@@ -378,7 +380,7 @@ export default function AdminDashboard() {
                       >
                         Previous
                       </Button>
-                      <span className="text-sm text-gray-400">
+                      <span className="text-sm text-gray-400 whitespace-nowrap">
                         Page {usersData.pagination.page} of {usersData.pagination.totalPages}
                       </span>
                       <Button

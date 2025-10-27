@@ -147,9 +147,9 @@ export default function AdminAccountReports({ onBack }: AdminAccountReportsProps
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
       {/* Header */}
-      <div className="border-b border-gray-800 bg-black/95 backdrop-blur-sm sticky top-0 z-50">
+      <div className="border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-black/95 backdrop-blur-sm sticky top-0 z-50">
         <div className="mx-auto w-full max-w-6xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-400 hover:text-white p-2">

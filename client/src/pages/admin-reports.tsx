@@ -147,9 +147,9 @@ export default function AdminReports({ onBack }: AdminReportsProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p>Loading reports...</p>
         </div>
       </div>
@@ -157,9 +157,9 @@ export default function AdminReports({ onBack }: AdminReportsProps) {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
       {/* Header */}
-      <div className="border-b sticky top-0 z-30 bg-black/95 backdrop-blur-sm border-gray-800">
+      <div className="border-b sticky top-0 z-30 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-gray-200 dark:border-gray-800">
         <div className="mx-auto w-full max-w-4xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Button

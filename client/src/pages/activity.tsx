@@ -101,9 +101,9 @@ export default function Activity({ onBack }: ActivityProps) {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-gray-800">
+      <div className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
         <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-3 flex items-center space-x-3">
           <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-400 hover:text-white p-2">
             <ArrowLeft className="w-5 h-5" />
