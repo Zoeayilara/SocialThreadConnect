@@ -999,7 +999,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center space-x-2">
-                                <span className="font-semibold text-white">{getUserDisplayName(post.user)}</span>
+                                <span className="font-semibold text-gray-900 dark:text-white">{getUserDisplayName(post.user)}</span>
                                 {post.user.isVerified === 1 && (
                                   <VerificationBadge className="w-3.5 h-3.5" />
                                 )}
@@ -1080,7 +1080,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                 </div>
                               </div>
                             ) : (
-                              <p className="text-white mb-3">{post.content}</p>
+                              <p className="text-gray-900 dark:text-white mb-3">{post.content}</p>
                             )}
                             
                             {/* Media display with carousel */}
@@ -1375,7 +1375,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                               <AvatarFallback className="bg-gray-700 text-white">{post.user.firstName?.[0]}{post.user.lastName?.[0]}</AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-semibold text-white cursor-pointer hover:underline" onClick={() => handleProfileClick(post.user.id)}>
+                              <p className="font-semibold text-gray-900 dark:text-white cursor-pointer hover:underline" onClick={() => handleProfileClick(post.user.id)}>
                                 {post.user.firstName} {post.user.lastName}
                               </p>
                               <p className="text-sm text-gray-400">
@@ -1387,7 +1387,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                       </CardHeader>
                       <CardContent className="pt-0 px-0 pb-4">
                         <div className="px-6">
-                          <p className="text-white mb-3">{post.content}</p>
+                          <p className="text-gray-900 dark:text-white mb-3">{post.content}</p>
                         </div>
                         
                         {/* Render media from imageUrl: single URL or JSON array */}

@@ -21,9 +21,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 // Polling and timeout constants
-const CONVERSATIONS_POLL_INTERVAL = 3000; // 3 seconds
-const MESSAGES_POLL_INTERVAL = 3000; // 3 seconds
-const USER_DATA_REFRESH_INTERVAL = 30000; // 30 seconds
 const SCROLL_DEBOUNCE_DELAY = 150; // 150ms
 const INITIAL_SCROLL_DELAY = 100; // 100ms
 const SCROLL_BOTTOM_THRESHOLD = 20; // 20px from bottom
@@ -99,8 +96,8 @@ export default function Messages({ directUserId }: MessagesProps) {
     },
     enabled: !!selectedUser,
     staleTime: 0,
-    refetchInterval: MESSAGES_POLL_INTERVAL,
-    refetchIntervalInBackground: true,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true
   });
 
@@ -164,8 +161,8 @@ export default function Messages({ directUserId }: MessagesProps) {
       }
     };
 
-    // Refresh user data periodically
-    const interval = setInterval(refreshUserData, USER_DATA_REFRESH_INTERVAL);
+    // Refresh user data periodically (reduced frequency)
+    const interval = setInterval(refreshUserData, 60000); // 60 seconds instead of 30
     
     return () => clearInterval(interval);
   }, [selectedUser?.id, selectedUser?.isVerified]);
@@ -178,11 +175,11 @@ export default function Messages({ directUserId }: MessagesProps) {
       if (!response.ok) throw new Error('Failed to fetch conversations');
       return response.json();
     },
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 2000,
+    gcTime: 5000,
     refetchOnWindowFocus: true,
-    refetchInterval: CONVERSATIONS_POLL_INTERVAL,
-    refetchIntervalInBackground: true
+    refetchInterval: 10000,
+    refetchIntervalInBackground: false
   });
 
   
