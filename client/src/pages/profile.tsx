@@ -709,7 +709,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={() => setLocation('/vendor-products')}
+                  onClick={() => setLocation(isOwnProfile ? '/vendor-products' : `/vendor-products/${userId}`)}
                   className="text-gray-400 hover:text-white"
                 >
                   <ShoppingBag className="w-5 h-5" />
