@@ -595,10 +595,10 @@ export default function CustomerDashboard() {
                 View as Admin
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={() => setShowSearch(!showSearch)} className="text-gray-400 hover:text-white">
+            <Button variant="ghost" size="sm" onClick={() => setShowSearch(!showSearch)} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
               <Search className="w-5 h-5" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setLocation('/marketplace')} className="text-gray-400 hover:text-white">
+            <Button variant="ghost" size="sm" onClick={() => setLocation('/marketplace')} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
               <ShoppingBag className="w-5 h-5" />
             </Button>
             <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleUserClick()}>
@@ -612,13 +612,13 @@ export default function CustomerDashboard() {
       {/* Search Modal */}
       {showSearch && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-20">
-          <div className="bg-gray-900 rounded-lg w-full max-w-md mx-4 max-h-[500px] overflow-hidden">
-            <div className="p-4 border-b border-gray-700">
+          <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-md mx-4 max-h-[500px] overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <Input
                 placeholder="Search for users..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"
+                className="bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
                 autoFocus
               />
             </div>
@@ -713,7 +713,7 @@ export default function CustomerDashboard() {
 
         {/* Feed */}
         {posts.map((post: Post) => (
-          <Card key={post.id} data-post-id={post.id} className="overflow-hidden border-0 shadow-none bg-transparent border-b border-gray-800 rounded-none">
+          <Card key={post.id} data-post-id={post.id} className="overflow-hidden border-0 shadow-none bg-transparent border-b border-gray-200 dark:border-gray-800 rounded-none">
             <CardHeader className="pb-2 px-0">
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3">
@@ -934,7 +934,7 @@ export default function CustomerDashboard() {
                         placeholder="Write a comment..."
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
-                        className="rounded-r-none bg-gray-900 border-gray-700 text-white placeholder:text-gray-500"
+                        className="rounded-r-none bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-500"
                         onKeyPress={(e) => { if (e.key === 'Enter') { handleComment(post.id); } }}
                       />
                       <Button onClick={() => handleComment(post.id)} disabled={!newComment.trim() || commentMutation.isPending} className="rounded-l-none" size="sm">
@@ -993,7 +993,7 @@ export default function CustomerDashboard() {
                                   placeholder={`Reply to ${getUserDisplayName(comment.user)}...`}
                                   value={replyContent}
                                   onChange={(e) => setReplyContent(e.target.value)}
-                                  className="rounded-r-none bg-gray-800 border-gray-600 text-white placeholder:text-gray-500 text-sm"
+                                  className="rounded-r-none bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-500 text-sm"
                                   onKeyPress={(e) => { if (e.key === 'Enter') { handleComment(post.id, comment.id); } }}
                                 />
                                 <Button 
@@ -1053,7 +1053,7 @@ export default function CustomerDashboard() {
                                           placeholder={`Reply to ${getUserDisplayName(reply.user)}...`}
                                           value={replyContent}
                                           onChange={(e) => setReplyContent(e.target.value)}
-                                          className="rounded-r-none bg-gray-700 border-gray-600 text-white placeholder:text-gray-500 text-xs"
+                                          className="rounded-r-none bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-500 text-xs"
                                           onKeyPress={(e) => { if (e.key === 'Enter') { handleComment(post.id, comment.id); } }}
                                         />
                                         <Button 
@@ -1085,7 +1085,7 @@ export default function CustomerDashboard() {
           <Card className="border-0 shadow-none bg-transparent">
             <CardContent className="text-center py-12 px-0">
               <FoxLogo size={60} className="mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-semibold mb-2 text-white">No posts yet</h3>
+              <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">No posts yet</h3>
               <p className="text-gray-500">Be the first to share something.</p>
             </CardContent>
           </Card>
@@ -1093,17 +1093,17 @@ export default function CustomerDashboard() {
       </div>
 
       {/* Bottom Navbar */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-black/95 backdrop-blur-sm border-gray-800 shadow-2xl">
+      <div className="fixed bottom-0 left-0 right-0 border-t bg-white/95 dark:bg-black/95 backdrop-blur-sm border-gray-200 dark:border-gray-800 shadow-2xl">
         <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-3 flex items-center justify-between">
-          <Button variant="ghost" size="icon" className="text-white h-14 w-14 hover:bg-gray-800/50 transition-all duration-200"><span className="sr-only">Home</span><svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg></Button>
-          <Button variant="ghost" size="icon" onClick={() => setLocation('/messages')} className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200 relative">
+          <Button variant="ghost" size="icon" className="text-gray-900 dark:text-white h-14 w-14 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-all duration-200"><span className="sr-only">Home</span><svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg></Button>
+          <Button variant="ghost" size="icon" onClick={() => setLocation('/messages')} className="h-14 w-14 text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-all duration-200 relative">
             <span className="sr-only">MessageSquare</span>
             <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             <NotificationBadge count={unreadCount} />
           </Button>
           <Button variant="ghost" size="icon" className="bg-blue-600 hover:bg-blue-700 rounded-full h-16 w-16 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105" onClick={() => setLocation('/create-post')}><span className="sr-only">Create</span><svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></Button>
-          <Button variant="ghost" size="icon" className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200" onClick={() => setLocation('/activity')}><span className="sr-only">Activity</span><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></Button>
-          <Button variant="ghost" size="icon" className="h-14 w-14 text-gray-500 hover:text-white hover:bg-gray-800/50 transition-all duration-200" onClick={() => handleUserClick()}><span className="sr-only">User</span><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M6 20a6 6 0 0 1 12 0"/></svg></Button>
+          <Button variant="ghost" size="icon" className="h-14 w-14 text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-all duration-200" onClick={() => setLocation('/activity')}><span className="sr-only">Activity</span><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></Button>
+          <Button variant="ghost" size="icon" className="h-14 w-14 text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-all duration-200" onClick={() => handleUserClick()}><span className="sr-only">User</span><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M6 20a6 6 0 0 1 12 0"/></svg></Button>
         </div>
       </div>
 

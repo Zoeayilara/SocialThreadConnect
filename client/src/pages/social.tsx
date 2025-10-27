@@ -299,11 +299,11 @@ export default function Social() {
   return (
     <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
+      <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
         <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <FoxLogo size={32} />
-            <h1 className="text-xl font-bold">EntreeFox</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">EntreeFox</h1>
           </div>
           <div className="flex items-center space-x-3">
             {/* Navigation Links */}
@@ -329,7 +329,7 @@ export default function Social() {
 
       <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-6 space-y-6">
         {/* Create Post */}
-        <Card>
+        <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
           <CardContent className="pt-6">
             <div className="flex space-x-3">
               <Avatar>
@@ -343,7 +343,7 @@ export default function Social() {
                   placeholder="What's happening?"
                   value={newPost}
                   onChange={(e) => setNewPost(e.target.value)}
-                  className="min-h-[100px] border-none resize-none focus:ring-0 text-lg placeholder:text-gray-500"
+                  className="min-h-[100px] border-none resize-none focus:ring-0 text-lg text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 bg-transparent"
                 />
                 {selectedMedia.length > 0 && (
                   <div className="mt-3 grid grid-cols-2 gap-2">
@@ -408,7 +408,7 @@ export default function Social() {
 
         {/* Posts Feed */}
         {posts.map((post: Post) => (
-          <Card key={post.id} className="overflow-hidden">
+          <Card key={post.id} className="overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -420,7 +420,7 @@ export default function Social() {
                   </Avatar>
                   <div>
                     <p className="font-semibold">{getUserDisplayName(post.user)}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {formatRelativeTime(post.createdAt)}
                     </p>
                   </div>
@@ -508,7 +508,7 @@ export default function Social() {
               ) : (
                 <>
                   {post.content && (
-                    <p className="text-lg mb-4 whitespace-pre-line break-words leading-relaxed">{post.content}</p>
+                    <p className="text-lg mb-4 whitespace-pre-line break-words leading-relaxed text-gray-900 dark:text-white">{post.content}</p>
                   )}
                   {/* Media display with carousel support */}
                   {(post.mediaUrl || post.imageUrl) && (() => {
@@ -624,7 +624,7 @@ export default function Social() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowComments(showComments === post.id ? null : post.id)}
-                  className="text-gray-400 hover:text-gray-200 p-0 h-auto font-normal"
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 p-0 h-auto font-normal"
                 >
                   <MessageCircle className="w-5 h-5 mr-1" />
                   <span className="text-sm">{post.commentsCount}</span>
@@ -633,7 +633,7 @@ export default function Social() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-gray-400 hover:text-gray-200 p-0 h-auto font-normal"
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 p-0 h-auto font-normal"
                 >
                   <Share className="w-5 h-5" />
                 </Button>
@@ -683,18 +683,18 @@ export default function Social() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <div className="bg-gray-100 rounded-lg px-3 py-2">
+                        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2">
                           <div className="flex items-center space-x-1">
-                            <p className="font-semibold text-sm">
+                            <p className="font-semibold text-sm text-gray-900 dark:text-white">
                               {getUserDisplayName(comment.user)}
                             </p>
                             {comment.user.isVerified === 1 && (
                               <VerificationBadge className="w-3 h-3" />
                             )}
                           </div>
-                          <p className="text-sm">{comment.content}</p>
+                          <p className="text-sm text-gray-900 dark:text-white">{comment.content}</p>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 ml-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-3">
                           {formatRelativeTime(comment.createdAt)}
                         </p>
                       </div>
@@ -707,11 +707,11 @@ export default function Social() {
         ))}
 
         {posts.length === 0 && (
-          <Card>
+          <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
             <CardContent className="text-center py-12">
               <FoxLogo size={60} className="mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-semibold mb-2">Welcome to EntreeFox!</h3>
-              <p className="text-gray-600">Start sharing your thoughts with the community.</p>
+              <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Welcome to EntreeFox!</h3>
+              <p className="text-gray-600 dark:text-gray-400">Start sharing your thoughts with the community.</p>
             </CardContent>
           </Card>
         )}
