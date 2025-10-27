@@ -565,9 +565,9 @@ export default function Messages({ directUserId }: MessagesProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
+    <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-gray-900 dark:via-black dark:to-gray-900 text-gray-900 dark:text-white">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-black/90 backdrop-blur-xl border-b border-gray-700/50 shadow-lg">
+      <div className="sticky top-0 z-50 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-b border-gray-200 dark:border-gray-700/50 shadow-lg">
         <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Button 
@@ -583,7 +583,7 @@ export default function Messages({ directUserId }: MessagesProps) {
                 const dashboardPath = user?.userType === 'vendor' ? '/vendor-dashboard' : '/customer-dashboard';
                 setLocation(dashboardPath);
               }} 
-              className="text-gray-400 hover:text-white p-2 hover:bg-gray-800/50 rounded-full transition-all duration-200 hover:scale-105"
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded-full transition-all duration-200 hover:scale-105"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
@@ -612,7 +612,7 @@ export default function Messages({ directUserId }: MessagesProps) {
                 </div>
               </div>
             ) : (
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">{showSearch ? "New message" : "Messages"}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{showSearch ? "New message" : "Messages"}</h1>
             )}
           </div>
           {!showSearch && !selectedUser && (
@@ -620,7 +620,7 @@ export default function Messages({ directUserId }: MessagesProps) {
               variant="ghost" 
               size="sm" 
               onClick={() => setShowSearch(true)} 
-              className="text-gray-400 hover:text-white p-2 hover:bg-gray-800/50 rounded-full transition-all duration-200 hover:scale-105"
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded-full transition-all duration-200 hover:scale-105"
             >
               <Edit3 className="w-5 h-5" />
             </Button>
@@ -631,7 +631,7 @@ export default function Messages({ directUserId }: MessagesProps) {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="text-gray-400 hover:text-white p-2 hover:bg-gray-800/50 rounded-full transition-all duration-200 hover:scale-105"
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded-full transition-all duration-200 hover:scale-105"
                 >
                   <MoreHorizontal className="w-5 h-5" />
                 </Button>
@@ -754,7 +754,7 @@ export default function Messages({ directUserId }: MessagesProps) {
                                 <Input
                                   value={editingMessageText}
                                   onChange={(e) => setEditingMessageText(e.target.value)}
-                                  className="bg-gray-800 border-gray-700 text-white"
+                                  className="bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
                                   autoFocus
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {

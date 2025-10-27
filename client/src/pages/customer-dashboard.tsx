@@ -651,7 +651,7 @@ export default function CustomerDashboard() {
                         }}
                       >
                         <div className="flex items-center space-x-1">
-                          <p className="font-semibold text-white">{getUserDisplayName(searchUser)}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">{getUserDisplayName(searchUser)}</p>
                           {searchUser.isVerified === 1 && (
                             <VerificationBadge className="w-3.5 h-3.5" />
                           )}
@@ -703,7 +703,7 @@ export default function CustomerDashboard() {
               </Avatar>
               <div className="flex-1 cursor-pointer" onClick={() => setLocation('/create-post')}>
                 <div className="mb-1">
-                  <h3 className="text-white font-semibold text-lg">{getUserDisplayName(user)}</h3>
+                  <h3 className="text-gray-900 dark:text-white font-semibold text-lg">{getUserDisplayName(user)}</h3>
                   <p className="text-gray-400 text-lg hover:text-gray-300 transition-colors">What's new?</p>
                 </div>
               </div>
@@ -723,18 +723,18 @@ export default function CustomerDashboard() {
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <p className="font-semibold text-white">{getUserDisplayName(post.user)}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{getUserDisplayName(post.user)}</p>
                       {post.user.isVerified === 1 && (
                         <VerificationBadge className="w-3.5 h-3.5" />
                       )}
-                      <p className="text-sm text-gray-500">{formatRelativeTime(post.createdAt)}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{formatRelativeTime(post.createdAt)}</p>
                     </div>
                     {editingPost === post.id ? (
                       <div className="mt-3">
                         <Textarea
                           value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
-                          className="min-h-[100px] mb-3 bg-gray-900 border-gray-700 text-white"
+                          className="min-h-[100px] mb-3 bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
                           placeholder="Edit your post..."
                         />
                         <div className="flex space-x-2">
@@ -757,7 +757,7 @@ export default function CustomerDashboard() {
                     ) : (
                       <>
                         {post.content && (
-                          <p className="text-white mt-2 whitespace-pre-line break-words leading-relaxed">{post.content}</p>
+                          <p className="text-gray-900 dark:text-white mt-2 whitespace-pre-line break-words leading-relaxed">{post.content}</p>
                         )}
                       </>
                     )}
@@ -765,7 +765,7 @@ export default function CustomerDashboard() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-white">
+                    <Button variant="ghost" size="sm" className="text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white">
                       <MoreHorizontal className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>

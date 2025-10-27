@@ -581,7 +581,7 @@ export default function VendorDashboard() {
         <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <FoxLogo size={28} />
-            <h1 className="text-lg font-bold text-white">VendorHub</h1>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">VendorHub</h1>
           </div>
           <div className="flex items-center space-x-3">
             {user?.userType === 'admin' && (
@@ -598,7 +598,7 @@ export default function VendorDashboard() {
             <Button variant="ghost" size="sm" onClick={() => setShowSearch(!showSearch)} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
               <Search className="w-5 h-5" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setLocation('/marketplace')} className="text-gray-400 hover:text-white">
+            <Button variant="ghost" size="sm" onClick={() => setLocation('/marketplace')} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
               <ShoppingBag className="w-5 h-5" />
             </Button>
             <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleUserClick()}>
@@ -651,7 +651,7 @@ export default function VendorDashboard() {
                         }}
                       >
                         <div className="flex items-center space-x-1">
-                          <p className="font-semibold text-white">{getUserDisplayName(searchUser)}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">{getUserDisplayName(searchUser)}</p>
                           {searchUser.isVerified === 1 && (
                             <VerificationBadge className="w-3.5 h-3.5" />
                           )}
@@ -703,7 +703,7 @@ export default function VendorDashboard() {
               </Avatar>
               <div className="flex-1 cursor-pointer" onClick={() => setLocation('/create-post')}>
                 <div className="mb-1">
-                  <h3 className="text-white font-semibold text-lg">{getUserDisplayName(user)}</h3>
+                  <h3 className="text-gray-900 dark:text-white font-semibold text-lg">{getUserDisplayName(user)}</h3>
                   <p className="text-gray-400 text-lg hover:text-gray-300 transition-colors">What's new?</p>
                 </div>
               </div>
@@ -723,7 +723,7 @@ export default function VendorDashboard() {
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <p className="font-semibold text-white">{getUserDisplayName(post.user)}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{getUserDisplayName(post.user)}</p>
                       {post.user.isVerified === 1 && (
                         <VerificationBadge className="w-3.5 h-3.5" />
                       )}
@@ -734,7 +734,7 @@ export default function VendorDashboard() {
                         <Textarea
                           value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
-                          className="min-h-[100px] mb-3 bg-gray-900 border-gray-700 text-white"
+                          className="min-h-[100px] mb-3 bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
                           placeholder="Edit your post..."
                         />
                         <div className="flex space-x-2">
@@ -757,7 +757,7 @@ export default function VendorDashboard() {
                     ) : (
                       <>
                         {post.content && (
-                          <p className="text-white mt-2 whitespace-pre-line break-words leading-relaxed">{post.content}</p>
+                          <p className="text-gray-900 dark:text-white mt-2 whitespace-pre-line break-words leading-relaxed">{post.content}</p>
                         )}
                       </>
                     )}
@@ -765,7 +765,7 @@ export default function VendorDashboard() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-white">
+                    <Button variant="ghost" size="sm" className="text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white">
                       <MoreHorizontal className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>

@@ -697,11 +697,11 @@ export default function Profile({ onBack, userId }: ProfileProps) {
       <div className="border-b sticky top-0 z-30 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-gray-200 dark:border-gray-800">
         <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-400 hover:text-white p-2">
+            <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2">
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-lg font-bold text-white">{getUserDisplayName(profileUser)}</h1>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">{getUserDisplayName(profileUser)}</h1>
               <p className="text-sm text-gray-400">{userPosts.length} posts</p>
             </div>
           </div>
@@ -726,7 +726,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                 <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700">
                   <DropdownMenuItem 
                     onClick={() => setLocation('/settings')}
-                    className="text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer"
+                    className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                   >
                     Settings
                   </DropdownMenuItem>
@@ -772,7 +772,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <div className="flex items-center space-x-2">
-                <h2 className="text-2xl font-bold text-white">{getUserDisplayName(profileUser)}</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{getUserDisplayName(profileUser)}</h2>
                 {profileUser.isVerified === 1 && (
                   <VerificationBadge className="w-5 h-5" />
                 )}
@@ -813,7 +813,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
           {/* Bio section */}
           <div className="space-y-2">
             {profileUser.bio && (
-              <p className="text-white">{profileUser.bio}</p>
+              <p className="text-gray-900 dark:text-white">{profileUser.bio}</p>
             )}
             {profileUser.link && (
               <a 
@@ -834,19 +834,19 @@ export default function Profile({ onBack, userId }: ProfileProps) {
               <>
                 <Button 
                   variant="outline" 
-                  className="flex-1 bg-transparent border-gray-600 text-white hover:bg-gray-800"
+                  className="flex-1 bg-transparent border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
                   onClick={() => setShowEditProfile(true)}
                 >
                   Edit profile
                 </Button>
-                <Button variant="outline" className="flex-1 bg-transparent border-gray-600 text-white hover:bg-gray-800">
+                <Button variant="outline" className="flex-1 bg-transparent border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800">
                   Share profile
                 </Button>
               </>
             ) : (
               <>
                 <Button 
-                  className={`flex-1 ${followerData?.isFollowing ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-white text-black hover:bg-gray-200'}`}
+                  className={`flex-1 ${followerData?.isFollowing ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-700' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
                   onClick={() => followMutation.mutate({ userId: profileUserId!, isFollowing: !!followerData?.isFollowing })}
                   disabled={followMutation.isPending}
                 >
@@ -854,7 +854,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="flex-1 bg-transparent border-gray-600 text-white hover:bg-gray-800"
+                  className="flex-1 bg-transparent border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
                   onClick={() => setLocation(`/messages/${profileUserId}`)}
                 >
                   Message
@@ -871,7 +871,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
               onClick={() => setActiveTab('posts')}
               className={`flex-1 py-3 text-center font-medium ${
                 activeTab === 'posts'
-                  ? 'text-white border-b-2 border-white'
+                  ? 'text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white'
                   : 'text-gray-400 hover:text-gray-300'
               }`}
             >
@@ -881,7 +881,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
               onClick={() => setActiveTab('reposts')}
               className={`flex-1 py-3 text-center font-medium ${
                 activeTab === 'reposts'
-                  ? 'text-white border-b-2 border-white'
+                  ? 'text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white'
                   : 'text-gray-400 hover:text-gray-300'
               }`}
             >
@@ -903,7 +903,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                   <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Edit3 className="w-6 h-6 text-gray-400" />
                   </div>
-                  <h4 className="font-medium text-white mb-2">Create post</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Create post</h4>
                   <p className="text-sm text-gray-400 mb-3">Say what's on your mind or share a recent highlight.</p>
                   <Button 
                     size="sm" 
@@ -919,7 +919,7 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                   <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Camera className="w-6 h-6 text-gray-400" />
                   </div>
-                  <h4 className="font-medium text-white mb-2">Add profile photo</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Add profile photo</h4>
                   <p className="text-sm text-gray-400 mb-3">Make it easier for people to recognize you.</p>
                   <Button 
                     size="sm" 
@@ -938,9 +938,9 @@ export default function Profile({ onBack, userId }: ProfileProps) {
         {/* Create Post Modal */}
         {showCreatePost && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-gray-900 rounded-lg w-full max-w-md max-h-[80vh] overflow-hidden">
-              <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">Create Post</h3>
+            <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-md max-h-[80vh] overflow-hidden">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Create Post</h3>
                 <Button variant="ghost" size="sm" onClick={() => setShowCreatePost(false)}>
                   <Plus className="w-4 h-4 rotate-45" />
                 </Button>
