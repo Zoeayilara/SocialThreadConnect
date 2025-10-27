@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Briefcase, Plus, Edit, Trash2, ArrowLeft, Phone, Mail, MessageCircle, MapPin, Clock, Package } from "lucide-react";
+import { Briefcase, Plus, Edit, Trash2, ArrowLeft, Phone, Mail, MessageCircle, MapPin, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -85,10 +85,10 @@ export default function VendorServices() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
         <div className="text-center">
           <Briefcase className="w-16 h-16 text-blue-500 animate-pulse mx-auto mb-4" />
-          <p className="text-gray-400">Loading services...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading services...</p>
         </div>
       </div>
     );
@@ -96,21 +96,17 @@ export default function VendorServices() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="w-24 h-24 bg-red-900/20 rounded-full flex items-center justify-center mb-6 mx-auto">
+          <div className="w-24 h-24 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-6 mx-auto">
             <Briefcase className="w-12 h-12 text-red-500" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Error Loading Services</h2>
-          <p className="text-gray-400 mb-6 max-w-md mx-auto">
-            {error instanceof Error ? error.message : 'Failed to load services'}
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Failed to Load Services</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">Please try again later</p>
           <Button
             onClick={() => window.history.back()}
-            variant="outline"
-            className="border-gray-700 text-gray-300 hover:bg-gray-800"
+            className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
             Go Back
           </Button>
         </div>
@@ -119,11 +115,11 @@ export default function VendorServices() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-20">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white pb-20">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-black/95 backdrop-blur-sm border-b border-gray-800">
+      <div className="sticky top-0 z-10 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-3">
               <Button
                 variant="ghost"
@@ -142,23 +138,13 @@ export default function VendorServices() {
               </div>
             </div>
             {isOwnServices && (
-              <div className="flex space-x-2">
-                <Button
-                  onClick={() => setLocation('/vendor-products')}
-                  variant="outline"
-                  className="border-gray-700 text-gray-300 hover:bg-gray-800"
-                >
-                  <Package className="w-4 h-4 mr-2" />
-                  My Products
-                </Button>
-                <Button
-                  onClick={() => setLocation('/add-service')}
-                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Service
-                </Button>
-              </div>
+              <Button
+                onClick={() => setLocation('/add-service')}
+                className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 w-full sm:w-auto"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Service
+              </Button>
             )}
           </div>
         </div>
