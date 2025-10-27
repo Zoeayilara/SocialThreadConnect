@@ -596,7 +596,7 @@ export default function Messages({ directUserId }: MessagesProps) {
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="font-semibold text-white text-lg">
+                    <span className="font-semibold text-gray-900 dark:text-white text-lg">
                       {getUserDisplayName(selectedUser)}
                     </span>
                     {selectedUser.isVerified === 1 && (
@@ -664,7 +664,7 @@ export default function Messages({ directUserId }: MessagesProps) {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex items-center space-x-2 mb-2">
-                    <h3 className="text-xl font-semibold text-white">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                       {getUserDisplayName(selectedUser)}
                     </h3>
                     {selectedUser.isVerified === 1 && (

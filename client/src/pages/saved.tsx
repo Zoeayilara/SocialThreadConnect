@@ -276,11 +276,11 @@ const Saved = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => window.history.back()}
-                className="p-2 text-white hover:bg-gray-800"
+                className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <h1 className="text-xl font-semibold text-white">Saved</h1>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Saved</h1>
             </div>
           </div>
           <div className="px-4 py-4">
@@ -301,11 +301,11 @@ const Saved = () => {
               variant="ghost"
               size="sm"
               onClick={() => window.history.back()}
-              className="p-2 text-white hover:bg-gray-800"
+              className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-semibold text-white">Saved</h1>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Saved</h1>
           </div>
         </div>
 
@@ -316,7 +316,7 @@ const Saved = () => {
               <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
                 <Bookmark className="h-8 w-8 text-gray-400" />
               </div>
-              <h2 className="text-xl font-semibold text-white mb-2">No saved posts yet</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No saved posts yet</h2>
               <p className="text-gray-400 text-center max-w-sm">
                 When you save posts, they'll appear here so you can easily find them later.
               </p>
@@ -334,12 +334,12 @@ const Saved = () => {
                         </Avatar>
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
-                            <p className="font-semibold text-white">{getUserDisplayName(post.user)}</p>
+                            <p className="font-semibold text-gray-900 dark:text-white">{getUserDisplayName(post.user)}</p>
                             <p className="text-sm text-gray-500">{formatRelativeTime(post.createdAt)}</p>
                           </div>
                           <>
                             {post.content && (
-                              <p className="text-white mt-2 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+                              <p className="text-gray-900 dark:text-white mt-2 whitespace-pre-wrap leading-relaxed">{post.content}</p>
                             )}
                             {post.mediaUrl && (
                               <div className="mt-3">
@@ -363,7 +363,7 @@ const Saved = () => {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-white">
+                          <Button variant="ghost" size="sm" className="text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white">
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -489,7 +489,7 @@ const Saved = () => {
                               placeholder="Write a comment..."
                               value={newComment}
                               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewComment(e.target.value)}
-                              className="rounded-r-none bg-gray-900 border-gray-700 text-white placeholder:text-gray-500"
+                              className="rounded-r-none bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-500"
                               onKeyPress={(e: React.KeyboardEvent) => { if (e.key === 'Enter') { handleComment(post.id); } }}
                             />
                             <Button onClick={() => handleComment(post.id)} disabled={!newComment.trim() || commentMutation.isPending} className="rounded-l-none" size="sm">
@@ -507,7 +507,7 @@ const Saved = () => {
                               </Avatar>
                               <div className="flex-1">
                                 <div className="bg-gray-900 rounded-lg px-3 py-2">
-                                  <p className="font-semibold text-sm text-white">{getUserDisplayName(comment.user)}</p>
+                                  <p className="font-semibold text-sm text-gray-900 dark:text-white">{getUserDisplayName(comment.user)}</p>
                                   <p className="text-sm text-gray-300">{comment.content}</p>
                                 </div>
                                 <div className="flex items-center space-x-4 mt-1 ml-3">
@@ -516,7 +516,7 @@ const Saved = () => {
                                     variant="ghost" 
                                     size="sm" 
                                     onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                                    className="text-xs text-gray-500 hover:text-white p-0 h-auto"
+                                    className="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white p-0 h-auto"
                                   >
                                     Reply
                                   </Button>
@@ -525,7 +525,7 @@ const Saved = () => {
                                       variant="ghost" 
                                       size="sm" 
                                       onClick={() => toggleReplies(comment.id)}
-                                      className="text-xs text-gray-500 hover:text-white p-0 h-auto"
+                                      className="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white p-0 h-auto"
                                     >
                                       {showReplies.has(comment.id) ? 'Hide' : 'View'} {comment.repliesCount} {comment.repliesCount === 1 ? 'reply' : 'replies'}
                                     </Button>
@@ -543,7 +543,7 @@ const Saved = () => {
                                         placeholder={`Reply to ${getUserDisplayName(comment.user)}...`}
                                         value={replyContent}
                                         onChange={(e) => setReplyContent(e.target.value)}
-                                        className="rounded-r-none bg-gray-800 border-gray-600 text-white placeholder:text-gray-500 text-sm"
+                                        className="rounded-r-none bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-500 text-sm"
                                         onKeyPress={(e: React.KeyboardEvent) => { if (e.key === 'Enter') { handleComment(post.id, comment.id); } }}
                                       />
                                       <Button 
@@ -572,7 +572,7 @@ const Saved = () => {
                                       </Avatar>
                                       <div className="flex-1">
                                         <div className="bg-gray-800 rounded-lg px-3 py-2">
-                                          <p className="font-semibold text-xs text-white">{getUserDisplayName(reply.user)}</p>
+                                          <p className="font-semibold text-xs text-gray-900 dark:text-white">{getUserDisplayName(reply.user)}</p>
                                           <p className="text-xs text-gray-300">{reply.content}</p>
                                         </div>
                                         <div className="flex items-center space-x-4 mt-1 ml-3">
@@ -581,7 +581,7 @@ const Saved = () => {
                                             variant="ghost" 
                                             size="sm" 
                                             onClick={() => setReplyingTo(replyingTo === reply.id ? null : reply.id)}
-                                            className="text-xs text-gray-500 hover:text-white p-0 h-auto"
+                                            className="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white p-0 h-auto"
                                           >
                                             Reply
                                           </Button>
@@ -598,7 +598,7 @@ const Saved = () => {
                                                 placeholder={`Reply to ${getUserDisplayName(reply.user)}...`}
                                                 value={replyContent}
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReplyContent(e.target.value)}
-                                                className="rounded-r-none bg-gray-800 border-gray-600 text-white placeholder:text-gray-500 text-sm"
+                                                className="rounded-r-none bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-500 text-sm"
                                                 onKeyPress={(e: React.KeyboardEvent) => { if (e.key === 'Enter') { handleComment(post.id, reply.id); } }}
                                               />
                                               <Button 
