@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Bell, Bookmark, User, HelpCircle, Info, LogOut, ChevronRight, Moon, Sun } from "lucide-react";
+// import { Switch } from "@/components/ui/switch"; // Temporarily unused
+import { ArrowLeft, Bell, Bookmark, User, HelpCircle, Info, LogOut, ChevronRight } from "lucide-react";
+// import { Moon, Sun } from "lucide-react"; // Temporarily unused
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { useTheme } from "@/contexts/ThemeContext";
+// import { useTheme } from "@/contexts/ThemeContext"; // Temporarily unused
 
 interface SettingsProps {
   onBack: () => void;
@@ -12,7 +13,7 @@ interface SettingsProps {
 export default function Settings({ onBack }: SettingsProps) {
   const [, setLocation] = useLocation();
   const { logoutMutation } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  // const { theme, toggleTheme } = useTheme(); // Temporarily unused
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -40,8 +41,8 @@ export default function Settings({ onBack }: SettingsProps) {
 
       {/* Settings List */}
       <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-6">
-        {/* Theme Toggle */}
-        <div className="mb-6">
+        {/* Theme Toggle - TEMPORARILY COMMENTED OUT */}
+        {/* <div className="mb-6">
           <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
             <div className="flex items-center gap-3">
               {theme === 'dark' ? (
@@ -62,7 +63,7 @@ export default function Settings({ onBack }: SettingsProps) {
               className="data-[state=checked]:bg-blue-500"
             />
           </div>
-        </div>
+        </div> */}
 
         <div className="space-y-1">
           {settingsItems.map((item, index) => {
