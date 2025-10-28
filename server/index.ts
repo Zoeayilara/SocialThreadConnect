@@ -21,6 +21,8 @@ const app = express();
 // CORS middleware
 app.use((req, res, next) => {
   const allowedOrigins = [
+    'https://entreefox.com',
+    'https://www.entreefox.com',
     'https://entreefox.netlify.app',
     'https://enterfox.netlify.app',
     'http://localhost:5000',
