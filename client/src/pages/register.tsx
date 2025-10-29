@@ -79,9 +79,6 @@ export default function Register() {
         localStorage.setItem('tempPassword', formData.password);
         localStorage.setItem('registrationComplete', 'true');
         
-        // Prevent auth queries from running during registration flow
-        localStorage.setItem('skipAuthQuery', 'true');
-        
         // Set flag to show terms dialog when user reaches dashboard
         sessionStorage.setItem('from-registration', 'true');
 

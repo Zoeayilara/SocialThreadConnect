@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticating(false);
       return userData;
     },
-    enabled: !hasLoggedOut && !localStorage.getItem('skipAuthQuery'), // Skip during registration flow
+    enabled: !hasLoggedOut, // Don't run query after logout
     retry: false, // Don't retry to prevent loading loops
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
@@ -157,8 +157,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('tempUserType');
       localStorage.removeItem('tempEmail');
       localStorage.removeItem('tempPassword');
-      // Clear skipAuthQuery flag to enable auth queries after login
-      localStorage.removeItem('skipAuthQuery');
       
       queryClient.setQueryData(['auth', 'user'], data.user);
       queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
