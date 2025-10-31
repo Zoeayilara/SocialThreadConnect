@@ -14,16 +14,21 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { VerificationBadge } from "@/components/VerificationBadge";
+import { PaymentCheckout } from "@/components/PaymentCheckout";
 import { authenticatedFetch, getImageUrl } from "@/utils/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Marketplace() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'products' | 'services'>('products');
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
 
   // Fetch all products
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -69,9 +74,15 @@ export default function Marketplace() {
     : [...new Set(services.map((s: any) => s.category).filter(Boolean))];
 
   const handleBuyNow = (product: any) => {
+    setSelectedProduct(product);
+    setIsCheckoutOpen(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['products'] });
     toast({
-      title: "Coming Soon!",
-      description: `Purchase functionality for ${product.name} will be available soon.`,
+      title: "Order placed successfully! 🎉",
+      description: "Your order has been confirmed. The vendor will process it soon.",
     });
   };
 
@@ -430,6 +441,24 @@ export default function Marketplace() {
           )
         )}
       </div>
+
+      {/* Payment Checkout Modal */}
+      {selectedProduct && (
+        <PaymentCheckout
+          product={{
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            price: selectedProduct.price,
+            image_url: selectedProduct.imageUrl,
+          }}
+          isOpen={isCheckoutOpen}
+          onClose={() => {
+            setIsCheckoutOpen(false);
+            setSelectedProduct(null);
+          }}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
     </div>
   );
 }

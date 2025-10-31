@@ -4,6 +4,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from "../shared/schema";
 import session from 'express-session';
+// @ts-ignore - Type declaration exists but TypeScript may need restart
 import SqliteStore from 'better-sqlite3-session-store';
 import { mkdirSync } from 'fs';
 import { dirname } from 'path';
@@ -58,6 +59,47 @@ sqlite.exec(`
     FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
   )
 `);
+
+// Create orders table if it doesn't exist
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    customer_id INTEGER NOT NULL,
+    vendor_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL,
+    size TEXT,
+    total_amount REAL NOT NULL,
+    shipping_address TEXT NOT NULL,
+    payment_reference TEXT NOT NULL UNIQUE,
+    status TEXT DEFAULT 'pending',
+    payment_verified_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (vendor_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+  )
+`);
+
+// Clean up products without Paystack integration (one-time migration)
+// This removes products created before the payment system was integrated
+try {
+  const productsWithoutPaystack = sqlite.prepare(`
+    SELECT COUNT(*) as count FROM products WHERE paystack_subaccount_code IS NULL
+  `).get() as any;
+  
+  if (productsWithoutPaystack.count > 0) {
+    console.log(`🧹 Found ${productsWithoutPaystack.count} products without Paystack integration. Cleaning up...`);
+    sqlite.prepare(`DELETE FROM products WHERE paystack_subaccount_code IS NULL`).run();
+    console.log('✅ Old products without payment integration removed');
+  }
+} catch (error: any) {
+  if (error.message.includes('no such column')) {
+    console.log('⚠️ Products table needs paystack_subaccount_code column - will be added on next product creation');
+  } else {
+    console.error('Error cleaning up old products:', error);
+  }
+}
 
 // Add theme column to users table if it doesn't exist
 try {

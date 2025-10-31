@@ -14,6 +14,7 @@ import { z } from "zod";
 import { db, sqlite } from "./db";
 import { sql } from "drizzle-orm";
 import reportsRouter from './routes/reports';
+import paymentsRouter from './payments';
 
 // Validation schemas for forgot password flow
 const forgotPasswordSchema = z.object({
@@ -973,7 +974,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         universityHandle: null,
         profileImageUrl: null,
         isPrivate: 0,
-        isVerified: 0
+        isVerified: 0,
+        theme: 'dark'
       });
 
       console.log('✅ User created successfully with ID:', user.id);
@@ -1401,18 +1403,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (mentions.length > 0 && post.id) {
         for (const mentionName of mentions) {
           try {
-            // Find user by name (first name + last name combination)
-            const nameParts = mentionName.split(' ');
-            let mentionedUser;
+            // Split mention name into parts
+            const nameParts = mentionName.split(/\s+/);
             
+            // Find user by name (first name + last name combination)
+            let mentionedUser: any = null;
             if (nameParts.length === 1) {
-              // Single name - could be first or last name
+              // Single name - try to match first name
               mentionedUser = sqlite.prepare(`
                 SELECT id, firstName, lastName FROM users 
-                WHERE LOWER(firstName) = LOWER(?) OR LOWER(lastName) = LOWER(?)
-              `).get(nameParts[0], nameParts[0]);
+                WHERE LOWER(firstName) = LOWER(?)
+              `).get(nameParts[0]);
             } else {
-              // Multiple names - try first + last name combination
+              // Full name - match first and last name
               mentionedUser = sqlite.prepare(`
                 SELECT id, firstName, lastName FROM users 
                 WHERE LOWER(firstName) = LOWER(?) AND LOWER(lastName) = LOWER(?)
@@ -2645,6 +2648,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     req.db = sqlite;
     next();
   }, reportsRouter);
+
+  // Add payment routes
+  app.use('/api/payments', isAuthenticated, paymentsRouter);
 
   // ==================== PRODUCTS/MARKETPLACE ENDPOINTS ====================
 
