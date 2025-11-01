@@ -88,14 +88,14 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold mb-2">Create New Password</h1>
-          <p className="text-muted-foreground">Your new password must be different from previous used passwords</p>
+        <div className="text-center mb-6 sm:mb-8 px-2">
+          <h1 className="text-xl sm:text-2xl font-bold mb-2">Create New Password</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm">Your new password must be different from previous used passwords</p>
         </div>
 
         {/* Reset Password Form */}
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField

@@ -88,17 +88,17 @@ export function PaymentCheckout({ product, isOpen, onClose }: PaymentCheckoutPro
 
         <div className="space-y-4">
           {/* Product Info */}
-          <div className="flex gap-4 p-4 bg-gray-800 rounded-lg">
+          <div className="flex gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-800 rounded-lg">
             {product.image_url && (
               <img
                 src={product.image_url}
                 alt={product.name}
-                className="w-20 h-20 object-cover rounded"
+                className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded flex-shrink-0"
               />
             )}
-            <div className="flex-1">
-              <h3 className="font-semibold">{product.name}</h3>
-              <p className="text-sm text-gray-400">₦{product.price.toLocaleString()}</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm sm:text-base truncate">{product.name}</h3>
+              <p className="text-xs sm:text-sm text-gray-400">₦{product.price.toLocaleString()}</p>
             </div>
           </div>
 
@@ -142,9 +142,9 @@ export function PaymentCheckout({ product, isOpen, onClose }: PaymentCheckoutPro
           </div>
 
           {/* Total */}
-          <div className="flex justify-between items-center p-4 bg-gray-800 rounded-lg">
-            <span className="font-semibold">Total:</span>
-            <span className="text-xl font-bold text-green-500">
+          <div className="flex justify-between items-center p-3 sm:p-4 bg-gray-800 rounded-lg">
+            <span className="font-semibold text-sm sm:text-base">Total:</span>
+            <span className="text-lg sm:text-xl font-bold text-green-500">
               ₦{totalPrice.toLocaleString()}
             </span>
           </div>

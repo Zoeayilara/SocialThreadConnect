@@ -81,6 +81,21 @@ sqlite.exec(`
   )
 `);
 
+// Create vendor_bank_accounts table if it doesn't exist
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS vendor_bank_accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    vendor_id INTEGER NOT NULL UNIQUE,
+    bank_code TEXT NOT NULL,
+    account_number TEXT NOT NULL,
+    account_name TEXT NOT NULL,
+    paystack_subaccount_code TEXT NOT NULL UNIQUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (vendor_id) REFERENCES users(id) ON DELETE CASCADE
+  )
+`);
+
 // Clean up products without Paystack integration (one-time migration)
 // This removes products created before the payment system was integrated
 try {

@@ -15,6 +15,7 @@ import { db, sqlite } from "./db";
 import { sql } from "drizzle-orm";
 import reportsRouter from './routes/reports';
 import paymentsRouter from './payments';
+import vendorBankRouter from './vendor-bank';
 
 // Validation schemas for forgot password flow
 const forgotPasswordSchema = z.object({
@@ -2651,6 +2652,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Add payment routes
   app.use('/api/payments', isAuthenticated, paymentsRouter);
+
+  // Add vendor bank account routes
+  app.use('/api/vendor', isAuthenticated, vendorBankRouter);
 
   // ==================== PRODUCTS/MARKETPLACE ENDPOINTS ====================
 

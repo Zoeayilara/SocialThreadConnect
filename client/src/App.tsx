@@ -40,6 +40,7 @@ import VendorServices from './pages/vendor-services';
 import AddService from './pages/add-service';
 import EditService from './pages/edit-service';
 import PaymentCallback from './pages/payment-callback';
+import VendorBankAccount from './pages/vendor-bank-account';
 
 function AppContent() {
   const { user, isLoggingOut, isAuthenticating, isLoading } = useAuth();
@@ -123,6 +124,7 @@ function AppContent() {
           <Route path="/add-service" component={AddService} />
           <Route path="/edit-service/:id" component={EditService} />
           <Route path="/payment-callback" component={PaymentCallback} />
+          <Route path="/vendor-bank-account" component={VendorBankAccount} />
         </>
       )}
       <Route component={NotFound} />

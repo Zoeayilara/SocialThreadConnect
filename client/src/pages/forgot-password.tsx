@@ -76,14 +76,14 @@ export default function ForgotPassword() {
         </Button>
 
         {/* Main Card */}
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8">
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 sm:p-8">
           {/* Header with Icon */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Shield className="h-8 w-8 text-white" />
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <Shield className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-3">Reset Password</h1>
-            <p className="text-gray-600 text-sm leading-relaxed max-w-sm mx-auto">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">Reset Password</h1>
+            <p className="text-gray-600 text-xs sm:text-sm leading-relaxed max-w-sm mx-auto px-2">
               Enter your email address and we'll send you a verification code to reset your password
             </p>
           </div>

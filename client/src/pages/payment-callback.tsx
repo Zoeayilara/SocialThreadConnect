@@ -38,11 +38,11 @@ export default function PaymentCallback() {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
         <Card className="w-full max-w-md bg-gray-900 border-gray-800">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center gap-4 text-center">
-              <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
-              <h2 className="text-xl font-semibold text-white">Verifying Payment...</h2>
-              <p className="text-gray-400">Please wait while we confirm your transaction</p>
+          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
+            <div className="flex flex-col items-center gap-3 sm:gap-4 text-center">
+              <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 animate-spin text-blue-500" />
+              <h2 className="text-lg sm:text-xl font-semibold text-white">Verifying Payment...</h2>
+              <p className="text-sm sm:text-base text-gray-400">Please wait while we confirm your transaction</p>
             </div>
           </CardContent>
         </Card>
@@ -97,34 +97,34 @@ export default function PaymentCallback() {
               Payment Successful!
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-gray-800 rounded-lg p-4 space-y-2">
-              <div className="flex justify-between">
+          <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
+            <div className="bg-gray-800 rounded-lg p-3 sm:p-4 space-y-2">
+              <div className="flex justify-between text-sm sm:text-base">
                 <span className="text-gray-400">Order ID:</span>
                 <span className="text-white font-mono">#{order?.id}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-sm sm:text-base">
                 <span className="text-gray-400">Amount Paid:</span>
                 <span className="text-white font-semibold">
                   ₦{((transaction?.amount || 0) / 100).toLocaleString()}
                 </span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-sm sm:text-base">
                 <span className="text-gray-400">Reference:</span>
-                <span className="text-white font-mono text-sm">{transaction?.reference}</span>
+                <span className="text-white font-mono text-xs sm:text-sm break-all">{transaction?.reference}</span>
               </div>
               {order?.shipping_address && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Shipping To:</span>
-                  <span className="text-white text-sm text-right max-w-[200px]">
+                <div className="flex justify-between text-sm sm:text-base">
+                  <span className="text-gray-400 flex-shrink-0">Shipping To:</span>
+                  <span className="text-white text-xs sm:text-sm text-right max-w-[200px] break-words">
                     {order.shipping_address}
                   </span>
                 </div>
               )}
             </div>
 
-            <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
-              <p className="text-sm text-blue-300">
+            <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-3 sm:p-4">
+              <p className="text-xs sm:text-sm text-blue-300">
                 Your order has been confirmed! The vendor will process it soon and contact you for delivery.
               </p>
             </div>

@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useRef, useEffect } from "react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Upload, X, Package, Boxes, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,31 @@ export default function AddProduct() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if vendor has bank account set up
+  const { data: bankAccount, isLoading: loadingBankAccount } = useQuery({
+    queryKey: ['vendorBankAccount'],
+    queryFn: async () => {
+      const response = await authenticatedFetch('/api/vendor/bank-account');
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        throw new Error('Failed to fetch bank account');
+      }
+      return response.json();
+    },
+  });
+
+  // Redirect to bank account setup if not configured
+  useEffect(() => {
+    if (!loadingBankAccount && !bankAccount) {
+      toast({
+        title: "Bank Account Required",
+        description: "Please set up your bank account before adding products.",
+        variant: "destructive",
+      });
+      setLocation('/vendor-bank-account');
+    }
+  }, [bankAccount, loadingBankAccount, setLocation, toast]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -118,6 +143,23 @@ export default function AddProduct() {
 
     createProductMutation.mutate(data);
   };
+
+  // Show loading while checking bank account
+  if (loadingBankAccount) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+        <div className="text-center">
+          <Package className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-500" />
+          <p className="text-gray-400">Checking account setup...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render form if no bank account (will redirect)
+  if (!bankAccount) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white pb-20">

@@ -110,15 +110,15 @@ export default function VerifyOtp() {
         </Button>
 
         {/* Main Card */}
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8">
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 sm:p-8">
           {/* Header with Icon */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Shield className="h-8 w-8 text-white" />
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <Shield className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-3">Enter Verification Code</h1>
-            <p className="text-gray-600 text-sm leading-relaxed max-w-sm mx-auto">
-              We've sent a 6-digit code to <span className="font-medium text-gray-900">{email}</span>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">Enter Verification Code</h1>
+            <p className="text-gray-600 text-xs sm:text-sm leading-relaxed max-w-sm mx-auto px-2">
+              We've sent a 6-digit code to <span className="font-medium text-gray-900 break-all">{email}</span>
             </p>
           </div>
 
@@ -134,7 +134,7 @@ export default function VerifyOtp() {
 
           {/* OTP Input */}
           <div className="space-y-6">
-            <div className="flex justify-center">
+            <div className="flex justify-center overflow-x-auto px-2">
               <InputOTP 
                 maxLength={6} 
                 value={otp} 
@@ -142,30 +142,30 @@ export default function VerifyOtp() {
                 onComplete={handleOtpComplete}
                 disabled={timeLeft <= 0}
               >
-                <InputOTPGroup className="gap-3">
+                <InputOTPGroup className="gap-2 sm:gap-3">
                   <InputOTPSlot 
                     index={0} 
-                    className="w-14 h-14 text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
+                    className="w-10 h-10 sm:w-14 sm:h-14 text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
                   />
                   <InputOTPSlot 
                     index={1} 
-                    className="w-14 h-14 text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
+                    className="w-10 h-10 sm:w-14 sm:h-14 text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
                   />
                   <InputOTPSlot 
                     index={2} 
-                    className="w-14 h-14 text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
+                    className="w-10 h-10 sm:w-14 sm:h-14 text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
                   />
                   <InputOTPSlot 
                     index={3} 
-                    className="w-14 h-14 text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
+                    className="w-10 h-10 sm:w-14 sm:h-14 text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
                   />
                   <InputOTPSlot 
                     index={4} 
-                    className="w-14 h-14 text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
+                    className="w-10 h-10 sm:w-14 sm:h-14 text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
                   />
                   <InputOTPSlot 
                     index={5} 
-                    className="w-14 h-14 text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
+                    className="w-10 h-10 sm:w-14 sm:h-14 text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
                   />
                 </InputOTPGroup>
               </InputOTP>
