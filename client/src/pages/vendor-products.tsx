@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Package, Plus, Edit, Trash2, ShoppingBag, ArrowLeft, Briefcase } from "lucide-react";
+import { Package, Plus, Edit, Trash2, ShoppingBag, ArrowLeft, Briefcase, CreditCard } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -117,6 +117,14 @@ export default function VendorProducts() {
             </div>
             {isOwnProducts && products.length > 0 && (
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button
+                  onClick={() => setLocation('/vendor-bank-account')}
+                  variant="outline"
+                  className="border-gray-700 text-gray-300 hover:bg-gray-800 w-full sm:w-auto"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Bank Account
+                </Button>
                 <Button
                   onClick={() => setLocation('/vendor-services')}
                   variant="outline"
