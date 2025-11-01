@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Building2, CreditCard, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Building2, CreditCard, AlertCircle, CheckCircle, Loader2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,8 @@ export default function VendorBankAccount() {
     accountNumber: '',
     accountName: '',
   });
+
+  const [bankSearch, setBankSearch] = useState('');
 
   // Fetch banks list
   const { data: banks = [], isLoading: loadingBanks } = useQuery({
@@ -244,12 +246,39 @@ export default function VendorBankAccount() {
                   <SelectTrigger className="bg-gray-800 border-gray-700">
                     <SelectValue placeholder="Select your bank" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {banks.map((bank: any) => (
-                      <SelectItem key={bank.code} value={bank.code}>
-                        {bank.name}
-                      </SelectItem>
-                    ))}
+                  <SelectContent className="max-h-[300px]">
+                    {/* Search Input */}
+                    <div className="sticky top-0 bg-gray-900 p-2 border-b border-gray-700">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                        <Input
+                          placeholder="Search banks..."
+                          value={bankSearch}
+                          onChange={(e) => setBankSearch(e.target.value)}
+                          className="pl-8 bg-gray-800 border-gray-700 text-sm"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    </div>
+                    {/* Bank List */}
+                    <div className="max-h-[200px] overflow-y-auto">
+                      {banks
+                        .filter((bank: any) => 
+                          bank.name.toLowerCase().includes(bankSearch.toLowerCase())
+                        )
+                        .map((bank: any) => (
+                          <SelectItem key={bank.code} value={bank.code}>
+                            {bank.name}
+                          </SelectItem>
+                        ))}
+                      {banks.filter((bank: any) => 
+                        bank.name.toLowerCase().includes(bankSearch.toLowerCase())
+                      ).length === 0 && (
+                        <div className="p-4 text-center text-sm text-gray-400">
+                          No banks found
+                        </div>
+                      )}
+                    </div>
                   </SelectContent>
                 </Select>
               </div>
