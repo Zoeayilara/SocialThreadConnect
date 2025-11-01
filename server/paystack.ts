@@ -53,7 +53,7 @@ export async function updateSubaccount(subaccountCode: string, params: Partial<C
 }
 
 export async function listBanks() {
-  const response = await paystackClient.get('/bank');
+  const response = await paystackClient.get('/bank?country=nigeria');
   return response.data;
 }
 

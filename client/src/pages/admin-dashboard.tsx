@@ -150,15 +150,15 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white pb-20">
       {/* Header */}
       <div className="border-b sticky top-0 z-30 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-gray-200 dark:border-gray-800">
-        <div className="mx-auto w-full max-w-7xl px-4 py-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center space-x-3">
-              <FoxLogo size={28} />
-              <h1 className="text-lg font-bold text-white">Admin Dashboard</h1>
-              <Badge variant="secondary" className="bg-red-600 text-white">
+        <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 py-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center space-x-2 sm:space-x-3 flex-wrap">
+              <FoxLogo size={24} className="sm:w-7 sm:h-7" />
+              <h1 className="text-base sm:text-lg font-bold text-white">Admin Dashboard</h1>
+              <Badge variant="secondary" className="bg-red-600 text-white text-xs">
                 <Shield className="w-3 h-3 mr-1" />
                 Admin
               </Badge>
@@ -205,9 +205,9 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-7xl px-4 py-6">
+      <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 py-4 sm:py-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Card className="bg-gray-900 border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-300">Total Users</CardTitle>

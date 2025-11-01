@@ -187,7 +187,7 @@ export default function VendorBankAccount() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setLocation('/vendor-products')}
+              onClick={() => window.history.back()}
               className="text-gray-400 hover:text-white"
             >
               <ArrowLeft className="w-5 h-5" />

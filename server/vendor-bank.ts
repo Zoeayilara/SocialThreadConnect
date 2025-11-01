@@ -7,11 +7,16 @@ const router = Router();
 // Get list of banks
 router.get('/banks', async (req: Request, res: Response) => {
   try {
+    console.log('📋 Fetching banks list from Paystack...');
     const response = await listBanks();
+    console.log('✅ Banks fetched successfully:', response.data?.length || 0, 'banks');
     res.json(response.data);
   } catch (error: any) {
-    console.error('Error fetching banks:', error);
-    res.status(500).json({ message: 'Failed to fetch banks', error: error.message });
+    console.error('❌ Error fetching banks:', error.response?.data || error.message);
+    res.status(500).json({ 
+      message: 'Failed to fetch banks', 
+      error: error.response?.data?.message || error.message 
+    });
   }
 });
 

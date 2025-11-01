@@ -578,32 +578,32 @@ export default function CustomerDashboard() {
     <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
       {/* Header mimicking Threads */}
       <div className="border-b sticky top-0 z-30 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-gray-200 dark:border-gray-800">
-        <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <FoxLogo size={28} />
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">SocialConnect</h1>
+        <div className="mx-auto w-full max-w-md md:max-w-lg lg:max-w-xl px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+            <FoxLogo size={24} className="sm:w-7 sm:h-7 flex-shrink-0" />
+            <h1 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">SocialConnect</h1>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {user?.userType === 'admin' && (
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => setLocation('/admin-dashboard')}
-                className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white text-xs sm:text-sm px-2 sm:px-3"
               >
-                <Shield className="w-4 h-4 mr-2" />
-                View as Admin
+                <Shield className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">View as Admin</span>
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={() => setShowSearch(!showSearch)} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-              <Search className="w-5 h-5" />
+            <Button variant="ghost" size="sm" onClick={() => setShowSearch(!showSearch)} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2">
+              <Search className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setLocation('/marketplace')} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-              <ShoppingBag className="w-5 h-5" />
+            <Button variant="ghost" size="sm" onClick={() => setLocation('/marketplace')} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2">
+              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
-            <Avatar className="w-8 h-8 cursor-pointer" onClick={() => handleUserClick()}>
+            <Avatar className="w-7 h-7 sm:w-8 sm:h-8 cursor-pointer flex-shrink-0" onClick={() => handleUserClick()}>
               <AvatarImage src={getImageUrl(user?.profileImageUrl)} />
-              <AvatarFallback className="bg-gray-700 text-white">{user?.firstName?.[0] || user?.lastName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+              <AvatarFallback className="bg-gray-700 text-white text-xs">{user?.firstName?.[0] || user?.lastName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
             </Avatar>
           </div>
         </div>
