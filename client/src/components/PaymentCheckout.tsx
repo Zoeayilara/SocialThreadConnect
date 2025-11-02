@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { authenticatedFetch } from '@/lib/authenticatedFetch';
+import { authenticatedFetch, getImageUrl } from '@/utils/api';
 import { Loader2, ShoppingCart } from 'lucide-react';
 
 interface PaymentCheckoutProps {
@@ -91,7 +91,7 @@ export function PaymentCheckout({ product, isOpen, onClose }: PaymentCheckoutPro
           <div className="flex gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-800 rounded-lg">
             {product.image_url && (
               <img
-                src={product.image_url}
+                src={getImageUrl(product.image_url)}
                 alt={product.name}
                 className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded flex-shrink-0"
               />

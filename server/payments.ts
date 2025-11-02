@@ -18,11 +18,12 @@ router.post('/initialize', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    // Get product details
+    // Get product details and vendor's bank account
     const product = sqlite.prepare(`
-      SELECT p.*, u.email as vendor_email
+      SELECT p.*, u.email as vendor_email, vba.paystack_subaccount_code
       FROM products p
       JOIN users u ON p.vendor_id = u.id
+      LEFT JOIN vendor_bank_accounts vba ON p.vendor_id = vba.vendor_id
       WHERE p.id = ?
     `).get(productId) as any;
 
