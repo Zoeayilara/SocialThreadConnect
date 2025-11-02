@@ -1016,6 +1016,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await loginUser(email, password);
       
+      // Log the hasCompletedProfileSetup value for debugging
+      console.log('🔍 User hasCompletedProfileSetup value:', user.hasCompletedProfileSetup);
+      console.log('🔍 Full user object:', JSON.stringify(user, null, 2));
+      
       // Generate JWT token
       const token = generateUserToken(user);
       console.log('🔑 Generated JWT token for user:', user.id);
@@ -1052,7 +1056,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bio: user.bio,
           link: user.link,
           isPrivate: user.isPrivate,
-          hasCompletedProfileSetup: user.hasCompletedProfileSetup || 0
+          hasCompletedProfileSetup: user.hasCompletedProfileSetup ?? 0
         }
       });
     } catch (error) {

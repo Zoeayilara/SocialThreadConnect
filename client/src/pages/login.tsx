@@ -17,10 +17,17 @@ export default function Login() {
 
   // Redirect after successful login
   if (user && loginMutation.isSuccess) {
+    // Debug logging
+    console.log('🔍 Login successful - User data:', user);
+    console.log('🔍 hasCompletedProfileSetup value:', user.hasCompletedProfileSetup);
+    console.log('🔍 Check result:', user.hasCompletedProfileSetup === 0 || !user.hasCompletedProfileSetup);
+    
     // Check if user needs to complete profile setup (first-time login after registration)
     if (user.hasCompletedProfileSetup === 0 || !user.hasCompletedProfileSetup) {
+      console.log('✅ Redirecting to upload-picture page');
       setLocation('/upload-picture');
     } else {
+      console.log('✅ Redirecting to dashboard');
       // Regular login - go to dashboard
       if (user.userType === 'vendor') {
         setLocation('/vendor-dashboard');

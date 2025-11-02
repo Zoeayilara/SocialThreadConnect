@@ -61,6 +61,9 @@ export default function Register() {
       return Promise.race([registrationPromise, timeoutPromise]);
     },
     onSuccess: async () => {
+      // Clear any existing auth tokens to ensure clean login
+      localStorage.removeItem('authToken');
+      
       // Registration successful - redirect to sign in page
       toast({
         title: "Account created successfully!",
