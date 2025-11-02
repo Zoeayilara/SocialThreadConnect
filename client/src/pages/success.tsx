@@ -16,97 +16,44 @@ export default function Success() {
     setIsRedirecting(true);
     
     try {
-      // Get the temporary user data
-      const tempUserType = localStorage.getItem('tempUserType');
+      // Check if we have a valid auth token
       const authToken = localStorage.getItem('authToken');
       
-      // Check if we already have a valid auth token from registration
-      if (authToken && tempUserType) {
-        // Invalidate auth queries to force refetch with new token
-        queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
-        
-        // Navigate to appropriate dashboard using wouter FIRST
-        if (tempUserType === 'vendor') {
-          setLocation("/vendor-dashboard");
-        } else if (tempUserType === 'admin') {
-          setLocation("/admin-dashboard");
-        } else {
-          setLocation("/customer-dashboard");
-        }
-        
-        // Clean up temp data AFTER navigation (but keep tempUserId for terms dialog)
-        localStorage.removeItem('tempUserType');
-        // Keep tempUserId until terms dialog is shown in dashboard
-        localStorage.removeItem('tempEmail');
-        localStorage.removeItem('tempPassword');
-        // Remove skip flag to allow auth queries in dashboard
-        localStorage.removeItem('skipAuthQuery');
-        
-        // Small delay to ensure cleanup is complete
-        await new Promise(resolve => setTimeout(resolve, 100));
-        return;
-      }
-      
-      // Fallback: try to login with temp credentials if no token
-      const tempEmail = localStorage.getItem('tempEmail');
-      const tempPassword = localStorage.getItem('tempPassword');
-      
-      if (tempEmail && tempPassword) {
+      if (authToken) {
+        // Fetch user data to determine dashboard
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const response = await fetch(`${API_URL}/api/login`, {
-          method: 'POST',
+        const response = await fetch(`${API_URL}/api/auth/user`, {
           headers: {
-            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
           },
           credentials: 'include',
-          body: JSON.stringify({
-            email: tempEmail,
-            password: tempPassword
-          }),
         });
 
         if (response.ok) {
-          const data = await response.json();
+          const userData = await response.json();
           
-          // Store JWT token if provided
-          if (data.token) {
-            localStorage.setItem('authToken', data.token);
-          }
+          // Invalidate auth queries to force refetch
+          queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
+          queryClient.setQueryData(['auth', 'user'], userData);
           
-          // Login successful, clean up temp data (but keep tempUserId for terms dialog)
-          localStorage.removeItem('tempUserType');
-          // Keep tempUserId until terms dialog is shown in dashboard
-          localStorage.removeItem('tempEmail');
-          localStorage.removeItem('tempPassword');
-          
-          // Small delay to ensure token is stored
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // Navigate to appropriate dashboard using wouter
-          if (tempUserType === 'vendor') {
-            setLocation("/vendor-dashboard");
-          } else if (tempUserType === 'admin') {
-            setLocation("/admin-dashboard");
+          // Navigate to appropriate dashboard
+          if (userData.userType === 'vendor') {
+            window.location.replace('/vendor-dashboard');
+          } else if (userData.userType === 'admin') {
+            window.location.replace('/admin-dashboard');
           } else {
-            setLocation("/customer-dashboard");
+            window.location.replace('/customer-dashboard');
           }
           return;
         }
       }
       
-      // Fallback: clean up and redirect to login
-      localStorage.removeItem('tempUserType');
-      localStorage.removeItem('tempUserId');
-      localStorage.removeItem('tempEmail');
-      localStorage.removeItem('tempPassword');
+      // Fallback: redirect to login if no valid token
+      console.log('❌ No valid auth token, redirecting to login');
       setLocation("/login");
       
     } catch (error) {
-      // Clean up and redirect to login on error
-      localStorage.removeItem('tempUserType');
-      localStorage.removeItem('tempUserId');
-      localStorage.removeItem('tempEmail');
-      localStorage.removeItem('tempPassword');
+      console.error('Error in success page:', error);
       setLocation("/login");
     } finally {
       setIsLoading(false);
