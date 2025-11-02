@@ -168,15 +168,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: `Welcome back, ${data.user.firstName}!`,
       });
 
-      setTimeout(() => {
-        if (data.user.userType === 'vendor') {
-          window.location.replace('/vendor-dashboard');
-        } else if (data.user.userType === 'admin') {
-          window.location.replace('/admin-dashboard');
-        } else {
-          window.location.replace('/customer-dashboard');
-        }
-      }, 1000);
+      // Check if user needs to complete profile setup (first-time login after registration)
+      if (data.user.hasCompletedProfileSetup === 0 || !data.user.hasCompletedProfileSetup) {
+        console.log('✅ First-time login - redirecting to upload-picture');
+        setTimeout(() => {
+          window.location.replace('/upload-picture');
+        }, 1000);
+      } else {
+        console.log('✅ Regular login - redirecting to dashboard');
+        setTimeout(() => {
+          if (data.user.userType === 'vendor') {
+            window.location.replace('/vendor-dashboard');
+          } else if (data.user.userType === 'admin') {
+            window.location.replace('/admin-dashboard');
+          } else {
+            window.location.replace('/customer-dashboard');
+          }
+        }, 1000);
+      }
     },
     onError: (error: Error) => {
       setIsAuthenticating(false);
