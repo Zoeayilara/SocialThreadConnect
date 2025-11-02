@@ -17,19 +17,30 @@ export default function Login() {
 
   // Redirect after successful login
   if (user && loginMutation.isSuccess) {
-    if (user.userType === 'vendor') {
-      setLocation('/vendor-dashboard');
+    // Check if user needs to complete profile setup (first-time login after registration)
+    if (user.hasCompletedProfileSetup === 0 || !user.hasCompletedProfileSetup) {
+      setLocation('/upload-picture');
     } else {
-      setLocation('/customer-dashboard');
+      // Regular login - go to dashboard
+      if (user.userType === 'vendor') {
+        setLocation('/vendor-dashboard');
+      } else {
+        setLocation('/customer-dashboard');
+      }
     }
   }
 
   // Redirect if already logged in
   if (user) {
-    if (user.userType === 'vendor') {
-      setLocation('/vendor-dashboard');
+    // Check if user needs to complete profile setup
+    if (user.hasCompletedProfileSetup === 0 || !user.hasCompletedProfileSetup) {
+      setLocation('/upload-picture');
     } else {
-      setLocation('/customer-dashboard');
+      if (user.userType === 'vendor') {
+        setLocation('/vendor-dashboard');
+      } else {
+        setLocation('/customer-dashboard');
+      }
     }
     return null;
   }

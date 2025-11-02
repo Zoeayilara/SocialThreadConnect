@@ -976,53 +976,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         profileImageUrl: null,
         isPrivate: 0,
         isVerified: 0,
-        theme: 'dark'
+        theme: 'dark',
+        hasCompletedProfileSetup: 0
       });
 
       console.log('✅ User created successfully with ID:', user.id);
       console.log('🔍 Created user details:', JSON.stringify(user, null, 2));
 
-      // Generate JWT token for auto-login after registration
-      const token = generateUserToken(user);
-      console.log('🔑 Generated JWT token for new user:', user.id);
-      
-      // Set session for backward compatibility
-      (req.session as any).userId = user.id;
-      console.log('🔑 Setting userId in session:', user.id, 'Session ID:', req.sessionID);
-      console.log('🔍 Session before save:', JSON.stringify(req.session, null, 2));
-      
-      // Save the session explicitly and wait for it
-      await new Promise<void>((resolve, reject) => {
-        req.session.save((err: any) => {
-          if (err) {
-            console.error('❌ Session save error during registration:', err);
-            reject(err);
-          } else {
-            console.log('✅ Registration session saved successfully for user:', user.id, 'Session ID:', req.sessionID);
-            console.log('🔍 Session after save:', JSON.stringify(req.session, null, 2));
-            resolve();
-          }
-        });
-      });
+           // DO NOT auto-login after registration - user must sign in manually
+      console.log('✅ Registration complete - user must sign in to continue');
 
       res.json({ 
-        message: "Registration successful", 
-        token: token, // Include JWT token in response
+        message: "Registration successful! Please sign in to continue.", 
         userId: user.id,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          userType: user.userType,
-          university: user.university,
-          phone: user.phone,
-          profileImageUrl: user.profileImageUrl,
-          bio: user.bio,
-          link: user.link,
-          isVerified: user.isVerified,
-          isPrivate: user.isPrivate
-        }
+        requiresSignIn: true
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -1084,7 +1051,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           phone: user.phone,
           bio: user.bio,
           link: user.link,
-          isPrivate: user.isPrivate
+          isPrivate: user.isPrivate,
+          hasCompletedProfileSetup: user.hasCompletedProfileSetup || 0
         }
       });
     } catch (error) {
@@ -1845,6 +1813,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error toggling repost:", error);
       res.status(500).json({ message: "Failed to toggle repost" });
+    }
+  });
+
+  // Mark profile setup as complete
+  app.post('/api/users/complete-profile-setup', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.userId as number;
+      
+      sqlite.prepare(`
+        UPDATE users SET has_completed_profile_setup = 1 WHERE id = ?
+      `).run(userId);
+      
+      console.log(`✅ Profile setup marked as complete for user ${userId}`);
+      res.json({ message: "Profile setup completed" });
+    } catch (error) {
+      console.error("Error marking profile setup as complete:", error);
+      res.status(500).json({ message: "Failed to complete profile setup" });
     }
   });
 

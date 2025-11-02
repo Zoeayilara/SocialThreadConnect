@@ -128,6 +128,43 @@ try {
   }
 }
 
+// Add has_completed_profile_setup column to users table if it doesn't exist
+try {
+  sqlite.exec(`ALTER TABLE users ADD COLUMN has_completed_profile_setup INTEGER DEFAULT 0`);
+  console.log('✅ has_completed_profile_setup column added to users table');
+  
+  // Mark all existing users as having completed profile setup
+  // (They were created before this feature existed)
+  const result = sqlite.prepare(`
+    UPDATE users 
+    SET has_completed_profile_setup = 1 
+    WHERE has_completed_profile_setup IS NULL OR has_completed_profile_setup = 0
+  `).run();
+  
+  console.log(`✅ Marked ${result.changes} existing users as having completed profile setup`);
+} catch (error: any) {
+  if (error.message.includes('duplicate column name')) {
+    console.log('✅ has_completed_profile_setup column already exists');
+    
+    // Still update existing users who might have NULL values
+    try {
+      const result = sqlite.prepare(`
+        UPDATE users 
+        SET has_completed_profile_setup = 1 
+        WHERE has_completed_profile_setup IS NULL
+      `).run();
+      
+      if (result.changes > 0) {
+        console.log(`✅ Updated ${result.changes} existing users to mark profile setup as complete`);
+      }
+    } catch (updateError) {
+      console.error('Error updating existing users:', updateError);
+    }
+  } else {
+    console.error('Error adding has_completed_profile_setup column:', error);
+  }
+}
+
 export const db = drizzle(sqlite, { schema });
 
 // Create session store using SQLite for persistence

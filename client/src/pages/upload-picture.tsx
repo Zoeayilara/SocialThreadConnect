@@ -73,7 +73,16 @@ export default function UploadPicture() {
         }
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Mark profile setup as complete
+      try {
+        await authenticatedFetch('/api/users/complete-profile-setup', {
+          method: 'POST',
+        });
+      } catch (error) {
+        console.error('Failed to mark profile setup as complete:', error);
+      }
+      
       toast({
         title: "Upload Successful",
         description: "Profile picture uploaded successfully!",
@@ -145,7 +154,16 @@ export default function UploadPicture() {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    // Mark profile setup as complete even when skipping
+    try {
+      await authenticatedFetch('/api/users/complete-profile-setup', {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Failed to mark profile setup as complete:', error);
+    }
+    
     setLocation("/success");
   };
 

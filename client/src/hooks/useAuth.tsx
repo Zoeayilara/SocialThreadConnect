@@ -14,6 +14,7 @@ interface User {
   profileImageUrl?: string | null;
   isVerified?: boolean;
   theme?: string;
+  hasCompletedProfileSetup?: number;
 }
 
 interface LoginData {

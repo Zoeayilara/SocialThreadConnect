@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { FoxLogo } from "@/components/FoxLogo";
@@ -32,7 +32,6 @@ type RegisterForm = z.infer<typeof registerSchema>;
 export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const userType = new URLSearchParams(window.location.search).get('type') || 'customer';
@@ -61,43 +60,17 @@ export default function Register() {
       
       return Promise.race([registrationPromise, timeoutPromise]);
     },
-    onSuccess: async (result, formData) => {
-      try {
-        // Update auth context with the new user data
-        queryClient.setQueryData(['auth', 'user'], result.user);
-        queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
-        
-        // Store JWT token if provided
-        if (result.token) {
-          localStorage.setItem('authToken', result.token);
-        }
-        
-        // Store temporary data for use in subsequent pages
-        localStorage.setItem('tempUserType', formData.userType);
-        localStorage.setItem('tempUserId', result.userId?.toString() || '');
-        localStorage.setItem('tempEmail', formData.email);
-        localStorage.setItem('tempPassword', formData.password);
-        localStorage.setItem('registrationComplete', 'true');
-        
-        // Set flag to show terms dialog when user reaches dashboard
-        sessionStorage.setItem('from-registration', 'true');
+    onSuccess: async () => {
+      // Registration successful - redirect to sign in page
+      toast({
+        title: "Account created successfully!",
+        description: "Please sign in to continue.",
+      });
 
-        toast({
-          title: "Registration successful!",
-          description: "Please upload a profile picture to continue.",
-        });
-
-        // Small delay to ensure auth state is updated
-        setTimeout(() => {
-          setLocation("/upload-picture");
-        }, 100);
-      } catch (error) {
-        toast({
-          title: "Registration completed but with issues",
-          description: "Please try logging in if you encounter problems.",
-          variant: "destructive",
-        });
-      }
+      // Redirect to sign in page after short delay
+      setTimeout(() => {
+        setLocation("/sign-in");
+      }, 1500);
     },
     onError: (error) => {
       // Clear any partial registration data
