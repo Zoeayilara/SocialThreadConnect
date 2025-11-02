@@ -83,6 +83,9 @@ export default function UploadPicture() {
         console.error('Failed to mark profile setup as complete:', error);
       }
       
+      // Set flag to show terms dialog on dashboard
+      sessionStorage.setItem('from-registration', 'true');
+      
       toast({
         title: "Upload Successful",
         description: "Profile picture uploaded successfully!",
@@ -163,6 +166,9 @@ export default function UploadPicture() {
     } catch (error) {
       console.error('Failed to mark profile setup as complete:', error);
     }
+    
+    // Set flag to show terms dialog on dashboard
+    sessionStorage.setItem('from-registration', 'true');
     
     setLocation("/success");
   };
