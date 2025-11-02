@@ -69,7 +69,7 @@ export default function Register() {
 
       // Redirect to sign in page after short delay
       setTimeout(() => {
-        setLocation("/sign-in");
+        setLocation("/login");
       }, 1500);
     },
     onError: (error) => {
