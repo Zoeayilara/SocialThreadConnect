@@ -34,6 +34,7 @@ import Messages from './pages/messages';
 import CreatePost from './pages/create-post';
 import Marketplace from './pages/marketplace';
 import VendorProducts from './pages/vendor-products';
+import VendorOrders from './pages/vendor-orders';
 import AddProduct from './pages/add-product';
 import EditProduct from './pages/edit-product';
 import VendorServices from './pages/vendor-services';
@@ -117,6 +118,7 @@ function AppContent() {
           <Route path="/marketplace" component={Marketplace} />
           <Route path="/vendor-products" component={VendorProducts} />
           <Route path="/vendor-products/:vendorId" component={VendorProducts} />
+          <Route path="/vendor-orders" component={VendorOrders} />
           <Route path="/add-product" component={AddProduct} />
           <Route path="/edit-product/:id" component={EditProduct} />
           <Route path="/vendor-services" component={VendorServices} />

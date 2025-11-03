@@ -26,9 +26,22 @@ export default function Marketplace() {
   const [activeTab, setActiveTab] = useState<'products' | 'services'>('products');
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<number>>(new Set());
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+
+  const toggleDescription = (id: number) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
 
   // Fetch all products
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -283,9 +296,22 @@ export default function Marketplace() {
                     <h3 className="font-semibold text-white text-lg mb-2 line-clamp-1 group-hover:text-blue-400 transition-colors">
                       {product.name}
                     </h3>
-                    <p className="text-gray-400 text-sm mb-3 line-clamp-2">
-                      {product.description}
-                    </p>
+                    <div className="mb-3">
+                      <p className={`text-gray-400 text-sm ${expandedDescriptions.has(product.id) ? '' : 'line-clamp-2'}`}>
+                        {product.description}
+                      </p>
+                      {product.description && product.description.length > 100 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleDescription(product.id);
+                          }}
+                          className="text-blue-400 text-xs mt-1 hover:text-blue-300 transition-colors"
+                        >
+                          {expandedDescriptions.has(product.id) ? 'Read less' : 'Read more'}
+                        </button>
+                      )}
+                    </div>
 
                     {/* Price */}
                     <div className="flex items-center justify-between mb-3">
@@ -399,9 +425,22 @@ export default function Marketplace() {
                         )}
                       </div>
 
-                      <p className="text-gray-400 text-sm line-clamp-3">
-                        {service.description}
-                      </p>
+                      <div>
+                        <p className={`text-gray-400 text-sm ${expandedDescriptions.has(service.id) ? '' : 'line-clamp-3'}`}>
+                          {service.description}
+                        </p>
+                        {service.description && service.description.length > 150 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleDescription(service.id);
+                            }}
+                            className="text-purple-400 text-xs mt-1 hover:text-purple-300 transition-colors"
+                          >
+                            {expandedDescriptions.has(service.id) ? 'Read less' : 'Read more'}
+                          </button>
+                        )}
+                      </div>
 
                       {/* Vendor Info */}
                       <div 

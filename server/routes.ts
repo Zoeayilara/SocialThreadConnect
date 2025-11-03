@@ -983,7 +983,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('✅ User created successfully with ID:', user.id);
       console.log('🔍 Created user details:', JSON.stringify(user, null, 2));
 
-           // DO NOT auto-login after registration - user must sign in manually
+      // Send welcome email (don't await - let it run in background)
+      emailService.sendWelcomeEmail(email, firstName, userType)
+        .then(() => console.log('✅ Welcome email sent to:', email))
+        .catch((error) => console.error('❌ Failed to send welcome email:', error));
+
+      // DO NOT auto-login after registration - user must sign in manually
       console.log('✅ Registration complete - user must sign in to continue');
 
       res.json({ 
@@ -2644,6 +2649,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Add vendor bank account routes
   app.use('/api/vendor', isAuthenticated, vendorBankRouter);
+
+  // ==================== ORDERS ENDPOINTS ====================
+
+  // Get vendor's orders (for vendors to see who ordered their products)
+  app.get('/api/vendor/orders', isAuthenticated, async (req: any, res) => {
+    try {
+      const vendorId = req.userId;
+
+      const orders = sqlite.prepare(`
+        SELECT 
+          o.*,
+          p.name as product_name,
+          p.price as product_price,
+          p.image_url as product_image,
+          c.first_name as customer_first_name,
+          c.last_name as customer_last_name,
+          c.email as customer_email,
+          c.phone as customer_phone,
+          c.profile_image_url as customer_profile_image
+        FROM orders o
+        JOIN products p ON o.product_id = p.id
+        JOIN users c ON o.customer_id = c.id
+        WHERE o.vendor_id = ?
+        ORDER BY o.created_at DESC
+      `).all(vendorId);
+
+      res.json(orders);
+    } catch (error) {
+      console.error('Error fetching vendor orders:', error);
+      res.status(500).json({ message: 'Failed to fetch orders' });
+    }
+  });
+
+  // Get customer's orders (for customers to see their order history)
+  app.get('/api/customer/orders', isAuthenticated, async (req: any, res) => {
+    try {
+      const customerId = req.userId;
+
+      const orders = sqlite.prepare(`
+        SELECT 
+          o.*,
+          p.name as product_name,
+          p.price as product_price,
+          p.image_url as product_image,
+          v.first_name as vendor_first_name,
+          v.last_name as vendor_last_name,
+          v.email as vendor_email,
+          v.phone as vendor_phone,
+          v.profile_image_url as vendor_profile_image
+        FROM orders o
+        JOIN products p ON o.product_id = p.id
+        JOIN users v ON o.vendor_id = v.id
+        WHERE o.customer_id = ?
+        ORDER BY o.created_at DESC
+      `).all(customerId);
+
+      res.json(orders);
+    } catch (error) {
+      console.error('Error fetching customer orders:', error);
+      res.status(500).json({ message: 'Failed to fetch orders' });
+    }
+  });
+
+  // Update order status (for vendors to mark orders as shipped/delivered)
+  app.patch('/api/orders/:orderId/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const vendorId = req.userId;
+      const { orderId } = req.params;
+      const { status } = req.body;
+
+      // Verify vendor owns this order
+      const order = sqlite.prepare(`
+        SELECT * FROM orders WHERE id = ? AND vendor_id = ?
+      `).get(orderId, vendorId);
+
+      if (!order) {
+        return res.status(404).json({ message: 'Order not found or unauthorized' });
+      }
+
+      // Update order status
+      sqlite.prepare(`
+        UPDATE orders SET status = ? WHERE id = ?
+      `).run(status, orderId);
+
+      res.json({ message: 'Order status updated successfully' });
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      res.status(500).json({ message: 'Failed to update order status' });
+    }
+  });
 
   // ==================== PRODUCTS/MARKETPLACE ENDPOINTS ====================
 

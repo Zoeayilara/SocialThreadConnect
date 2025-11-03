@@ -134,7 +134,7 @@ export default function VerifyOtp() {
 
           {/* OTP Input */}
           <div className="space-y-6">
-            <div className="flex justify-center overflow-x-auto px-2">
+            <div className="flex justify-center">
               <InputOTP 
                 maxLength={6} 
                 value={otp} 
@@ -142,30 +142,30 @@ export default function VerifyOtp() {
                 onComplete={handleOtpComplete}
                 disabled={timeLeft <= 0}
               >
-                <InputOTPGroup className="gap-2 sm:gap-3">
+                <InputOTPGroup className="gap-1.5 xs:gap-2 sm:gap-3">
                   <InputOTPSlot 
                     index={0} 
-                    className="w-10 h-10 sm:w-14 sm:h-14 text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
+                    className="w-9 h-11 xs:w-10 xs:h-12 sm:w-14 sm:h-14 text-base xs:text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-lg sm:rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
                   />
                   <InputOTPSlot 
                     index={1} 
-                    className="w-10 h-10 sm:w-14 sm:h-14 text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
+                    className="w-9 h-11 xs:w-10 xs:h-12 sm:w-14 sm:h-14 text-base xs:text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-lg sm:rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
                   />
                   <InputOTPSlot 
                     index={2} 
-                    className="w-10 h-10 sm:w-14 sm:h-14 text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
+                    className="w-9 h-11 xs:w-10 xs:h-12 sm:w-14 sm:h-14 text-base xs:text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-lg sm:rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
                   />
                   <InputOTPSlot 
                     index={3} 
-                    className="w-10 h-10 sm:w-14 sm:h-14 text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
+                    className="w-9 h-11 xs:w-10 xs:h-12 sm:w-14 sm:h-14 text-base xs:text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-lg sm:rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
                   />
                   <InputOTPSlot 
                     index={4} 
-                    className="w-10 h-10 sm:w-14 sm:h-14 text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
+                    className="w-9 h-11 xs:w-10 xs:h-12 sm:w-14 sm:h-14 text-base xs:text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-lg sm:rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
                   />
                   <InputOTPSlot 
                     index={5} 
-                    className="w-10 h-10 sm:w-14 sm:h-14 text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
+                    className="w-9 h-11 xs:w-10 xs:h-12 sm:w-14 sm:h-14 text-base xs:text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-lg sm:rounded-xl bg-white text-black focus:border-blue-500 focus:ring-0 transition-colors"
                   />
                 </InputOTPGroup>
               </InputOTP>

@@ -48,6 +48,10 @@ try {
 export const sqlite = new Database(dbPath);
 console.log('✅ SQLite database initialized at:', dbPath);
 
+// Enable WAL mode for better concurrency (allows concurrent reads during writes)
+sqlite.pragma('journal_mode = WAL');
+console.log('✅ SQLite WAL mode enabled for better concurrency');
+
 // Create saved_posts table if it doesn't exist
 sqlite.exec(`
   CREATE TABLE IF NOT EXISTS saved_posts (

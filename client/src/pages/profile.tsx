@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, MessageCircle, Share, MoreHorizontal, Send, Edit, Trash2, Flag, Camera, X, ArrowLeft, Plus, Edit3, Repeat2, ShoppingBag } from "lucide-react";
+import { Heart, MessageCircle, Share, MoreHorizontal, Send, Edit, Trash2, Flag, Camera, X, ArrowLeft, Plus, Edit3, Repeat2, ShoppingBag, ClipboardList } from "lucide-react";
 import { FoxLogo } from "@/components/FoxLogo";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { authenticatedFetch, getImageUrl } from "@/utils/api";
@@ -708,14 +708,28 @@ export default function Profile({ onBack, userId }: ProfileProps) {
           {isOwnProfile ? (
             <div className="flex items-center space-x-2">
               {profileUser?.userType === 'vendor' && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setLocation(isOwnProfile ? '/vendor-products' : `/vendor-products/${userId}`)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <ShoppingBag className="w-5 h-5" />
-                </Button>
+                <>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setLocation(isOwnProfile ? '/vendor-products' : `/vendor-products/${userId}`)}
+                    className="text-gray-400 hover:text-white"
+                    title="Products"
+                  >
+                    <ShoppingBag className="w-5 h-5" />
+                  </Button>
+                  {isOwnProfile && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setLocation('/vendor-orders')}
+                      className="text-gray-400 hover:text-white"
+                      title="Orders"
+                    >
+                      <ClipboardList className="w-5 h-5" />
+                    </Button>
+                  )}
+                </>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

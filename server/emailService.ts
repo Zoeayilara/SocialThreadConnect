@@ -11,7 +11,7 @@ interface EmailConfig {
 }
 
 class EmailService {
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | null = null;
   private useHttpFallback: boolean = false;
 
   constructor() {
@@ -132,12 +132,12 @@ class EmailService {
       const result = await Promise.race([emailPromise, timeoutPromise]);
       console.log('Email sent successfully:', result.messageId);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending OTP email:', error);
       console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        command: error.command
+        message: error?.message,
+        code: error?.code,
+        command: error?.command
       });
       return false;
     }
@@ -223,43 +223,6 @@ class EmailService {
     }
   }
 
-  async sendWelcomeEmail(email: string, firstName?: string): Promise<boolean> {
-    try {
-      const mailOptions = {
-        from: process.env.FROM_EMAIL || 'noreply@entreefox.com',
-        to: email,
-        subject: 'Welcome to EntreeFox!',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #000; text-align: center;">Welcome to EntreeFox!</h2>
-            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
-              ${firstName ? `<p>Hi ${firstName},</p>` : '<p>Hi,</p>'}
-              <p>Welcome to EntreeFox - your community marketplace!</p>
-              <p>You can now:</p>
-              <ul>
-                <li>Connect with vendors and customers</li>
-                <li>Share updates and experiences</li>
-                <li>Discover what's happening in your community</li>
-                <li>Access the marketplace and start trading!</li>
-              </ul>
-              <div style="text-align: center; margin: 20px 0;">
-                <a href="${process.env.APP_URL || 'http://localhost:5000'}" style="background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 8px;">Get Started</a>
-              </div>
-            </div>
-            <p style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">
-              This email was sent by EntreeFox - Your Community Marketplace
-            </p>
-          </div>
-        `,
-      };
-
-      await this.transporter.sendMail(mailOptions);
-      return true;
-    } catch (error) {
-      console.error('Error sending welcome email:', error);
-      return false;
-    }
-  }
 
   // HTTP-based email service for Railway using Resend
   private async sendEmailViaHttp(email: string, otp: string, firstName: string | undefined, type: 'otp' | 'notification'): Promise<boolean> {
@@ -343,6 +306,158 @@ class EmailService {
         <p style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">
           This email was sent by EntreeFox - Your Community Marketplace
         </p>
+      </div>
+    `;
+  }
+
+  // Send welcome email to new users
+  async sendWelcomeEmail(email: string, firstName: string, userType: string): Promise<boolean> {
+    try {
+      console.log('📧 Sending welcome email to:', email);
+
+      // Try HTTP-based email service first (works better on Railway/Fly.io)
+      if (process.env.RAILWAY_ENVIRONMENT_NAME || process.env.FLY_APP_NAME) {
+        console.log('☁️ Cloud environment detected - using HTTP email service');
+        return await this.sendWelcomeEmailViaHttp(email, firstName, userType);
+      }
+
+      // Check if SMTP credentials are available
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.log('⚠️ SMTP not configured - falling back to HTTP email service');
+        return await this.sendWelcomeEmailViaHttp(email, firstName, userType);
+      }
+
+      const mailOptions = {
+        from: `"EntreeFox" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: 'Welcome to EntreeFox! 🎉',
+        html: this.getWelcomeEmailHtml(firstName, userType),
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log('✅ Welcome email sent successfully via SMTP');
+      return true;
+    } catch (error) {
+      console.error('❌ SMTP welcome email failed:', error);
+      console.log('🔄 Falling back to HTTP email service');
+      return await this.sendWelcomeEmailViaHttp(email, firstName, userType);
+    }
+  }
+
+  // HTTP-based welcome email using Resend
+  private async sendWelcomeEmailViaHttp(email: string, firstName: string, userType: string): Promise<boolean> {
+    try {
+      const resendApiKey = process.env.RESEND_API_KEY;
+      if (!resendApiKey) {
+        console.log('⚠️ RESEND_API_KEY not configured - skipping welcome email');
+        return true; // Return true so registration continues
+      }
+
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+      const emailData = {
+        from: `EntreeFox <${fromEmail}>`,
+        to: [email],
+        subject: 'Welcome to EntreeFox! 🎉',
+        html: this.getWelcomeEmailHtml(firstName, userType)
+      };
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Welcome email sent successfully via Resend:', result.id);
+        return true;
+      } else {
+        const error = await response.text();
+        console.error('❌ Resend API error:', error);
+        return true; // Still return true so registration continues
+      }
+    } catch (error) {
+      console.error('❌ HTTP welcome email send failed:', error);
+      return true; // Still return true so registration continues
+    }
+  }
+
+  private getWelcomeEmailHtml(firstName: string, userType: string): string {
+    const isVendor = userType === 'vendor';
+    
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 32px;">🦊 EntreeFox</h1>
+          <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px;">Your Community Marketplace</p>
+        </div>
+
+        <!-- Main Content -->
+        <div style="padding: 40px 30px; background-color: #f8f9fa;">
+          <h2 style="color: #333; margin-top: 0;">Welcome, ${firstName}! 🎉</h2>
+          
+          <p style="color: #555; line-height: 1.6; font-size: 16px;">
+            We're thrilled to have you join the EntreeFox community! You've just taken the first step towards connecting with your campus marketplace.
+          </p>
+
+          ${isVendor ? `
+            <div style="background-color: #fff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
+              <h3 style="color: #667eea; margin-top: 0;">🏪 As a Vendor</h3>
+              <p style="color: #555; line-height: 1.6;">
+                You can showcase your products and services to students in your university community. Set up your shop, list your items, and start connecting with customers today!
+              </p>
+            </div>
+          ` : `
+            <div style="background-color: #fff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #764ba2;">
+              <h3 style="color: #764ba2; margin-top: 0;">🛍️ As a Customer</h3>
+              <p style="color: #555; line-height: 1.6;">
+                Discover amazing products and services from vendors in your university. Browse, shop, and support local student entrepreneurs!
+              </p>
+            </div>
+          `}
+
+          <div style="background-color: #fff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #333; margin-top: 0;">What is EntreeFox?</h3>
+            <p style="color: #555; line-height: 1.6;">
+              EntreeFox is a vibrant community marketplace designed specifically for university students. We connect <strong>vendors</strong> (students selling products/services) with <strong>customers</strong> (students looking to buy) - all within your campus community.
+            </p>
+            <ul style="color: #555; line-height: 1.8;">
+              <li><strong>For Vendors:</strong> Showcase your business, manage inventory, and reach customers easily</li>
+              <li><strong>For Customers:</strong> Discover unique products, support fellow students, and shop conveniently</li>
+              <li><strong>Community-Driven:</strong> Built by students, for students</li>
+            </ul>
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.FRONTEND_URL || 'https://entreefox.com'}/login" 
+               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                      color: #ffffff; 
+                      padding: 15px 40px; 
+                      text-decoration: none; 
+                      border-radius: 25px; 
+                      font-weight: bold; 
+                      display: inline-block;
+                      font-size: 16px;">
+              Sign In Now
+            </a>
+          </div>
+
+          <p style="color: #555; line-height: 1.6; font-size: 14px; margin-top: 30px;">
+            Need help getting started? Feel free to explore the platform and reach out if you have any questions!
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #333; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
+          <p style="color: #999; font-size: 12px; margin: 0;">
+            This email was sent by EntreeFox<br>
+            Your Community Marketplace
+          </p>
+        </div>
       </div>
     `;
   }
