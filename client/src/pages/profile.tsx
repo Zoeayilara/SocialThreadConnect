@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, MessageCircle, Share, MoreHorizontal, Send, Edit, Trash2, Flag, Camera, X, ArrowLeft, Plus, Edit3, Repeat2, ShoppingBag, ClipboardList } from "lucide-react";
+import { Heart, MessageCircle, Share, MoreHorizontal, Send, Edit, Trash2, Flag, Camera, X, ArrowLeft, Plus, Edit3, Repeat2, ShoppingBag, ClipboardList, Share2 } from "lucide-react";
 import { FoxLogo } from "@/components/FoxLogo";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { authenticatedFetch, getImageUrl } from "@/utils/api";
@@ -577,6 +577,33 @@ export default function Profile({ onBack, userId }: ProfileProps) {
     likeMutation.mutate({ postId: post.id });
   };
 
+  const handleDeletePost = (postId: number) => {
+    deletePostMutation.mutate(postId);
+  };
+
+  const handleSharePost = async (postId: number) => {
+    const shareUrl = `${window.location.origin}/post/${postId}`;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Check out this post on EntreeFox',
+          text: 'I found this interesting post on EntreeFox!',
+          url: shareUrl,
+        });
+        toast({ title: 'Post shared successfully!' });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ 
+          title: 'Link copied!',
+          description: 'Post link has been copied to clipboard.',
+        });
+      }
+    } catch (error) {
+      console.log('Share cancelled or failed:', error);
+    }
+  };
+
   const handleSavePost = (postId: number) => {
     savePostMutation.mutate(postId);
   };
@@ -1041,15 +1068,23 @@ export default function Profile({ onBack, userId }: ProfileProps) {
                                         Edit post
                                       </DropdownMenuItem>
                                       <DropdownMenuItem 
-                                        onClick={() => deletePostMutation.mutate(post.id)}
+                                        onClick={() => handleDeletePost(post.id)}
                                         className="text-red-400 hover:bg-gray-800"
                                       >
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Delete post
                                       </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleSharePost(post.id)}>
+                                        <Share2 className="mr-2 h-4 w-4" />
+                                        Share post
+                                      </DropdownMenuItem>
                                     </>
                                   ) : (
                                     <>
+                                      <DropdownMenuItem onClick={() => handleSharePost(post.id)}>
+                                        <Share2 className="mr-2 h-4 w-4" />
+                                        Share post
+                                      </DropdownMenuItem>
                                       <SavePostMenuItem postId={post.id} onSave={handleSavePost} onUnsave={handleUnsavePost} />
                                       <DropdownMenuItem 
                                         className="text-red-400 hover:bg-gray-800"

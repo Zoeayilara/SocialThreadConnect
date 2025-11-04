@@ -11,7 +11,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
-import { Heart, MessageCircle, MoreHorizontal, Send, Search, Shield, Repeat2, MessageSquare, Edit3, Trash2, Flag, X, ShoppingBag } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Send, Search, Shield, Repeat2, MessageSquare, Edit3, Trash2, Flag, X, ShoppingBag, Share2 } from "lucide-react";
 import { NotificationBadge } from "@/components/NotificationBadge";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { FoxLogo } from "@/components/FoxLogo";
@@ -483,6 +483,29 @@ export default function CustomerDashboard() {
     savePostMutation.mutate(postId);
   };
 
+  const handleSharePost = async (postId: number) => {
+    const shareUrl = `${window.location.origin}/post/${postId}`;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Check out this post on EntreeFox',
+          text: 'I found this interesting post on EntreeFox!',
+          url: shareUrl,
+        });
+        toast({ title: 'Post shared successfully!' });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ 
+          title: 'Link copied!',
+          description: 'Post link has been copied to clipboard.',
+        });
+      }
+    } catch (error) {
+      console.log('Share cancelled or failed:', error);
+    }
+  };
+
   const handleUnsavePost = (postId: number) => {
     unsavePostMutation.mutate(postId);
   };
@@ -804,6 +827,10 @@ export default function CustomerDashboard() {
                         <DropdownMenuSeparator />
                       </>
                     ) : null}
+                    <DropdownMenuItem onClick={() => handleSharePost(post.id)}>
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share Post
+                    </DropdownMenuItem>
                     <SavePostMenuItem postId={post.id} onSave={handleSavePost} onUnsave={handleUnsavePost} />
                     <DropdownMenuItem onClick={() => {
                       setReportPostId(post.id);

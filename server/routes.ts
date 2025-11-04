@@ -1312,6 +1312,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single post by ID (public access for sharing)
+  app.get('/api/posts/:id', async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      
+      // Fetch post with author details
+      const post = sqlite.prepare(`
+        SELECT 
+          p.*,
+          u.first_name as authorFirstName,
+          u.last_name as authorLastName,
+          u.email as authorEmail,
+          u.profile_image_url as authorProfileImage,
+          u.is_verified as authorIsVerified,
+          (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as likesCount,
+          (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as commentsCount,
+          (SELECT COUNT(*) FROM reposts WHERE post_id = p.id) as repostsCount
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.id = ?
+      `).get(postId);
+
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+
+      // If user is authenticated, check if they liked/reposted
+      let isLiked = false;
+      let isReposted = false;
+      if (req.userId) {
+        isLiked = await storage.isPostLiked(req.userId, postId);
+        isReposted = await storage.isPostReposted(req.userId, postId);
+      }
+
+      res.json({
+        ...post,
+        isLiked,
+        isReposted,
+      });
+    } catch (error) {
+      console.error('Error fetching single post:', error);
+      res.status(500).json({ message: 'Failed to fetch post' });
+    }
+  });
+
   app.post('/api/posts', isAuthenticated, upload.array('media', 10), async (req: any, res) => {
     try {
       const userId = req.userId;

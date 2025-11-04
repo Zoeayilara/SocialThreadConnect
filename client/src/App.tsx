@@ -32,6 +32,7 @@ import Activity from './pages/activity';
 import Profile from './pages/profile';
 import Messages from './pages/messages';
 import CreatePost from './pages/create-post';
+import PostDetail from './pages/post-detail';
 import Marketplace from './pages/marketplace';
 import VendorProducts from './pages/vendor-products';
 import VendorOrders from './pages/vendor-orders';
@@ -112,6 +113,7 @@ function AppContent() {
           <Route path="/messages" component={() => <Messages />} />
           <Route path="/messages/:userId" component={({ params }: any) => <Messages directUserId={parseInt(params.userId)} />} />
           <Route path="/create-post" component={CreatePost} />
+          <Route path="/post/:postId" component={PostDetail} />
           <Route path="/help" component={() => <Help onBack={() => window.history.back()} />} />
           <Route path="/about" component={() => <About onBack={() => window.history.back()} />} />
           <Route path="/profile/:userId" component={({ params }: any) => <Profile onBack={() => window.history.back()} userId={parseInt(params.userId)} />} />
