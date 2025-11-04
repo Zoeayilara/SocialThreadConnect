@@ -12,7 +12,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
-import { MessageCircle, Share, MoreHorizontal, Image, Send, LogOut, Edit, Trash2, Bookmark, Flag, Share2 } from "lucide-react";
+import { MessageCircle, Share, MoreHorizontal, Image, Send, LogOut, Edit, Trash2, Bookmark, Flag } from "lucide-react";
 import { FoxLogo } from "@/components/FoxLogo";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { authenticatedFetch } from "@/utils/api";
@@ -276,29 +276,6 @@ export default function Social() {
     deletePostMutation.mutate(postId);
   };
 
-  const handleSharePost = async (postId: number) => {
-    const shareUrl = `${window.location.origin}/post/${postId}`;
-    
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'Check out this post on EntreeFox',
-          text: 'I found this interesting post on EntreeFox!',
-          url: shareUrl,
-        });
-        toast({ title: 'Post shared successfully!' });
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        toast({ 
-          title: 'Link copied!',
-          description: 'Post link has been copied to clipboard.',
-        });
-      }
-    } catch (error) {
-      console.log('Share cancelled or failed:', error);
-    }
-  };
-
   const isPostOwner = (post: Post) => {
     return user?.id === post.user.id;
   };
@@ -489,10 +466,6 @@ export default function Social() {
                         <DropdownMenuSeparator />
                       </>
                     ) : null}
-                    <DropdownMenuItem onClick={() => handleSharePost(post.id)}>
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share Post
-                    </DropdownMenuItem>
                     <DropdownMenuItem>
                       <Bookmark className="w-4 h-4 mr-2" />
                       Save Post
