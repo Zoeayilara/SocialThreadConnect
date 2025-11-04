@@ -134,8 +134,9 @@ export default function VendorDashboard() {
     },
     refetchInterval: false, // No automatic updates - only manual refresh
     refetchOnWindowFocus: true, // Refresh when user comes back to tab
+    refetchOnMount: true, // Refresh when component mounts (page reload)
     refetchIntervalInBackground: false, // No background updates
-    staleTime: 1000 * 60 * 5, // Consider data stale after 5 minutes
+    staleTime: 0, // Always consider data stale - refresh on every interaction
   });
 
   // Fetch comments for a post with optimized refetching
