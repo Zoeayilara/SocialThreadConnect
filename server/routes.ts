@@ -1337,7 +1337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         FROM posts p
         JOIN users u ON p.user_id = u.id
         WHERE p.id = ?
-      `).get(postId);
+      `).get(postId) as any;
 
       if (!post) {
         console.log('❌ Post not found:', postId);
