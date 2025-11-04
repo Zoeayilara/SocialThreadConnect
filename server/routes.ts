@@ -1317,8 +1317,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const postId = parseInt(req.params.id);
       console.log('📝 Fetching single post:', postId);
+      console.log('📝 Request origin:', req.headers.origin);
+      console.log('📝 User authenticated:', !!req.userId);
       
       if (isNaN(postId)) {
+        console.log('❌ Invalid post ID:', req.params.id);
         return res.status(400).json({ message: 'Invalid post ID' });
       }
       

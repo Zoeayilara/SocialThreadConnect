@@ -133,9 +133,9 @@ export default function VendorDashboard() {
       return response.json();
     },
     refetchInterval: false, // No automatic updates - only manual refresh
-    refetchOnWindowFocus: false, // No interruptions when switching tabs
+    refetchOnWindowFocus: true, // Refresh when user comes back to tab
     refetchIntervalInBackground: false, // No background updates
-    staleTime: Infinity, // Never consider data stale - only refresh on manual action
+    staleTime: 1000 * 60 * 5, // Consider data stale after 5 minutes
   });
 
   // Fetch comments for a post with optimized refetching

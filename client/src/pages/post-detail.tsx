@@ -28,8 +28,15 @@ export default function PostDetail() {
     queryKey: ['post', postId],
     queryFn: async () => {
       console.log('🔍 Fetching post from:', `${API_URL}/api/posts/${postId}`);
-      const response = await fetch(`${API_URL}/api/posts/${postId}`);
+      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies for CORS
+      });
       console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         console.error('❌ Fetch error:', errorData);
