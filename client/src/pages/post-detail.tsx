@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Heart, MessageCircle, Repeat2, Send, Loader2 } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { authenticatedFetch, getImageUrl } from '@/utils/api';
+import { authenticatedFetch, getImageUrl, API_URL } from '@/utils/api';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -27,7 +27,7 @@ export default function PostDetail() {
   const { data: post, isLoading } = useQuery({
     queryKey: ['post', postId],
     queryFn: async () => {
-      const response = await fetch(`/api/posts/${postId}`);
+      const response = await fetch(`${API_URL}/api/posts/${postId}`);
       if (!response.ok) throw new Error('Failed to fetch post');
       return response.json();
     },
