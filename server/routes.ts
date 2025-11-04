@@ -1316,6 +1316,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/posts/:id', async (req: any, res) => {
     try {
       const postId = parseInt(req.params.id);
+      console.log('📝 Fetching single post:', postId);
+      
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: 'Invalid post ID' });
+      }
       
       // Fetch post with author details
       const post = sqlite.prepare(`
@@ -1335,8 +1340,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `).get(postId);
 
       if (!post) {
+        console.log('❌ Post not found:', postId);
         return res.status(404).json({ message: 'Post not found' });
       }
+
+      console.log('✅ Post found:', post.id);
 
       // If user is authenticated, check if they liked/reposted
       let isLiked = false;
@@ -1352,7 +1360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isReposted,
       });
     } catch (error) {
-      console.error('Error fetching single post:', error);
+      console.error('❌ Error fetching single post:', error);
       res.status(500).json({ message: 'Failed to fetch post' });
     }
   });

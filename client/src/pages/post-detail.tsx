@@ -24,14 +24,23 @@ export default function PostDetail() {
   const [comment, setComment] = useState('');
 
   // Fetch single post
-  const { data: post, isLoading } = useQuery({
+  const { data: post, isLoading, error } = useQuery({
     queryKey: ['post', postId],
     queryFn: async () => {
+      console.log('🔍 Fetching post from:', `${API_URL}/api/posts/${postId}`);
       const response = await fetch(`${API_URL}/api/posts/${postId}`);
-      if (!response.ok) throw new Error('Failed to fetch post');
-      return response.json();
+      console.log('📡 Response status:', response.status);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ Fetch error:', errorData);
+        throw new Error(errorData.message || 'Failed to fetch post');
+      }
+      const data = await response.json();
+      console.log('✅ Post data received:', data);
+      return data;
     },
     enabled: !!postId,
+    retry: 2,
   });
 
   // Fetch comments
@@ -128,7 +137,22 @@ export default function PostDetail() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-2" />
+          <p className="text-gray-600 dark:text-gray-400 text-sm">Loading post...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Error loading post</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{(error as Error).message}</p>
+          <Button onClick={() => setLocation('/')}>Go to Home</Button>
+        </div>
       </div>
     );
   }
