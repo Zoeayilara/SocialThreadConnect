@@ -126,11 +126,11 @@ export default function CustomerDashboard() {
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
-    refetchInterval: false, // No automatic updates - only manual refresh
+    staleTime: 0, // Always consider data stale
+    gcTime: 0, // Don't cache data
+    refetchOnMount: 'always', // Always refetch when component mounts
     refetchOnWindowFocus: true, // Refresh when user comes back to tab
-    refetchOnMount: true, // Refresh when component mounts (page reload)
-    refetchIntervalInBackground: false, // No background updates
-    staleTime: 0, // Always consider data stale - refresh on every interaction
+    refetchOnReconnect: true, // Refresh when reconnecting
   });
 
   // Fetch comments for a post with optimized refetching
