@@ -20,6 +20,7 @@ export interface InitializePaymentParams {
   amount: number; // in kobo (multiply by 100)
   reference: string;
   subaccount?: string;
+  transaction_charge?: number; // Platform fee in kobo
   bearer?: 'account' | 'subaccount';
   callback_url?: string;
   metadata?: any;

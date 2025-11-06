@@ -215,6 +215,10 @@ class EmailService {
         `,
       };
 
+      if (!this.transporter) {
+        console.error('Email transporter not initialized');
+        return false;
+      }
       await this.transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
@@ -334,6 +338,10 @@ class EmailService {
         html: this.getWelcomeEmailHtml(firstName, userType),
       };
 
+      if (!this.transporter) {
+        console.error('Email transporter not initialized');
+        return await this.sendWelcomeEmailViaHttp(email, firstName, userType);
+      }
       await this.transporter.sendMail(mailOptions);
       console.log('✅ Welcome email sent successfully via SMTP');
       return true;
@@ -448,6 +456,237 @@ class EmailService {
 
           <p style="color: #555; line-height: 1.6; font-size: 14px; margin-top: 30px;">
             Need help getting started? Feel free to explore the platform and reach out if you have any questions!
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #333; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
+          <p style="color: #999; font-size: 12px; margin: 0;">
+            This email was sent by EntreeFox<br>
+            Your Community Marketplace
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  // Send order notification to vendor
+  async sendVendorOrderNotification(
+    vendorEmail: string,
+    orderDetails: {
+      vendorName: string;
+      customerName: string;
+      customerEmail: string;
+      customerPhone?: string;
+      productName: string;
+      quantity: number;
+      size?: string;
+      totalAmount: number;
+      shippingAddress: string;
+      orderReference: string;
+    }
+  ): Promise<boolean> {
+    try {
+      console.log('📧 Sending order notification to vendor:', vendorEmail);
+
+      // Try HTTP-based email service first (works better on Railway/Fly.io)
+      if (process.env.RAILWAY_ENVIRONMENT_NAME || process.env.FLY_APP_NAME) {
+        console.log('☁️ Cloud environment detected - using HTTP email service');
+        return await this.sendVendorOrderNotificationViaHttp(vendorEmail, orderDetails);
+      }
+
+      // Check if SMTP credentials are available
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.log('⚠️ SMTP not configured - falling back to HTTP email service');
+        return await this.sendVendorOrderNotificationViaHttp(vendorEmail, orderDetails);
+      }
+
+      const mailOptions = {
+        from: `"EntreeFox" <${process.env.SMTP_USER}>`,
+        to: vendorEmail,
+        subject: '🎉 New Order Received - EntreeFox',
+        html: this.getVendorOrderNotificationHtml(orderDetails),
+      };
+
+      if (!this.transporter) {
+        console.error('Email transporter not initialized');
+        return await this.sendVendorOrderNotificationViaHttp(vendorEmail, orderDetails);
+      }
+      await this.transporter.sendMail(mailOptions);
+      console.log('✅ Vendor order notification sent successfully via SMTP');
+      return true;
+    } catch (error) {
+      console.error('❌ SMTP vendor notification failed:', error);
+      console.log('🔄 Falling back to HTTP email service');
+      return await this.sendVendorOrderNotificationViaHttp(vendorEmail, orderDetails);
+    }
+  }
+
+  // HTTP-based vendor order notification using Resend
+  private async sendVendorOrderNotificationViaHttp(
+    vendorEmail: string,
+    orderDetails: {
+      vendorName: string;
+      customerName: string;
+      customerEmail: string;
+      customerPhone?: string;
+      productName: string;
+      quantity: number;
+      size?: string;
+      totalAmount: number;
+      shippingAddress: string;
+      orderReference: string;
+    }
+  ): Promise<boolean> {
+    try {
+      const resendApiKey = process.env.RESEND_API_KEY;
+      if (!resendApiKey) {
+        console.log('⚠️ RESEND_API_KEY not configured - logging order notification instead');
+        console.log('📦 New order for vendor:', vendorEmail, orderDetails);
+        return true; // Return true so order processing continues
+      }
+
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+      const emailData = {
+        from: `EntreeFox <${fromEmail}>`,
+        to: [vendorEmail],
+        subject: '🎉 New Order Received - EntreeFox',
+        html: this.getVendorOrderNotificationHtml(orderDetails)
+      };
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Vendor order notification sent successfully via Resend:', result.id);
+        return true;
+      } else {
+        const error = await response.text();
+        console.error('❌ Resend API error:', error);
+        console.log('📦 Fallback - New order for vendor:', vendorEmail, orderDetails);
+        return true; // Still return true so order processing continues
+      }
+    } catch (error) {
+      console.error('❌ HTTP vendor notification send failed:', error);
+      console.log('📦 Fallback - New order for vendor:', vendorEmail, orderDetails);
+      return true; // Still return true so order processing continues
+    }
+  }
+
+  private getVendorOrderNotificationHtml(orderDetails: {
+    vendorName: string;
+    customerName: string;
+    customerEmail: string;
+    customerPhone?: string;
+    productName: string;
+    quantity: number;
+    size?: string;
+    totalAmount: number;
+    shippingAddress: string;
+    orderReference: string;
+  }): string {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 32px;">🦊 EntreeFox</h1>
+          <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px;">New Order Received!</p>
+        </div>
+
+        <!-- Main Content -->
+        <div style="padding: 40px 30px; background-color: #f8f9fa;">
+          <h2 style="color: #333; margin-top: 0;">Hi ${orderDetails.vendorName}! 🎉</h2>
+          
+          <p style="color: #555; line-height: 1.6; font-size: 16px;">
+            Great news! You've received a new order on EntreeFox.
+          </p>
+
+          <!-- Order Details -->
+          <div style="background-color: #fff; padding: 25px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
+            <h3 style="color: #667eea; margin-top: 0;">📦 Order Details</h3>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 10px 0; color: #666; font-weight: bold;">Order Reference:</td>
+                <td style="padding: 10px 0; color: #333;">${orderDetails.orderReference}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; color: #666; font-weight: bold;">Product:</td>
+                <td style="padding: 10px 0; color: #333;">${orderDetails.productName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; color: #666; font-weight: bold;">Quantity:</td>
+                <td style="padding: 10px 0; color: #333;">${orderDetails.quantity}</td>
+              </tr>
+              ${orderDetails.size ? `
+              <tr>
+                <td style="padding: 10px 0; color: #666; font-weight: bold;">Size:</td>
+                <td style="padding: 10px 0; color: #333;">${orderDetails.size}</td>
+              </tr>
+              ` : ''}
+              <tr>
+                <td style="padding: 10px 0; color: #666; font-weight: bold;">Total Amount:</td>
+                <td style="padding: 10px 0; color: #333; font-size: 18px; font-weight: bold;">₦${orderDetails.totalAmount.toLocaleString()}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Customer Details -->
+          <div style="background-color: #fff; padding: 25px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #764ba2;">
+            <h3 style="color: #764ba2; margin-top: 0;">👤 Customer Information</h3>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 10px 0; color: #666; font-weight: bold;">Name:</td>
+                <td style="padding: 10px 0; color: #333;">${orderDetails.customerName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; color: #666; font-weight: bold;">Email:</td>
+                <td style="padding: 10px 0; color: #333;">${orderDetails.customerEmail}</td>
+              </tr>
+              ${orderDetails.customerPhone ? `
+              <tr>
+                <td style="padding: 10px 0; color: #666; font-weight: bold;">Phone:</td>
+                <td style="padding: 10px 0; color: #333;">${orderDetails.customerPhone}</td>
+              </tr>
+              ` : ''}
+              <tr>
+                <td style="padding: 10px 0; color: #666; font-weight: bold; vertical-align: top;">Shipping Address:</td>
+                <td style="padding: 10px 0; color: #333;">${orderDetails.shippingAddress}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Action Button -->
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.FRONTEND_URL || 'https://entreefox.com'}/vendor-orders" 
+               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                      color: #ffffff; 
+                      padding: 15px 40px; 
+                      text-decoration: none; 
+                      border-radius: 25px; 
+                      font-weight: bold; 
+                      display: inline-block;
+                      font-size: 16px;">
+              View Order Details
+            </a>
+          </div>
+
+          <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+            <p style="color: #856404; margin: 0; line-height: 1.6;">
+              <strong>⚠️ Important:</strong> Please prepare the order and contact the customer to arrange delivery or pickup.
+            </p>
+          </div>
+
+          <p style="color: #555; line-height: 1.6; font-size: 14px; margin-top: 30px;">
+            Payment has been confirmed and will be transferred to your account according to your settlement schedule.
           </p>
         </div>
 

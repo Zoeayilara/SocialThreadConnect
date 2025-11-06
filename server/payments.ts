@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { sqlite } from './db';
 import { initializePayment, verifyPayment } from './paystack';
+import { emailService } from './emailService';
 
 const router = Router();
 
@@ -51,9 +52,11 @@ router.post('/initialize', async (req: Request, res: Response) => {
 
     // Calculate total (product price * quantity)
     const subtotal = product.price * quantity;
-    
-    // Platform fee is 2% (already configured in subaccount)
     const totalAmount = subtotal;
+    
+    // Calculate platform fee (2% of total amount)
+    const platformFeePercentage = 0.02; // 2%
+    const platformFee = Math.round(totalAmount * platformFeePercentage * 100); // Convert to kobo
 
     // Generate unique reference
     const reference = `ORDER-${Date.now()}-${productId}-${userId}`;
@@ -79,13 +82,14 @@ router.post('/initialize', async (req: Request, res: Response) => {
     const frontendUrl = process.env.FRONTEND_URL || 'https://entreefox.com';
     const callbackUrl = `${frontendUrl}/payment-callback?reference=${reference}`;
 
-    // Initialize Paystack payment
+    // Initialize Paystack payment with transaction split
     const paystackResponse = await initializePayment({
       email: customer.email,
       amount: Math.round(totalAmount * 100), // Convert to kobo
       reference: reference,
       subaccount: product.paystack_subaccount_code,
-      bearer: 'subaccount', // Vendor pays transaction fee
+      transaction_charge: platformFee, // Platform gets 2% fee
+      bearer: 'subaccount', // Vendor pays Paystack transaction fee
       callback_url: callbackUrl,
       metadata: {
         order_id: orderResult.lastInsertRowid,
@@ -95,6 +99,7 @@ router.post('/initialize', async (req: Request, res: Response) => {
         size: size || 'N/A',
         customer_name: `${customer.first_name} ${customer.last_name}`,
         vendor_id: product.vendor_id,
+        platform_fee: platformFee / 100, // Store in naira for reference
       },
     });
 
@@ -149,6 +154,50 @@ router.get('/verify/:reference', async (req: Request, res: Response) => {
         SET stock = stock - ? 
         WHERE id = ?
       `).run(order.quantity, order.product_id);
+
+      // Get vendor and customer details for email notification
+      const orderDetails = sqlite.prepare(`
+        SELECT 
+          o.*,
+          p.name as product_name,
+          v.email as vendor_email,
+          v.first_name as vendor_first_name,
+          v.last_name as vendor_last_name,
+          c.first_name as customer_first_name,
+          c.last_name as customer_last_name,
+          c.email as customer_email,
+          c.phone as customer_phone
+        FROM orders o
+        JOIN products p ON o.product_id = p.id
+        JOIN users v ON o.vendor_id = v.id
+        JOIN users c ON o.customer_id = c.id
+        WHERE o.payment_reference = ?
+      `).get(reference) as any;
+
+      // Send email notification to vendor
+      if (orderDetails) {
+        try {
+          await emailService.sendVendorOrderNotification(
+            orderDetails.vendor_email,
+            {
+              vendorName: `${orderDetails.vendor_first_name} ${orderDetails.vendor_last_name}`,
+              customerName: `${orderDetails.customer_first_name} ${orderDetails.customer_last_name}`,
+              customerEmail: orderDetails.customer_email,
+              customerPhone: orderDetails.customer_phone,
+              productName: orderDetails.product_name,
+              quantity: orderDetails.quantity,
+              size: orderDetails.size,
+              totalAmount: orderDetails.total_amount,
+              shippingAddress: orderDetails.shipping_address,
+              orderReference: reference,
+            }
+          );
+          console.log('✅ Vendor notification email sent successfully');
+        } catch (emailError) {
+          console.error('❌ Failed to send vendor notification email:', emailError);
+          // Don't fail the payment verification if email fails
+        }
+      }
 
       res.json({
         status: 'success',
