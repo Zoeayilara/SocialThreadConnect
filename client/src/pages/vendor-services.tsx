@@ -153,24 +153,33 @@ export default function VendorServices() {
       {/* Services Grid */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         {services.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
-              <Briefcase className="w-12 h-12 text-gray-600" />
+          <div className="flex flex-col items-center justify-center py-12 md:py-20 text-center px-4">
+            <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
+              <Briefcase className="w-10 h-10 md:w-12 md:h-12 text-gray-600" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">No Services Yet</h2>
-            <p className="text-gray-400 mb-6 max-w-md">
+            <h2 className="text-xl md:text-2xl font-bold text-white mb-2">No Services Yet</h2>
+            <p className="text-sm md:text-base text-gray-400 mb-6 max-w-md">
               {isOwnServices 
-                ? "Start showcasing your professional services to potential clients"
+                ? "Start building your catalog by adding products or services"
                 : "This vendor hasn't added any services yet"}
             </p>
             {isOwnServices && (
-              <Button
-                onClick={() => setLocation('/add-service')}
-                className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Service
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <Button
+                  onClick={() => setLocation('/add-product')}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 w-full sm:w-auto"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Product
+                </Button>
+                <Button
+                  onClick={() => setLocation('/add-service')}
+                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 w-full sm:w-auto"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Service
+                </Button>
+              </div>
             )}
           </div>
         ) : (
