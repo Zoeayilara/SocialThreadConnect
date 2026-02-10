@@ -1,5 +1,6 @@
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
+import { applySeoForRoute } from "./lib/seo";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -47,6 +48,10 @@ import VendorBankAccount from './pages/vendor-bank-account';
 function AppContent() {
   const { user, isLoggingOut, isAuthenticating, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    applySeoForRoute(window.location.pathname, !!user);
+  }, [location, user]);
 
   // Auto-redirect authenticated users from landing/welcome pages to their dashboard
   useEffect(() => {

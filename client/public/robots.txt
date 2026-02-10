@@ -1,0 +1,34 @@
+User-agent: *
+Allow: /
+
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-otp
+Disallow: /user-selection
+
+Disallow: /customer-dashboard
+Disallow: /vendor-dashboard
+Disallow: /admin-dashboard
+Disallow: /settings
+Disallow: /notifications
+Disallow: /saved
+Disallow: /account
+Disallow: /activity
+Disallow: /messages
+Disallow: /create-post
+Disallow: /post/
+Disallow: /profile/
+Disallow: /marketplace
+Disallow: /vendor-products
+Disallow: /vendor-orders
+Disallow: /add-product
+Disallow: /edit-product
+Disallow: /vendor-services
+Disallow: /add-service
+Disallow: /edit-service
+Disallow: /payment-callback
+Disallow: /vendor-bank-account
+
+Sitemap: https://entreefox.com/sitemap.xml
