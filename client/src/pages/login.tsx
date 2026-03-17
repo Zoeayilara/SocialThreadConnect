@@ -27,12 +27,12 @@ export default function Login() {
       console.log('✅ Redirecting to upload-picture page');
       setLocation('/upload-picture');
     } else {
-      console.log('✅ Redirecting to dashboard');
-      // Regular login - go to dashboard
-      if (user.userType === 'vendor') {
-        setLocation('/vendor-dashboard');
+      console.log('✅ Redirecting to marketplace');
+      // Regular login - go to marketplace (admin stays on admin dashboard)
+      if (user.userType === 'admin') {
+        setLocation('/admin-dashboard');
       } else {
-        setLocation('/customer-dashboard');
+        setLocation('/marketplace');
       }
     }
   }
@@ -43,10 +43,10 @@ export default function Login() {
     if (user.hasCompletedProfileSetup === 0 || !user.hasCompletedProfileSetup) {
       setLocation('/upload-picture');
     } else {
-      if (user.userType === 'vendor') {
-        setLocation('/vendor-dashboard');
+      if (user.userType === 'admin') {
+        setLocation('/admin-dashboard');
       } else {
-        setLocation('/customer-dashboard');
+        setLocation('/marketplace');
       }
     }
     return null;

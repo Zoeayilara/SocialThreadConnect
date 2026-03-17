@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingBag, Package, Search, Filter, ArrowLeft, Briefcase } from "lucide-react";
+import { ShoppingBag, Package, Search, Filter, ArrowLeft, Briefcase, LayoutDashboard } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import { authenticatedFetch, getImageUrl } from "@/utils/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Marketplace() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,6 +31,20 @@ export default function Marketplace() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  const handleDashboardClick = () => {
+    if (!user) return;
+    if (user.userType === 'admin') {
+      setLocation('/admin-dashboard');
+      return;
+    }
+    if (user.userType === 'vendor') {
+      setLocation('/vendor-dashboard');
+      return;
+    }
+    setLocation('/customer-dashboard');
+  };
 
   const toggleDescription = (id: number) => {
     setExpandedDescriptions(prev => {
@@ -497,6 +512,23 @@ export default function Marketplace() {
           }}
           onSuccess={handlePaymentSuccess}
         />
+      )}
+
+      {/* Bottom Navigation */}
+      {user && (
+        <div className="fixed bottom-0 left-0 right-0 z-50">
+          <div className="mx-auto w-full max-w-7xl px-4 pb-4">
+            <div className="relative bg-black/90 backdrop-blur-md border border-gray-800 rounded-2xl h-16 flex items-center justify-center">
+              <Button
+                onClick={handleDashboardClick}
+                className="absolute left-1/2 -translate-x-1/2 -top-6 h-14 w-14 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-xl"
+                size="icon"
+              >
+                <LayoutDashboard className="w-6 h-6 text-white" />
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

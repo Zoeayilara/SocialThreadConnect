@@ -175,14 +175,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           window.location.replace('/upload-picture');
         }, 1000);
       } else {
-        console.log('✅ Regular login - redirecting to dashboard');
+        console.log('✅ Regular login - redirecting to marketplace');
         setTimeout(() => {
-          if (data.user.userType === 'vendor') {
-            window.location.replace('/vendor-dashboard');
-          } else if (data.user.userType === 'admin') {
+          if (data.user.userType === 'admin') {
             window.location.replace('/admin-dashboard');
           } else {
-            window.location.replace('/customer-dashboard');
+            window.location.replace('/marketplace');
           }
         }, 1000);
       }
