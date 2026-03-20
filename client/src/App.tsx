@@ -53,20 +53,18 @@ function AppContent() {
     applySeoForRoute(window.location.pathname, !!user);
   }, [location, user]);
 
-  // Auto-redirect authenticated users from landing/welcome pages to their dashboard
+  // Auto-redirect authenticated users from landing/welcome pages to their default page
   useEffect(() => {
     // Check if user just logged out to prevent auto-redirect
     const justLoggedOut = sessionStorage.getItem('justLoggedOut');
     
     if (user && !isLoading && !isAuthenticating && !justLoggedOut) {
       if (location === '/' || location === '/welcome') {
-        let dashboardPath = '/customer-dashboard';
-        if (user.userType === 'vendor') {
-          dashboardPath = '/vendor-dashboard';
-        } else if (user.userType === 'admin') {
-          dashboardPath = '/admin-dashboard';
+        if (user.userType === 'admin') {
+          setLocation('/admin-dashboard');
+        } else {
+          setLocation('/marketplace');
         }
-        setLocation(dashboardPath);
       }
     }
     
@@ -102,7 +100,7 @@ function AppContent() {
         </>
       ) : (
         <>
-          <Route path="/" component={user.userType === 'vendor' ? VendorDashboard : user.userType === 'admin' ? AdminDashboard : CustomerDashboard} />
+          <Route path="/" component={user.userType === 'admin' ? AdminDashboard : Marketplace} />
           <Route path="/welcome" component={Welcome} />
           <Route path="/upload-picture" component={UploadPicture} />
           <Route path="/success" component={Success} />
